@@ -40,6 +40,12 @@ Open-source, self-hosted AI drama and motion comic creation — from scripts and
   <sub>如果二维码未直接显示，可点击二维码区域查看原图。</sub>
 </p>
 
+## 赞助商
+
+| | |
+|:---:|---|
+| <a href="https://metaso.cn/minimax-h3/?s=aid-studio"><img src="references/metasota-logo.jpg" alt="秘塔科技 Meta Sota" width="170"></a> | **MiniMax H3 视频生成 API｜秘塔科技**<br>秘塔科技提供高性价比的 MiniMax H3 视频生成服务：**768P 仅 0.09 元/秒，2K 仅 0.15 元/秒**。支持原生 2K、音画同步，API 兼容 **OpenAI 协议**，同时支持 **ComfyUI**，无需自行部署 GPU。<br>🎁 通过 [aid-studio 专属链接注册](https://metaso.cn/minimax-h3/?s=aid-studio)，即可领取赠送额度及专属优惠。 |
+
 ## 核心能力
 
 - **完整创作流程**：剧本、角色场景、分镜、图片、视频与配音围绕同一项目组织。
