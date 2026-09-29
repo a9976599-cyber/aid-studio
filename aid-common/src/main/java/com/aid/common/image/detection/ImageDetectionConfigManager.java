@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class ImageDetectionConfigManager {
     public static final String CATEGORY = "image_object_detection";
     private final ConfigService configService;
+    private final com.aid.common.tencent.media.TencentMediaCosConfigManager mediaCosConfigManager;
 
     public Map<String, String> publicConfig() {
         Map<String, String> values = new HashMap<>(category(CATEGORY));
@@ -39,17 +40,20 @@ public class ImageDetectionConfigManager {
         String credentialSource = values.getOrDefault("credentialSource", "COS_STORAGE");
         Map<String, String> credentials = "COS_STORAGE".equals(credentialSource)
                 ? (enabled ? category("oss") : optionalOss()) : values;
-        String region = "COS_STORAGE".equals(credentialSource) ? credentials.get("cosRegion") : values.get("region");
-        String bucket = "COS_STORAGE".equals(credentialSource) ? credentials.get("cosBucketName") : values.get("bucketName");
-        String secretId = "COS_STORAGE".equals(credentialSource) ? credentials.get("cosSecretId") : values.get("secretId");
-        String secretKey = "COS_STORAGE".equals(credentialSource) ? credentials.get("cosSecretKey") : values.get("secretKey");
+        com.aid.common.tencent.media.TencentMediaCosConfig mediaCos = "MEDIA_COS".equals(credentialSource)
+                ? mediaCosConfigManager.current() : null;
+        String region = mediaCos != null ? mediaCos.region() : "COS_STORAGE".equals(credentialSource) ? credentials.get("cosRegion") : values.get("region");
+        String bucket = mediaCos != null ? mediaCos.bucketName() : "COS_STORAGE".equals(credentialSource) ? credentials.get("cosBucketName") : values.get("bucketName");
+        String secretId = mediaCos != null ? mediaCos.secretId() : "COS_STORAGE".equals(credentialSource) ? credentials.get("cosSecretId") : values.get("secretId");
+        String secretKey = mediaCos != null ? mediaCos.secretKey() : "COS_STORAGE".equals(credentialSource) ? credentials.get("cosSecretKey") : values.get("secretKey");
         ImageDetectionConfig config = new ImageDetectionConfig(enabled,
                 values.getOrDefault("provider", "tencent_ci"), region, bucket, secretId, secretKey,
                 credentialSource, values.getOrDefault("cosImageAccessMode", "COS_OBJECT"),
                 number(values, "connectTimeoutMs", 3000), number(values, "readTimeoutMs", 15000),
                 number(values, "maxCallsPerUserMinute", 10));
         if (enabled && (!"tencent_ci".equals(config.provider())
-                || !("COS_STORAGE".equals(credentialSource) || "DEDICATED".equals(credentialSource))
+                || !("COS_STORAGE".equals(credentialSource) || "DEDICATED".equals(credentialSource)
+                || "MEDIA_COS".equals(credentialSource))
                 || !("COS_OBJECT".equals(config.cosImageAccessMode()) || "PUBLIC_URL".equals(config.cosImageAccessMode()))
                 || StrUtil.isBlank(region) || StrUtil.isBlank(bucket) || StrUtil.isBlank(secretId) || StrUtil.isBlank(secretKey)
                 || !region.matches("[a-z0-9-]{3,64}") || !bucket.matches("[a-zA-Z0-9-]+-[0-9]+")

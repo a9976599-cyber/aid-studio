@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ImageDetectionConfigController extends BaseController {
     private static final String CATEGORY = ImageDetectionConfigManager.CATEGORY;
     private final ImageDetectionConfigManager configManager;
+    private final com.aid.common.tencent.media.TencentMediaCosConfigManager mediaCosConfigManager;
     private final ConfigService configService;
     private final IAidConfigService aidConfigService;
     private final ImageObjectDetectionService detectionService;
@@ -57,7 +58,11 @@ public class ImageDetectionConfigController extends BaseController {
         try {
             Map<String, String> oss = configService.getConfigValues("oss");
             result.put("uploadMode", oss.getOrDefault("uploadMode", "local"));
-            if ("COS_STORAGE".equals(result.get("credentialSource"))) {
+            if ("MEDIA_COS".equals(result.get("credentialSource"))) {
+                var cos = mediaCosConfigManager.current();
+                result.put("region", StrUtil.nullToEmpty(cos.region()));
+                result.put("bucketName", StrUtil.nullToEmpty(cos.bucketName()));
+            } else if ("COS_STORAGE".equals(result.get("credentialSource"))) {
                 result.put("region", oss.getOrDefault("cosRegion", ""));
                 result.put("bucketName", oss.getOrDefault("cosBucketName", ""));
             }
@@ -84,9 +89,7 @@ public class ImageDetectionConfigController extends BaseController {
                 saveSecret("secretKey", request.getSecretKey());
             }
             Map<String, String> oss = configService.getConfigValues("oss");
-            if ("cos".equalsIgnoreCase(oss.get("uploadMode"))) {
-                save("cosImageAccessMode", request.getCosImageAccessMode());
-            }
+            save("cosImageAccessMode", request.getCosImageAccessMode());
             save("connectTimeoutMs", request.getConnectTimeoutMs());
             save("readTimeoutMs", request.getReadTimeoutMs());
             save("maxCallsPerUserMinute", request.getMaxCallsPerUserMinute());
@@ -113,9 +116,7 @@ public class ImageDetectionConfigController extends BaseController {
             DetectImageObjectsInput input;
             String traceId = UUID.randomUUID().toString();
             if ("COS_OBJECT".equals(request.getSourceType())) {
-                Map<String, String> oss = configService.getConfigValues("oss");
-                if (!"cos".equalsIgnoreCase(oss.get("uploadMode"))
-                        || !"COS_OBJECT".equals(config.cosImageAccessMode()) || StrUtil.isNotBlank(request.getImageUrl())) {
+                if (!"COS_OBJECT".equals(config.cosImageAccessMode()) || StrUtil.isNotBlank(request.getImageUrl())) {
                     throw new ImageDetectionException(ImageDetectionException.Code.INVALID_IMAGE, "图片来源错误", 0);
                 }
                 if (!registeredImage.hasCosKey(request.getObjectKey())) {
@@ -160,7 +161,7 @@ public class ImageDetectionConfigController extends BaseController {
     private long elapsed(long started) { return (System.nanoTime() - started) / 1_000_000; }
 
     private void validate(ImageDetectionConfigSaveRequest request) {
-        if (request == null || !Set.of("COS_STORAGE", "DEDICATED").contains(request.getCredentialSource())
+        if (request == null || !Set.of("COS_STORAGE", "DEDICATED", "MEDIA_COS").contains(request.getCredentialSource())
                 || request.getEnabled() == null || request.getConnectTimeoutMs() == null
                 || request.getReadTimeoutMs() == null || request.getMaxCallsPerUserMinute() == null
                 || request.getConnectTimeoutMs() < 500 || request.getConnectTimeoutMs() > 30000

@@ -509,6 +509,7 @@ export const StoryScript = forwardRef<StoryScriptHandle, Props>(function StorySc
         open={showHistoryPanel}
         onClose={() => setShowHistoryPanel(false)}
         destroyOnHidden
+        rootStyle={{ pointerEvents: 'none' }}
         styles={{ mask: { pointerEvents: showHistoryPanel ? 'auto' : 'none' } }}
         placement="right"
         size={440}

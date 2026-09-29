@@ -26,6 +26,10 @@ export const CATEGORY_NAMES: Record<string, string> = {
   project_gen_config: '项目生成配置',
   image_moderation: '图片内容安全审查',
   image_object_detection: '图像识别 / 视觉服务',
+  tencent_media_cos: 'COS 配置',
+  tencent_media_portrait: '视频人像分割',
+  tencent_media_voice: '人声／背景音分离',
+  tencent_media_subtitle: '去字幕（MPS）',
   login_policy: '登录与在线策略',
   account_security: '账号安全',
   admin_entry: '后台登录入口',
@@ -60,11 +64,11 @@ export const CONFIG_SECTIONS: ConfigSection[] = [
     name: '登录与认证',
     categories: ['account_security', 'login_policy', 'admin_entry', 'default_avatar', 'wxLogin', 'captcha', 'api_crypto', 'security']
   },
-  { key: 'task', name: '任务与并发', categories: ['media', 'mps', 'tencent_asr', 'taskq', 'mq'] },
+  { key: 'task', name: '任务与并发', categories: ['media', 'tencent_asr', 'taskq', 'mq'] },
+  { key: 'tencent-media', name: '腾讯云媒体服务', categories: ['tencent_media_cos', 'image_object_detection', 'tencent_media_portrait', 'tencent_media_voice', 'tencent_media_subtitle', 'mps'] },
   { key: 'ai', name: 'AI 与生成', categories: ['agent_model', 'project_gen_config', 'storyboard'] },
   { key: 'voice', name: '配音设置', categories: ['voice'] },
   { key: 'moderation', name: '内容安全', categories: ['image_moderation'] },
-  { key: 'vision', name: '图像识别', categories: ['image_object_detection'] },
   { key: 'promotion', name: '营销活动', categories: ['register_bonus', 'invite'] }
 ];
 

@@ -14,7 +14,7 @@ function normalize(raw: Record<string, string>): ImageDetectionConfig {
   return {
     enabled: raw.enabled === 'true',
     provider: 'tencent_ci',
-    credentialSource: raw.credentialSource === 'DEDICATED' ? 'DEDICATED' : 'COS_STORAGE',
+    credentialSource: raw.credentialSource === 'DEDICATED' ? 'DEDICATED' : raw.credentialSource === 'MEDIA_COS' ? 'MEDIA_COS' : 'COS_STORAGE',
     region: raw.region || '',
     bucketName: raw.bucketName || '',
     secretId: raw.secretId || '',
@@ -34,11 +34,10 @@ export default function ImageDetectionSection() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const testInFlight = useRef(false);
-  const [uploadMode, setUploadMode] = useState('local');
   const [result, setResult] = useState<ImageDetectionTestResult | null>(null);
   const credentialSource = Form.useWatch('credentialSource', form);
   const cosImageAccessMode = Form.useWatch('cosImageAccessMode', form);
-  const useCosObject = uploadMode === 'cos' && cosImageAccessMode !== 'PUBLIC_URL';
+  const useCosObject = cosImageAccessMode !== 'PUBLIC_URL';
 
   const load = async () => {
     setLoading(true);
@@ -46,7 +45,6 @@ export default function ImageDetectionSection() {
       const response: any = await getImageDetectionConfig();
       const config = normalize(response.data || {});
       form.setFieldsValue(config);
-      setUploadMode(config.uploadMode);
     } catch {
       message.error('图像识别配置读取失败');
     } finally {
@@ -61,13 +59,12 @@ export default function ImageDetectionSection() {
       const values = await form.validateFields();
       setSaving(true);
       const data = { ...values };
-      if (credentialSource === 'COS_STORAGE') {
+      if (credentialSource !== 'DEDICATED') {
         delete (data as Partial<ImageDetectionConfig>).region;
         delete (data as Partial<ImageDetectionConfig>).bucketName;
         delete (data as Partial<ImageDetectionConfig>).secretId;
         delete (data as Partial<ImageDetectionConfig>).secretKey;
       }
-      if (uploadMode !== 'cos') delete (data as Partial<ImageDetectionConfig>).cosImageAccessMode;
       await saveImageDetectionConfig(data);
       setResult(null);
       message.success('保存成功，请测试实际识别');
@@ -106,19 +103,19 @@ export default function ImageDetectionSection() {
         <Form.Item name="enabled" label="启用图像主体检测" valuePropName="checked"><Switch /></Form.Item>
         <Form.Item label="供应商"><Input value="腾讯云数据万象 AIObjectDetect" disabled /></Form.Item>
         <Form.Item name="credentialSource" label="凭证来源" rules={[{ required: true }]}>
-          <Select options={[{ value: 'COS_STORAGE', label: '复用文件存储中的腾讯云 COS 配置' }, { value: 'DEDICATED', label: '独立数据万象凭证' }]} />
+          <Select options={[{ value: 'MEDIA_COS', label: '腾讯云媒体服务 COS（推荐）' }, { value: 'COS_STORAGE', label: '沿用网站文件存储 COS' }, { value: 'DEDICATED', label: '沿用独立数据万象凭证' }]} />
         </Form.Item>
-        {credentialSource === 'COS_STORAGE' ? <>
+        {credentialSource !== 'DEDICATED' ? <>
           <Form.Item name="region" label="COS 地域"><Input disabled /></Form.Item>
           <Form.Item name="bucketName" label="用于 CI 调用的 Bucket"><Input disabled /></Form.Item>
-          <div>此处始终读取文件存储中保存的 COS 配置，与当前上传模式无关。</div>
+          <div>{credentialSource === 'MEDIA_COS' ? '读取上方处理专用 COS 配置。' : '读取网站文件存储中保存的 COS 配置。'}</div>
         </> : <>
           <Form.Item name="region" label="地域" rules={[{ required: true, message: '请输入地域' }]}><Input placeholder="ap-guangzhou" /></Form.Item>
           <Form.Item name="bucketName" label="用于 CI 调用的 Bucket" rules={[{ required: true, message: '请输入 Bucket' }]}><Input /></Form.Item>
           <Form.Item name="secretId" label="SecretId"><Input.Password placeholder="留空或保留掩码则不修改" /></Form.Item>
           <Form.Item name="secretKey" label="SecretKey"><Input.Password placeholder="留空或保留掩码则不修改" /></Form.Item>
         </>}
-        {uploadMode === 'cos' && <Form.Item name="cosImageAccessMode" label="COS 图片取图方式">
+        {<Form.Item name="cosImageAccessMode" label="图片取图方式">
           <Radio.Group options={[{ value: 'COS_OBJECT', label: 'COS 桶直连' }, { value: 'PUBLIC_URL', label: '公网访问' }]} />
         </Form.Item>}
         <Form.Item name="connectTimeoutMs" label="连接超时（毫秒）" rules={[{ required: true }]}><InputNumber min={500} max={30000} style={{ width: '100%' }} /></Form.Item>

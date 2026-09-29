@@ -58,6 +58,8 @@ const CONFIG_TEST_FIELD_REMAP: Record<string, Record<string, string>> = {
 import ValueField from './ValueField';
 import ImageModerationSection from './ImageModerationSection';
 import ImageDetectionSection from './ImageDetectionSection';
+import TencentMediaCosSection from './TencentMediaCosSection';
+import TencentMediaServiceSection from './TencentMediaServiceSection';
 import MediaProcessSection from './MediaProcessSection';
 import TencentAsrSection from './TencentAsrSection';
 import AdminEntrySection from './AdminEntrySection';
@@ -434,6 +436,10 @@ export default function AidconfigPage() {
    */
   const isImageModeration = activeCategory === IMAGE_MODERATION_CATEGORY;
   const isImageDetection = activeCategory === 'image_object_detection';
+  const isTencentMediaCos = activeCategory === 'tencent_media_cos';
+  const tencentService = activeCategory === 'tencent_media_portrait' ? 'portrait'
+    : activeCategory === 'tencent_media_voice' ? 'voice'
+    : activeCategory === 'tencent_media_subtitle' ? 'subtitle' : null;
   const isMediaProcess = activeCategory === MEDIA_PROCESS_CATEGORY;
   const isTencentAsr = activeCategory === TENCENT_ASR_CATEGORY;
   const isAdminEntry = activeCategory === ADMIN_ENTRY_CATEGORY;
@@ -445,6 +451,8 @@ export default function AidconfigPage() {
   const isSpecialSection =
     isImageModeration ||
     isImageDetection ||
+    isTencentMediaCos ||
+    !!tencentService ||
     isMediaProcess ||
     isTencentAsr ||
     isAdminEntry ||
@@ -892,6 +900,10 @@ export default function AidconfigPage() {
             <ImageModerationSection />
           ) : isImageDetection ? (
             <ImageDetectionSection />
+          ) : isTencentMediaCos ? (
+            <TencentMediaCosSection />
+          ) : tencentService ? (
+            <TencentMediaServiceSection service={tencentService} />
           ) : isMediaProcess ? (
             <MediaProcessSection />
           ) : isTencentAsr ? (

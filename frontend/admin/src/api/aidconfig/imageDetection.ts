@@ -3,7 +3,7 @@ import { request } from '@/utils/request';
 export type ImageDetectionConfig = {
   enabled: boolean;
   provider: 'tencent_ci';
-  credentialSource: 'COS_STORAGE' | 'DEDICATED';
+  credentialSource: 'COS_STORAGE' | 'DEDICATED' | 'MEDIA_COS';
   region: string;
   bucketName: string;
   secretId: string;
