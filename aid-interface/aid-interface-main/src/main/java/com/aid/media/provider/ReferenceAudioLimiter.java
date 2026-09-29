@@ -50,7 +50,7 @@ public final class ReferenceAudioLimiter {
     public static final String KEY_REFERENCE_AUDIO_FORMATS = "referenceAudioFormats";
 
     /** 服务端可解析时长的音频格式；白名单超出此集合时无法探测时长 */
-    private static final List<String> PROBEABLE_FORMATS = List.of("wav", "mp3");
+    private static final List<String> PROBEABLE_FORMATS = List.of("wav", "pcm", "mp3", "m4a", "aac", "adts");
 
     private ReferenceAudioLimiter() {
     }
@@ -93,6 +93,7 @@ public final class ReferenceAudioLimiter {
         capability.minDurationSeconds = decimal(node.path(KEY_MIN_DURATION_SECONDS));
         capability.maxDurationSeconds = decimal(node.path(KEY_MAX_DURATION_SECONDS));
         capability.maxTotalDurationSeconds = decimal(node.path(KEY_MAX_TOTAL_DURATION_SECONDS));
+        capability.clipDurationSeconds = decimal(node.path("referenceAudioClipDurationSeconds"));
         capability.formats = readFormats(node);
         return capability;
     }
@@ -198,6 +199,9 @@ public final class ReferenceAudioLimiter {
         /** 多条总时长上限秒；未配置为 0 表示不限。 */
         private BigDecimal maxTotalDurationSeconds = BigDecimal.ZERO;
 
+        /** 上游只使用片头时的有效输入时长；未配置则完整计入。 */
+        private BigDecimal clipDurationSeconds = BigDecimal.ZERO;
+
         /** 允许的音频格式（小写）；为空表示未配置。 */
         private List<String> formats = new ArrayList<>();
 
@@ -251,7 +255,13 @@ public final class ReferenceAudioLimiter {
             if (minDurationSeconds.signum() > 0 && millis.compareTo(minDurationSeconds.multiply(BigDecimal.valueOf(1000))) < 0) {
                 return false;
             }
-            return maxDurationSeconds.signum() <= 0 || millis.compareTo(maxDurationSeconds.multiply(BigDecimal.valueOf(1000))) <= 0;
+            return maxDurationSeconds.signum() <= 0 || effectiveDurationMs(durationMs).compareTo(maxDurationSeconds.multiply(BigDecimal.valueOf(1000))) <= 0;
+        }
+
+        public BigDecimal effectiveDurationMs(Integer durationMs) {
+            BigDecimal millis = BigDecimal.valueOf(durationMs);
+            return clipDurationSeconds.signum() > 0
+                    ? millis.min(clipDurationSeconds.multiply(BigDecimal.valueOf(1000))) : millis;
         }
     }
 }

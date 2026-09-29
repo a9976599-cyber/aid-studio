@@ -235,6 +235,8 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
         vo.setBillingRuleJson(model.getBillingRuleJson());
         vo.setBillingVersion(model.getBillingVersion());
         vo.setIsFree(Boolean.TRUE.equals(model.getIsFree()));
+        vo.setImageUrlProxyEnabled(Boolean.TRUE.equals(model.getImageUrlProxyEnabled()));
+        vo.setImageUrlProxyTemplate(model.getImageUrlProxyTemplate());
         // 服务商字段（已处理用户覆盖）
         vo.setBaseUrl(effectiveBaseUrl);
         vo.setApiKey(effectiveApiKey);
@@ -299,8 +301,14 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
                 .filter(b -> java.util.Objects.equals(b.getModelId(), config.getId())
                         && java.util.Objects.equals(b.getCapabilityCode(), config.getCapabilityCode()))
                 .findFirst().ifPresent(b -> config.setBusinessDefaultsJson(b.getDefaultsJson()));
-        if (config.getResolvedDefinition() != null) com.aid.model.definition.ModelSchemaPresentation.apply(config,
-                com.aid.model.definition.ModelSchemaPresentation.withBusinessDefaults(config.getResolvedDefinition(), config.getBusinessDefaultsJson()));
+        if (config.getResolvedDefinition() != null) {
+            var definition = com.aid.model.definition.ModelSchemaPresentation.withBusinessDefaults(
+                    config.getResolvedDefinition(), config.getBusinessDefaultsJson());
+            var route = definition.getBindings().stream()
+                    .filter(binding -> java.util.Objects.equals(binding.getCode(), config.getBindingCode()))
+                    .findFirst().orElse(null);
+            com.aid.model.definition.ModelInvocationResolver.applyResolvedPresentation(config, definition, route);
+        }
         return config;
     }
 

@@ -108,9 +108,10 @@ public class SecurityConfig
                     // 行为验证码生成/校验接口，允许匿名访问
                     .requestMatchers("/captcha/gen", "/captcha/check").permitAll()
                     // 静态资源，可匿名访问
-                    .requestMatchers(HttpMethod.GET, "/", "/*.html", "/**.html", "/**.css", "/**.js", "/profile/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/", "/*.html", "/**.html", "/**.css", "/**.js", "/profile/**",
+                            "/brand-icons/**", "/default-avatars/**", "/captcha-backgrounds/**").permitAll()
                     // 图片 URL 强校验会先发 HEAD；本地存储必须与 GET 使用相同的匿名访问策略
-                    .requestMatchers(HttpMethod.HEAD, "/profile/**").permitAll()
+                    .requestMatchers(HttpMethod.HEAD, "/profile/**", "/brand-icons/**", "/default-avatars/**", "/captcha-backgrounds/**").permitAll()
                     // 修复 SC3：Druid / Swagger / api-docs 必须登录后才能访问，防止匿名泄漏 Controller/DTO 元数据或默认账号攻击
                     .requestMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**", "/druid/**").authenticated()
                     // 除上面外的所有请求全部需要鉴权认证

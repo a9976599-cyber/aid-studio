@@ -29,9 +29,9 @@ class ModelBillingActivationValidatorTest {
     @Test
     void enabledMarkedModelCannotClearOrDisableAllSkus() {
         AidAiModel model = model("0", "{\"requiresConfiguredBilling\":true}", "SKU",
-            "{\"skus\":[{\"enabled\":true,\"pricePerSecond\":0.2}]}");
+            "{\"meterType\":\"PER_SECOND\",\"skus\":[{\"enabled\":true,\"pricePerSecond\":0.2}]}");
         assertDoesNotThrow(() -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
-        model.setBillingRuleJson("{\"skus\":[{\"enabled\":false,\"pricePerSecond\":0.2}]}");
+        model.setBillingRuleJson("{\"meterType\":\"PER_SECOND\",\"skus\":[{\"enabled\":false,\"pricePerSecond\":0.2}]}");
         assertThrows(ServiceException.class, () -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
     }
 
@@ -46,12 +46,25 @@ class ModelBillingActivationValidatorTest {
     @Test
     void inputMediaAddonCannotPretendToBeMainGenerationPrice() {
         AidAiModel model = model("0", "{\"requiresConfiguredBilling\":true}", "SKU",
-            "{\"skus\":[{\"enabled\":true,\"inputPricing\":{\"image\":{\"unitPrice\":0.2}}}]}" );
+            "{\"meterType\":\"PER_SECOND\",\"skus\":[{\"enabled\":true,\"inputPricing\":{\"image\":{\"unitPrice\":0.2}}}]}" );
 
         assertThrows(ServiceException.class, () -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
-        model.setBillingRuleJson("{\"skus\":[{\"enabled\":true,\"pricePerSecond\":0.2,"
+        model.setBillingRuleJson("{\"meterType\":\"PER_SECOND\",\"skus\":[{\"enabled\":true,\"pricePerSecond\":0.2,"
             + "\"inputPricing\":{\"image\":{\"unitPrice\":0.1}}}]}" );
         assertDoesNotThrow(() -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
+    }
+
+    @Test
+    void pixelUnitRequiresPositiveIntegerAndImageMeter() {
+        AidAiModel model = model("0", "{\"requiresConfiguredBilling\":true}", "SKU",
+                "{\"meterType\":\"PER_IMAGE\",\"skus\":[{\"enabled\":true,\"price\":0.67,"
+                        + "\"outputPixelsPerUnit\":24000000}]}");
+        assertDoesNotThrow(() -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
+        model.setBillingRuleJson(model.getBillingRuleJson().replace("24000000", "0"));
+        assertThrows(ServiceException.class, () -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
+        model.setBillingRuleJson("{\"meterType\":\"PER_SECOND\",\"skus\":[{\"enabled\":true,"
+                + "\"pricePerSecond\":0.67,\"outputPixelsPerUnit\":24000000}]}");
+        assertThrows(ServiceException.class, () -> ModelBillingActivationValidator.validateIfRequiredAndEnabled(model));
     }
 
     private AidAiModel model(String status, String capability, String mode, String rule) {

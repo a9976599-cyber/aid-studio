@@ -186,8 +186,14 @@ public class CapabilityVO implements Serializable
     private List<String> voiceSampleFormats;
     private java.math.BigDecimal voiceSampleMaxFileSizeMb;
 
-    /** 是否允许用户自定义宽高（脱离 sizeOptions），当前项目策略统一为 false */
+    /** 是否允许用户自定义输出宽高（脱离 sizeOptions）。 */
     private Boolean allowCustomWH;
+
+    /** 供应商可选参数的模型级类型、枚举、范围和上游字段映射。 */
+    private Map<String, Map<String, Object>> providerParameters;
+
+    /** true 表示该模型可在无提示词时处理素材。 */
+    private Boolean promptOptional;
 
     /**
      * 场景规则：按"使用场景"提供差异化能力开关。

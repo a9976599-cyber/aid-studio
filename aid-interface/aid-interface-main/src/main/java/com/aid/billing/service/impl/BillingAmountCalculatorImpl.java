@@ -97,6 +97,7 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
             case TOKEN -> preHoldToken(modelConfig, matchedSku, rule, billingInput);
             case PER_IMAGE -> preHoldPerImage(modelConfig, matchedSku, rule, billingInput);
             case PER_SECOND -> preHoldPerSecond(modelConfig, matchedSku, rule, billingInput);
+            case PER_CREDIT -> preHoldPerCredit(modelConfig, matchedSku, rule, billingInput);
             case SKU_PACKAGE -> preHoldSkuPackage(modelConfig, matchedSku, rule, billingInput);
             case PER_CHAR -> preHoldPerChar(modelConfig, matchedSku, rule, billingInput);
         };
@@ -209,7 +210,7 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
         boolean explicitMeterType = CharSequenceUtil.isNotBlank(sku.getMeterType());
         return switch (meterType) {
             case TOKEN -> isNonNegative(sku.getInputPricePerMillion()) && isNonNegative(sku.getOutputPricePerMillion());
-            case PER_IMAGE, SKU_PACKAGE -> isNonNegative(sku.getPrice());
+            case PER_IMAGE, PER_CREDIT, SKU_PACKAGE -> isNonNegative(sku.getPrice());
             case PER_SECOND -> isNonNegative(sku.getPricePerSecond())
                     || (!explicitMeterType && isPositive(sku.getPrice())
                     && safeGetInt(sku.getMatch(), "durationMax", 0) > 0);
@@ -259,6 +260,12 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
             baseAmount = unitPrice.multiply(BigDecimal.valueOf(duration));
             snapshot.setPricePerSecond(unitPrice);
             snapshot.setExpectedDurationSeconds(duration);
+        } else if (meterType == MeterType.PER_CREDIT) {
+            BigDecimal credits = positiveProviderCredits(billingInput.getParams(), "estimatedProviderCredits");
+            if (credits == null) return BillingCalcResult.notMatched("供应商积分用量缺失或无效");
+            baseAmount = unitPrice.multiply(credits);
+            snapshot.setUnitPrice(unitPrice);
+            snapshot.setUnitPriceType("PER_CREDIT");
         } else {
             // TOKEN / SKU_PACKAGE：FIXED 模式直接用 costCredits
             baseAmount = unitPrice;
@@ -283,14 +290,30 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
 
     /** PER_IMAGE 预扣：unitPrice × expectedImageCount + 输入媒体附加费 */
     private BillingCalcResult preHoldPerImage(AiModelConfigVo modelConfig, BillingSku matchedSku,
-                                              BillingRule rule, BillingInput billingInput) {
+                                               BillingRule rule, BillingInput billingInput) {
         BigDecimal unitPrice = matchedSku.getPrice() == null ? BigDecimal.ZERO : matchedSku.getPrice();
+        Long pixelsPerUnit = matchedSku.getOutputPixelsPerUnit();
+        long outputPixels = 0L;
+        long units = 0L;
+        if (pixelsPerUnit != null) {
+            outputPixels = safeGetLong(billingInput.getParams(), "outputPixels", 0L);
+            if (pixelsPerUnit <= 0 || outputPixels <= 0 || outputPixels == Long.MAX_VALUE) {
+                return BillingCalcResult.notMatched("输出尺寸缺失或计费规则无效");
+            }
+            units = (outputPixels - 1) / pixelsPerUnit + 1;
+            unitPrice = unitPrice.multiply(BigDecimal.valueOf(units));
+        }
         int expectedImageCount = Math.max(1, safeGetInt(billingInput.getParams(), "expectedImageCount",
                 safeGetInt(billingInput.getParams(), "imageCount", 1)));
         BigDecimal baseAmount = unitPrice.multiply(BigDecimal.valueOf(expectedImageCount));
         BillingSnapshot snapshot = buildSkuSnapshot(modelConfig, matchedSku, rule, billingInput.getParams());
         snapshot.setMeterType(MeterType.PER_IMAGE.name());
         fillImageSnapshot(snapshot, unitPrice, expectedImageCount, billingInput.getParams());
+        if (pixelsPerUnit != null) {
+            snapshot.setOutputPixels(outputPixels);
+            snapshot.setOutputPixelsPerUnit(pixelsPerUnit);
+            snapshot.setOutputBillingUnits(units);
+        }
         baseAmount = addInputMediaCharge(baseAmount, rule, matchedSku, billingInput.getParams(), snapshot, modelConfig);
         snapshot.setPreHoldAmount(baseAmount);
         BigDecimal adjusted = applyMultipliersAndSnapshot(modelConfig, baseAmount, snapshot);
@@ -320,6 +343,32 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
      * 解析每秒单价：优先 sku.pricePerSecond，
      * 未设置时用 sku.price / match.durationMax 推算（兼容旧整包价数据）。
      */
+    /** Prices one server-estimated upstream credit; the ordinary model/global multipliers still apply. */
+    private BillingCalcResult preHoldPerCredit(AiModelConfigVo modelConfig, BillingSku matchedSku,
+                                               BillingRule rule, BillingInput billingInput) {
+        BigDecimal credits = positiveProviderCredits(billingInput.getParams(), "estimatedProviderCredits");
+        if (credits == null) return BillingCalcResult.notMatched("供应商积分用量缺失或无效");
+        BigDecimal baseAmount = matchedSku.getPrice().multiply(credits);
+        BillingSnapshot snapshot = buildSkuSnapshot(modelConfig, matchedSku, rule, billingInput.getParams());
+        snapshot.setMeterType(MeterType.PER_CREDIT.name());
+        snapshot.setUnitPrice(matchedSku.getPrice());
+        snapshot.setUnitPriceType("PER_CREDIT");
+        snapshot.setPreHoldAmount(baseAmount);
+        BigDecimal adjusted = applyMultipliersAndSnapshot(modelConfig, baseAmount, snapshot);
+        logUnifiedPreHoldFormula(modelConfig, snapshot, MeterType.PER_CREDIT, baseAmount, adjusted);
+        return BillingCalcResult.sku(matchedSku.getSkuCode(), matchedSku.getSkuName(), adjusted, snapshot);
+    }
+
+    private BigDecimal positiveProviderCredits(Map<String, Object> values, String key) {
+        if (values == null || values.get(key) == null) return null;
+        try {
+            BigDecimal credits = new BigDecimal(String.valueOf(values.get(key)));
+            return credits.signum() > 0 && credits.scale() <= 6 ? credits : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private BigDecimal resolvePerSecondPrice(BillingSku sku) {
         if (isNonNegative(sku.getPricePerSecond())) {
             return sku.getPricePerSecond();
@@ -571,6 +620,8 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
             // 显式 DIRECT_SETTLE + ESTIMATE：请求时长就是最终计费量。
             markSettleDone(snapshot, preHoldAmount, preHoldAmount);
             return BillingCalcResult.sku(snapshot.getSkuCode(), snapshot.getSkuName(), preHoldAmount, snapshot);
+        } else if (meterType == MeterType.PER_CREDIT) {
+            return settleWithPerCreditPricing(preHoldAmount, snapshot, usageData);
         } else if (meterType == MeterType.SKU_PACKAGE) {
             // SKU_PACKAGE：直接按预扣金额结算
             markSettleDone(snapshot, preHoldAmount, preHoldAmount);
@@ -839,6 +890,20 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
      * PER_SECOND 结算：pricePerSecond × usageData.actualDuration × finalMultiplier，只退不补。
      * actualDuration 从 usageData 中取，取不到时按预扣金额兜底。
      */
+    private BillingCalcResult settleWithPerCreditPricing(BigDecimal preHoldAmount, BillingSnapshot snapshot,
+                                                         Map<String, Object> usageData) {
+        BigDecimal actualCredits = positiveProviderCredits(usageData, "actualProviderCredits");
+        if (actualCredits == null || snapshot.getUnitPrice() == null) {
+            markSettleDone(snapshot, preHoldAmount, preHoldAmount);
+            return BillingCalcResult.sku(snapshot.getSkuCode(), snapshot.getSkuName(), preHoldAmount, snapshot);
+        }
+        BigDecimal actualBase = snapshot.getUnitPrice().multiply(actualCredits);
+        BigDecimal actualAmount = actualBase.multiply(resolveFinalMultiplierFromSnapshot(snapshot));
+        if (actualAmount.compareTo(preHoldAmount) > 0) actualAmount = preHoldAmount;
+        markSettleDone(snapshot, actualAmount, preHoldAmount);
+        return BillingCalcResult.sku(snapshot.getSkuCode(), snapshot.getSkuName(), actualAmount, snapshot);
+    }
+
     private BillingCalcResult settleWithPerSecondPricing(BigDecimal preHoldAmount, BillingSnapshot snapshot,
                                                           Map<String, Object> usageData) {
         BigDecimal pps = snapshot.getPricePerSecond();
@@ -1290,6 +1355,8 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
                 log.info("[预冻结-PER_SECOND] skuTotalPrice={}, pricePerSecond={}, durationSeconds={}, resolution={}",
                         baseAmount, pps, dur, resolveSnapshotSizeForLog(snapshot));
             }
+            case PER_CREDIT -> log.info("[billing-PER_CREDIT] baseAmount={}, creditUnitPrice={}",
+                    baseAmount, snapshot == null ? null : snapshot.getUnitPrice());
             case SKU_PACKAGE -> {
                 log.info("[预冻结-SKU_PACKAGE] skuPackagePrice={}, resolution={}",
                         baseAmount, resolveSnapshotSizeForLog(snapshot));
@@ -1486,6 +1553,15 @@ public class BillingAmountCalculatorImpl implements BillingAmountCalculator {
         }
         int result = toInt(val);
         return result > 0 ? result : defaultValue;
+    }
+
+    private long safeGetLong(Map<String, Object> params, String key, long defaultValue) {
+        if (params == null || params.get(key) == null) return defaultValue;
+        try {
+            return Long.parseLong(String.valueOf(params.get(key)));
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
     }
 
     /**

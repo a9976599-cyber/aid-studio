@@ -16,7 +16,7 @@ public final class ModelBillingRuleValidator {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Set<String> METER_TYPES = Set.of(
-            "TOKEN", "PER_IMAGE", "PER_SECOND", "SKU_PACKAGE", "PER_CHAR");
+            "TOKEN", "PER_IMAGE", "PER_SECOND", "PER_CREDIT", "SKU_PACKAGE", "PER_CHAR");
     private static final String CLIENT_MESSAGE = "计费规则无效";
 
     private ModelBillingRuleValidator() {
@@ -47,6 +47,7 @@ public final class ModelBillingRuleValidator {
                 reject(model, null, "skus不是数组");
             }
             int enabledCount = 0;
+            BigDecimal minimumEnabledImagePrice = null;
             for (JsonNode sku : skus) {
                 if (!sku.path("enabled").asBoolean(false)) {
                     continue;
@@ -63,6 +64,17 @@ public final class ModelBillingRuleValidator {
                 if (!hasValidMainPrice(sku, meterType, explicitMeterType)) {
                     reject(model, skuCode, meterType + "主价格缺失");
                 }
+                if ("PER_IMAGE".equals(meterType)) {
+                    BigDecimal configuredPrice = sku.path("price").decimalValue();
+                    minimumEnabledImagePrice = minimumEnabledImagePrice == null ? configuredPrice
+                            : minimumEnabledImagePrice.min(configuredPrice);
+                }
+                if (sku.hasNonNull("outputPixelsPerUnit") && (!"PER_IMAGE".equals(meterType)
+                        || !positive(sku.get("outputPixelsPerUnit"))
+                        || !sku.get("outputPixelsPerUnit").isIntegralNumber()
+                        || !sku.get("outputPixelsPerUnit").canConvertToLong())) {
+                    reject(model, skuCode, "输出像素计费单位无效");
+                }
                 if (sku.hasNonNull("fixedSurcharge") && (!nonNegative(sku.get("fixedSurcharge"))
                         || !("PER_CHAR".equals(meterType) || "SKU_PACKAGE".equals(meterType)))) {
                     reject(model, skuCode, "固定附加费口径无效");
@@ -75,6 +87,30 @@ public final class ModelBillingRuleValidator {
             if (enabledCount == 0 && "0".equals(model.getStatus())) {
                 reject(model, null, "无启用SKU");
             }
+            JsonNode tiers = root.path("settleRule").path("imageOutputPixelTiers");
+            if (!tiers.isMissingNode() && !tiers.isNull()) {
+                if (!"PER_IMAGE".equals(fallbackMeterType) || !tiers.isArray() || tiers.isEmpty()
+                        || minimumEnabledImagePrice == null) {
+                    reject(model, null, "输出像素档位口径无效");
+                }
+                long previousLimit = 0;
+                for (int index = 0; index < tiers.size(); index++) {
+                    JsonNode tier = tiers.get(index);
+                    JsonNode limit = tier.path("maxPixels");
+                    JsonNode price = tier.path("price");
+                    boolean last = index == tiers.size() - 1;
+                    if (!tier.isObject() || !nonNegative(price)
+                            || price.decimalValue().compareTo(minimumEnabledImagePrice) > 0
+                            // Fastjson omits a null map value when an unchanged rule is saved.
+                            // The final open-ended tier therefore accepts either null or absent.
+                            || (last ? !(limit.isNull() || limit.isMissingNode())
+                            : !limit.isIntegralNumber() || !limit.canConvertToLong()
+                            || limit.longValue() <= previousLimit)) {
+                        reject(model, null, "输出像素档位需递增，末档无上限且价格不高于预冻结价");
+                    }
+                    if (!last) previousLimit = limit.longValue();
+                }
+            }
         } catch (ServiceException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -85,7 +121,7 @@ public final class ModelBillingRuleValidator {
     private static boolean hasValidMainPrice(JsonNode sku, String meterType, boolean explicitMeterType) {
         return switch (meterType) {
             case "TOKEN" -> nonNegative(sku.get("inputPricePerMillion")) && nonNegative(sku.get("outputPricePerMillion"));
-            case "PER_IMAGE", "SKU_PACKAGE" -> nonNegative(sku.get("price"));
+            case "PER_IMAGE", "PER_CREDIT", "SKU_PACKAGE" -> nonNegative(sku.get("price"));
             case "PER_SECOND" -> nonNegative(sku.get("pricePerSecond"))
                     || (!explicitMeterType && positive(sku.get("price"))
                     && positive(sku.path("match").get("durationMax")));

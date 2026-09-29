@@ -55,6 +55,22 @@ public class VerifiedMediaInputService {
         collect(images, request.getImageUrl());
         collectOptions(images, request.getOptions(), "referenceImages", "images", "key_images", "image_settings", "lastFrameImageUrl");
         long totalBytes = validateImages(images, rules);
+        boolean dmc = "dmc-h3-video".equalsIgnoreCase(model.getProtocol());
+        if (dmc) for (String image : images) {
+            var actual = metadata.inspect(image, "image");
+            if (actual.frameCount() != 1) throw new ServiceException("DMC 仅支持静态图片");
+        }
+        JsonNode frameRatioLimit = root.path("maxFrameAspectRatioDifference");
+        if (frameRatioLimit.isNumber() && frameRatioLimit.decimalValue().signum() > 0 && request.getImageUrl() != null
+                && request.getOptions() != null && request.getOptions().get("lastFrameImageUrl") instanceof String last) {
+            var firstMeta = metadata.inspect(request.getImageUrl(), "image");
+            var lastMeta = metadata.inspect(last, "image");
+            if (firstMeta.height() <= 0 || lastMeta.height() <= 0) throw new ServiceException("首尾帧尺寸无效");
+            BigDecimal firstRatio = BigDecimal.valueOf(firstMeta.width()).divide(BigDecimal.valueOf(firstMeta.height()), 12, RoundingMode.HALF_UP);
+            BigDecimal lastRatio = BigDecimal.valueOf(lastMeta.width()).divide(BigDecimal.valueOf(lastMeta.height()), 12, RoundingMode.HALF_UP);
+            if (firstRatio.signum() == 0 || firstRatio.subtract(lastRatio).abs().divide(firstRatio, 8, RoundingMode.HALF_UP)
+                    .compareTo(frameRatioLimit.decimalValue()) > 0) throw new ServiceException("首尾帧比例不符");
+        }
         if (request.getReferenceAudios() != null) {
             ReferenceAudioLimiter.limit(request.getReferenceAudios(), model, model.getModelCode());
             if (!request.getReferenceAudios().isEmpty() && !ReferenceAudioLimiter.readCapability(model).isUsable()) {
@@ -65,17 +81,30 @@ public class VerifiedMediaInputService {
             for (ReferenceAudioInput audio : request.getReferenceAudios()) {
                 if (audio == null) throw new ServiceException("参考音频无效");
                 var actual = metadata.inspect(audio.getSampleUrl(), "audio");
+                if (dmc && !("aac".equals(actual.codec()) || "mp3".equals(actual.codec())
+                        || "pcm_s16le".equals(actual.codec()) || "pcm_s24le".equals(actual.codec())
+                        || "pcm_f32le".equals(actual.codec()))) throw new ServiceException("参考音频编码不支持");
                 audio.setDurationMs(actual.durationSeconds().multiply(BigDecimal.valueOf(1000)).setScale(0, RoundingMode.CEILING).intValueExact());
                 audio.setFormat(actual.format());
                 for (JsonNode rule : rules) validate(actual, rule, "referenceAudio");
                 if (audioUrls.add(audio.getSampleUrl())) {
-                    totalAudioSeconds = totalAudioSeconds.add(actual.durationSeconds());
+                    JsonNode clip = root.path("referenceAudioClipDurationSeconds");
+                    BigDecimal counted = clip.isNumber() && clip.decimalValue().signum() > 0
+                            ? actual.durationSeconds().min(clip.decimalValue()) : actual.durationSeconds();
+                    totalAudioSeconds = totalAudioSeconds.add(counted);
                     totalBytes = Math.addExact(totalBytes, actual.sizeBytes());
                 }
             }
             for (JsonNode rule : rules) range(rule, null, "referenceAudioMaxTotalDurationSeconds", totalAudioSeconds);
         }
         Set<String> videos = new LinkedHashSet<>();
+        if (dmc && request.getResolvedReferenceVideos() != null) {
+            for (ReferenceVideoInput video : request.getResolvedReferenceVideos()) {
+                var actual = metadata.inspect(video.getVideoUrl(), "video");
+                if (!Set.of("h264", "hevc").contains(actual.codec())) throw new ServiceException("参考视频编码不支持");
+                if (actual.sizeBytes() > 50_000_000L) throw new ServiceException("参考视频文件过大");
+            }
+        }
         collectOptions(videos, request.getOptions(), "referenceVideos", "videos", "featureVideoUrl", "referenceVideoUrl", "baseVideoUrl", "inputVideoUrl", "videoUrl", "video_url");
         if (videos.isEmpty()) {
             for (JsonNode rule : rules) range(rule, null, "maxInputMediaTotalFileSizeMb", BigDecimal.valueOf(totalBytes).divide(MB));
@@ -169,7 +198,11 @@ public class VerifiedMediaInputService {
 
     private void validate(VerifiedMediaMetadataService.Metadata value, JsonNode rule, String prefix) {
         range(rule, null, prefix + "MaxFileSizeMb", BigDecimal.valueOf(value.sizeBytes()).divide(MB));
-        range(rule, prefix + "MinDurationSeconds", prefix + "MaxDurationSeconds", value.durationSeconds());
+        range(rule, prefix + "MinDurationSeconds", null, value.durationSeconds());
+        JsonNode clip = rule.path(prefix + "ClipDurationSeconds");
+        BigDecimal counted = value.durationSeconds() != null && clip.isNumber() && clip.decimalValue().signum() > 0
+                ? value.durationSeconds().min(clip.decimalValue()) : value.durationSeconds();
+        range(rule, null, prefix + "MaxDurationSeconds", counted);
         range(rule, prefix + "MinDimensionPixels", prefix + "MaxDimensionPixels", BigDecimal.valueOf(value.width()));
         range(rule, prefix + "MinDimensionPixels", prefix + "MaxDimensionPixels", BigDecimal.valueOf(value.height()));
         range(rule, prefix + "MinWidth", prefix + "MaxWidth", BigDecimal.valueOf(value.width()));

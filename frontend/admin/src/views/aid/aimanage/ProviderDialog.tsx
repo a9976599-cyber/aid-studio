@@ -3,9 +3,11 @@ import { Alert, Button, Col, Form, Input, InputNumber, Modal, Row, Select, Switc
 import { LinkOutlined } from '@ant-design/icons';
 import { ENABLE_STATUS_OPTIONS, DISPATCH_MODE_OPTIONS } from '@/utils/enums';
 import { makeDefaultScheduleStrategy } from './constants';
+import { PROVIDER_CATEGORIES, providerCategory } from './providerCategory';
 import type { Provider, ScheduleStrategy } from './types';
 import JsonObjectEditor, { KvPreset } from './JsonObjectEditor';
 import ImageUpload from '@/components/ImageUpload';
+import { resolveProviderLogo } from '@/utils/builtinImages';
 import { normalizeRelativeEndpoint, validateRelativeEndpoint } from './endpointPath';
 import {
   normalizeCallbackProviderCode,
@@ -64,7 +66,8 @@ const validateBaseGatewayUrl = (_: unknown, value?: string) => {
 const FIELD_TAB_MAP: Record<string, string> = {
   providerName: 'basic', providerCode: 'basic', logoUrl: 'basic', status: 'basic',
   baseUrl: 'basic', apiKey: 'basic', apiSecret: 'basic', apiKeyApplyUrl: 'basic',
-  officialDocUrl: 'basic', remark: 'basic',
+  officialDocUrl: 'basic', remark: 'basic', providerCategory: 'basic', displayOrder: 'basic',
+  integrationType: 'basic', newApiAccessToken: 'basic', newApiUserId: 'basic',
   taskQuerySuffix: 'schedule',
   callbackBaseUrl: 'schedule',
   authHeader: 'advanced', authPrefix: 'advanced', extraHeaders: 'advanced',
@@ -80,8 +83,11 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
 
   // 监听 providerCode 让 thinking 自动预览
   const providerCode = Form.useWatch('providerCode', form);
+  const uploadedLogo = Form.useWatch('logoUrl', form);
   const normalizedProviderCode = normalizeCallbackProviderCode(providerCode);
   const isTokenDance = normalizedProviderCode === 'tokendance';
+  const isNewApi = Form.useWatch('integrationType', form) === 'NEW_API';
+  const useSystemToken = Form.useWatch('newApiSystemTokenEnabled', form);
   const callbackPath = resolveProviderCallbackPath(providerCode);
   const callbackExample = `https://api.example.com${callbackPath}`;
   // 监听服务商名 / 文档链接 / 申请链接（用于头部展示与按钮）
@@ -92,9 +98,11 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
   useEffect(() => {
     if (!open) return;
     form.resetFields();
+    form.setFieldsValue({ providerCategory: providerCategory(data), displayOrder: data?.displayOrder ?? 100,
+      integrationType: data?.integrationType || 'NATIVE', newApiSystemTokenEnabled: !!data?.newApiSystemTokenEnabled });
     const s = makeDefaultScheduleStrategy();
     if (data) {
-      const { apiKey: _ak, apiSecret: _as, ...safeData } = data;
+      const { apiKey: _ak, apiSecret: _as, newApiAccessToken: _nt, ...safeData } = data;
       form.setFieldsValue(safeData);
       if (data.scheduleStrategyJson) {
         try { Object.assign(s, JSON.parse(data.scheduleStrategyJson)); } catch {}
@@ -107,6 +115,7 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
   }, [open, data, form]);
 
   const handleOk = async () => {
+    if (loading) return;
     let values: any;
     try {
       values = await form.validateFields();
@@ -175,8 +184,14 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
       if (isEdit) {
         if (!values.apiKey) delete values.apiKey;
         if (!values.apiSecret) delete values.apiSecret;
+        if (!values.newApiAccessToken) delete values.newApiAccessToken;
       }
-      const { apiKey: _ak, apiSecret: _as, extraHeaders: _xh, ...safeOriginal } = (data || {}) as any;
+      if (isNewApi) {
+        values.providerCategory = 'AGGREGATOR';
+        values.authHeader = 'Authorization';
+        values.authPrefix = 'Bearer ';
+      }
+      const { apiKey: _ak, apiSecret: _as, extraHeaders: _xh, newApiAccessToken: _nt, ...safeOriginal } = (data || {}) as any;
       await onOk({ ...safeOriginal, ...values });
     } finally { setLoading(false); }
   };
@@ -236,8 +251,8 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
                       type="info"
                       showIcon
                       style={{ marginBottom: 16 }}
-                      message="TokenDance 已作为推荐供应商内置"
-                      description="无需重复新增。请从页面顶部推荐区进入模型目录或授权与账户；此处用于添加其他服务商。"
+                      message="TokenDance 已作为聚合供应商内置"
+                      description="无需重复新增。请在左侧三方聚合分区选择 TokenDance，进入目录或账户；此处用于添加其他供应商。"
                     />
                   )}
                   {isTokenDance && (
@@ -250,12 +265,16 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
                     />
                   )}
                   <Row gutter={16}>
+                    <Col span={24}><Form.Item name="integrationType" label="接入方式"><Select disabled={isTokenDance} options={[{ value: 'NATIVE', label: '原有供应商协议' }, { value: 'NEW_API', label: 'New API 站点' }]} onChange={(value) => { if (value === 'NEW_API') form.setFieldValue('providerCategory', 'AGGREGATOR'); }} /></Form.Item></Col>
+                    <Col span={12}><Form.Item name="providerCategory" label="供应商分类" rules={[{ required: true }]}><Select disabled={isNewApi} options={PROVIDER_CATEGORIES.map(({ value, label }) => ({ value, label }))} /></Form.Item></Col>
+                    <Col span={12}><Form.Item name="displayOrder" label="展示排序" tooltip="数字越小越靠前，仅影响同类供应商的显示顺序。"><InputNumber min={0} max={9999} precision={0} style={{ width: '100%' }} /></Form.Item></Col>
                     <Col span={12}><Form.Item name="providerName" label="服务商名称" rules={[{ required: true }]}><Input placeholder="如: 字节火山引擎" /></Form.Item></Col>
                     <Col span={12}><Form.Item name="providerCode" label="服务商编码" rules={[{ required: true }]} tooltip={isTokenDance ? 'TokenDance 的稳定路由编码，创建后不可修改。' : '系统内路由标识，volcengine / dashscope / openai 等'}><Input disabled={!!data?.id && isTokenDance} placeholder="如: bytedance" /></Form.Item></Col>
                     <Col span={24}>
                       <Form.Item
                         name="logoUrl"
                         label="服务商 LOGO"
+                        extra={!uploadedLogo && resolveProviderLogo(providerCode) ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><img src={resolveProviderLogo(providerCode)} alt="内置服务商图标" width={24} height={24} style={{ objectFit: 'contain' }} />未上传时使用内置图标</span> : '上传后使用自定义图标；清空后恢复内置图标。'}
                         tooltip="厂家品牌图标，左侧服务商列表与模型相关接口会带出展示。上传方式（本地/OSS/COS）由系统配置自动决定。"
                       >
                         <ImageUpload
@@ -286,8 +305,10 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
                         </Form.Item>
                       ) : (
                         <>
-                          <Form.Item name="apiKey" label="API 密钥" rules={[{ required: !data?.id }]}>
-                            <Input.Password placeholder={data?.id ? '已配置（不显示，留空不修改）' : '官方 API 密钥(加密存储)'} visibilityToggle={false} />
+                          <Form.Item name="apiKey" label="API 密钥" rules={[{ required: (!data?.id && !(isNewApi && useSystemToken))
+                            || (isNewApi && !useSystemToken && !!data?.newApiSystemTokenEnabled && !data?.newApiTokenId), message: '请输入模型 API Key' }]}
+                            extra={isNewApi && useSystemToken ? '可暂不填写；保存后在“账户与模型”中选择或创建本站 API Key。' : undefined}>
+                            <Input.Password placeholder={data?.id ? '已配置（不显示，留空不修改）' : isNewApi && useSystemToken ? '选填，保存后可从上游账户绑定' : '官方 API 密钥(加密存储)'} visibilityToggle={false} />
                           </Form.Item>
                           {apiKeyApplyUrl && (
                             <Button
@@ -323,6 +344,14 @@ export default function ProviderDialog({ open, title, data, onCancel, onOk }: Pr
                         <Input placeholder="https://docs.example.com" allowClear />
                       </Form.Item>
                     </Col>
+                    {isNewApi && <>
+                      <Col span={24}><Form.Item name="newApiSystemTokenEnabled" label="使用系统访问令牌" valuePropName="checked" extra="关闭时只使用模型 API Key，手动添加模型；开启后可读取本站账户分组及动态模型目录。"><Switch /></Form.Item></Col>
+                      {useSystemToken && <>
+                        <Col span={24}><Alert type="info" showIcon message="使用普通用户访问令牌即可，无需账号密码" description="先在上游站点完成 GitHub 等登录，再从个人设置或安全设置生成访问令牌。该令牌与调用模型的 API Key 不同。" style={{ marginBottom: 16 }} /></Col>
+                        <Col span={16}><Form.Item name="newApiAccessToken" label="系统访问令牌" rules={[{ required: !data?.newApiSystemTokenEnabled, message: '请输入上游访问令牌' }]}><Input.Password autoComplete="new-password" visibilityToggle={false} placeholder={data?.newApiSystemTokenEnabled ? '留空保留，变更站点地址须重新填写' : '上游个人设置中的访问令牌'} /></Form.Item></Col>
+                        <Col span={8}><Form.Item name="newApiUserId" label="上游用户 ID" tooltip="仅旧版站点要求填写；新版可自动识别。"><InputNumber min={1} precision={0} style={{ width: '100%' }} /></Form.Item></Col>
+                      </>}
+                    </>}
                     <Col span={24}><Form.Item name="remark" label="备注"><Input.TextArea rows={2} placeholder="备注信息（选填）" /></Form.Item></Col>
                   </Row>
                 </div>

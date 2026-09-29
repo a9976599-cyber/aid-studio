@@ -9,6 +9,7 @@ import WxpayCertField from './WxpayCertField';
 import UploadTypeLimitsField from './UploadTypeLimitsField';
 import JsonArrayField from './JsonArrayField';
 import ImageUpload from '@/components/ImageUpload';
+import { BUILTIN_CAPTCHA_BACKGROUNDS } from '@/utils/builtinImages';
 import JsonObjectEditor from '@/views/aid/aimanage/JsonObjectEditor';
 import {
   CATEGORY_SELECT_OPTIONS,
@@ -157,13 +158,19 @@ export default function ValueField({ name, value, onChange, models, category }: 
   //     自动回填地址（本地模式回填 /profile/... ，OSS 模式回填远程 URL），逗号分隔多图
   if (category === 'captcha' && name === 'background_urls') {
     return (
-      <ImageUpload
-        value={value}
-        onChange={(v) => onChange(v)}
-        maxCount={10}
-        maxSize={5}
-        accept="image/*"
-      />
+      <div>
+        <ImageUpload
+          value={value === BUILTIN_CAPTCHA_BACKGROUNDS.join(',') ? '' : value}
+          onChange={(v) => onChange(v)}
+          maxCount={10}
+          maxSize={5}
+          accept="image/*"
+        />
+        <div style={{ marginTop: 8, color: '#64748b', fontSize: 12 }}>留空时使用以下内置背景；上传后优先使用自定义背景。</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {BUILTIN_CAPTCHA_BACKGROUNDS.map((src, index) => <img key={src} src={src} alt={`内置验证码背景 ${index + 1}`} width={84} height={52} style={{ objectFit: 'cover', borderRadius: 4 }} />)}
+        </div>
+      </div>
     );
   }
   // 0.2 分类型上传限制（oss.uploadTypeLimits）：JSON 数组，用表单（类型名+扩展名标签+大小MB）维护，运营无需手写 JSON

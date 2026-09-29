@@ -1,4 +1,12 @@
 export interface Provider {
+  integrationType?: 'NATIVE' | 'NEW_API';
+  newApiSystemTokenEnabled?: boolean;
+  newApiAccessToken?: string;
+  newApiUserId?: number;
+  newApiGroup?: string;
+  newApiTokenId?: number;
+  providerCategory?: 'AGGREGATOR' | 'OFFICIAL';
+  displayOrder?: number;
   id: number;
   providerName: string;
   providerCode: string;
@@ -71,6 +79,10 @@ export interface Model {
   configVersion?: number;
   /** 是否免费；缺省为正常计费 */
   isFree?: boolean;
+  /** 是否将该模型的上游图片输入按代理 URL 模板拼接 */
+  imageUrlProxyEnabled?: boolean;
+  /** 图片代理 URL 模板；启用时必须且只能包含一个 {url} */
+  imageUrlProxyTemplate?: string | null;
   meterType?: string;
   imageRefine?: number | null;
   supportsTextInput?: boolean;
@@ -135,6 +147,8 @@ export interface Sku {
   priority: number;
   match: Record<string, unknown>;
   price?: number | null;
+  /** 每个价格单位覆盖的输出像素；只适用于按图片计费，留空即固定单张价。 */
+  outputPixelsPerUnit?: number | null;
   /** 每秒单价（PER_SECOND 口径专用；缺省时后端用 price ÷ match.durationMax 反推） */
   pricePerSecond?: number | null;
   /** 每字符单价（PER_CHAR 口径专用，TTS 配音） */
@@ -161,6 +175,8 @@ export interface SkuEditData {
   /** 实际用量超过预冻结时是否允许补扣；缺省为 false。 */
   allowExtraCharge?: boolean;
   skuList: Sku[];
+  /** Optional actual-output-pixel prices; the SKU price remains the maximum pre-hold unit price. */
+  imageOutputPixelTiers?: Array<{ maxPixels: number | null; price: number | null }>;
   /** 规则级输入媒体计费（图片/视频输入附加费默认值） */
   inputPricing?: InputPricing | null;
 }

@@ -133,6 +133,7 @@ export const METER_TYPE_OPTIONS: EnumOption<string>[] = [
   { label: '按Token计费', value: 'TOKEN', elTagType: 'primary' },
   { label: '按张计费', value: 'PER_IMAGE', elTagType: 'success' },
   { label: '按秒计费', value: 'PER_SECOND', elTagType: 'warning' },
+  { label: '按供应商积分计费', value: 'PER_CREDIT', elTagType: 'warning' },
   { label: '按套餐计费', value: 'SKU_PACKAGE', elTagType: 'danger' },
   { label: '按字符计费', value: 'PER_CHAR', elTagType: 'info' }
 ];
@@ -149,6 +150,8 @@ export const GENERATE_MODE_OPTIONS: EnumOption<string>[] = [
   { label: '文生图', value: 'text_to_image', elTagType: 'primary' },
   { label: '图生图', value: 'image_to_image', elTagType: 'success' },
   { label: '图片编辑', value: 'image_edit', elTagType: 'warning' },
+  { label: '区域编辑', value: 'image_inpainting', elTagType: 'warning' },
+  { label: '图片扩展', value: 'image_outpainting', elTagType: 'primary' },
   { label: '图片高清', value: 'image_upscale', elTagType: 'danger' },
   { label: '文生视频', value: 'text_to_video', elTagType: 'primary' },
   { label: '图生视频', value: 'image_to_video', elTagType: 'success' },

@@ -27,4 +27,6 @@ public class ModelParameter {
     private BigDecimal maxDurationSeconds;
     private BigDecimal maxTotalDurationSeconds;
     private BigDecimal maxFileSizeMb;
+    private Long maxFileSizeBytes;
+    private BigDecimal clipDurationSeconds;
 }

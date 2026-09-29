@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import cn.hutool.core.util.StrUtil;
 import com.aid.aid.domain.AidAiProvider;
+import com.aid.aid.domain.AidAiModel;
+import com.aid.aid.mapper.AidAiModelMapper;
 import com.aid.aid.mapper.AidAiProviderMapper;
 import com.aid.aid.service.IAidAiProviderService;
 import com.aid.common.exception.ServiceException;
@@ -30,6 +32,8 @@ import java.util.Base64;
 @Service
 public class AidAiProviderServiceImpl extends ServiceImpl<AidAiProviderMapper, AidAiProvider> implements IAidAiProviderService
 {
+    @org.springframework.beans.factory.annotation.Autowired
+    private AidAiModelMapper modelMapper;
     private static final String KLING_PROVIDER_CODE = "kling";
     /** 启用状态 */
     private static final String STATUS_ENABLED = "0";
@@ -87,6 +91,8 @@ public class AidAiProviderServiceImpl extends ServiceImpl<AidAiProviderMapper, A
     @Override
     public int insertAidAiProvider(AidAiProvider aidAiProvider)
     {
+        normalizePresentation(aidAiProvider, true);
+        normalizeIntegration(aidAiProvider, null);
         validateAndNormalizeBaseUrl(aidAiProvider);
         validateAndNormalizeTaskQuerySuffix(aidAiProvider);
         validateKlingConfiguration(aidAiProvider);
@@ -103,9 +109,23 @@ public class AidAiProviderServiceImpl extends ServiceImpl<AidAiProviderMapper, A
     @Override
     public int updateAidAiProvider(AidAiProvider aidAiProvider)
     {
+        normalizePresentation(aidAiProvider, false);
         validateAndNormalizeBaseUrl(aidAiProvider);
         validateAndNormalizeTaskQuerySuffix(aidAiProvider);
         AidAiProvider before = aidAiModelSafeLoad(aidAiProvider == null ? null : aidAiProvider.getId());
+        if (before != null && aidAiProvider.getIntegrationType() != null
+                && !Objects.equals(before.getIntegrationType(), aidAiProvider.getIntegrationType())
+                && modelMapper.selectCount(Wrappers.<AidAiModel>lambdaQuery()
+                        .eq(AidAiModel::getProviderId, before.getId()).eq(AidAiModel::getDelFlag, "0")) > 0) {
+            throw new ServiceException("此供应商已有模型，变更接入方式请新建供应商");
+        }
+        if (before != null && "NEW_API".equals(before.getIntegrationType())
+                && !Objects.equals(before.getBaseUrl(), aidAiProvider.getBaseUrl())
+                && modelMapper.selectCount(Wrappers.<AidAiModel>lambdaQuery()
+                        .eq(AidAiModel::getProviderId, before.getId()).eq(AidAiModel::getDelFlag, "0")) > 0) {
+            throw new ServiceException("此站点已有模型，变更地址请新建供应商并重新验证模型");
+        }
+        normalizeIntegration(aidAiProvider, before);
         validateKlingConfiguration(mergeProviderForValidation(before, aidAiProvider));
         aidAiProvider.setUpdateTime(DateUtils.getNowDate());
         return this.updateById(aidAiProvider) ? 1 : 0;
@@ -211,6 +231,65 @@ public class AidAiProviderServiceImpl extends ServiceImpl<AidAiProviderMapper, A
             log.error("保存服务商失败, 查询路径无效, providerCode={}, reason={}",
                     aidAiProvider.getProviderCode(), ex.getMessage());
             throw new ServiceException("查询路径无效");
+        }
+    }
+
+    private void normalizeIntegration(AidAiProvider provider, AidAiProvider before)
+    {
+        String type = provider.getIntegrationType() != null ? provider.getIntegrationType()
+                : before == null ? "NATIVE" : before.getIntegrationType();
+        if (type == null) type = "NATIVE";
+        if (!"NATIVE".equals(type) && !"NEW_API".equals(type)) {
+            log.info("供应商接入方式无效, providerId={}", provider.getId());
+            throw new ServiceException("接入方式无效");
+        }
+        provider.setIntegrationType(type);
+        boolean accountEnabled = "NEW_API".equals(type) && Boolean.TRUE.equals(
+                provider.getNewApiSystemTokenEnabled() != null ? provider.getNewApiSystemTokenEnabled()
+                        : before == null ? false : before.getNewApiSystemTokenEnabled());
+        provider.setNewApiSystemTokenEnabled(accountEnabled);
+        // 账户模式可先保存供应商，再从本站普通用户令牌选择或创建模型 Key。
+        // api_key 列非空；新建时用空串占位，后续绑定 Key 时覆盖。
+        if (before == null && accountEnabled && provider.getApiKey() == null) {
+            provider.setApiKey("");
+        }
+        if (!accountEnabled) {
+            if ("NEW_API".equals(type) && StrUtil.isBlank(provider.getApiKey())
+                    && (before == null || StrUtil.isBlank(before.getApiKey()))) {
+                throw new ServiceException("关闭账户授权时请填写模型调用 Key");
+            }
+            // 空字符串会实际写入数据库；不影响模型调用 Key 和已有模型。
+            provider.setNewApiAccessToken("");
+            provider.setNewApiUserId(0L);
+        } else {
+            boolean changedOrigin = before != null && !Objects.equals(before.getBaseUrl(), provider.getBaseUrl());
+            String token = StrUtil.isNotBlank(provider.getNewApiAccessToken()) ? provider.getNewApiAccessToken().trim()
+                    : changedOrigin || before == null ? null : before.getNewApiAccessToken();
+            if (StrUtil.isBlank(token) || token.length() > 4096 || token.contains("\r") || token.contains("\n")) {
+                log.info("New API 缺少有效账户授权, providerId={}", provider.getId());
+                throw new ServiceException("请填写访问令牌");
+            }
+            provider.setNewApiAccessToken(token);
+        }
+        if ("NEW_API".equals(type)) {
+            provider.setProviderCategory("AGGREGATOR");
+            provider.setAuthHeader("Authorization");
+            provider.setAuthPrefix("Bearer ");
+        }
+    }
+
+    private void normalizePresentation(AidAiProvider provider, boolean creating)
+    {
+        if (creating && provider.getProviderCategory() == null) provider.setProviderCategory("AGGREGATOR");
+        String category = provider.getProviderCategory();
+        if (category != null && !Objects.equals(category, "AGGREGATOR") && !Objects.equals(category, "OFFICIAL")) {
+            log.info("供应商展示分类无效, providerId={}", provider.getId());
+            throw new ServiceException("供应商分类无效");
+        }
+        if (creating && provider.getDisplayOrder() == null) provider.setDisplayOrder(100);
+        if (provider.getDisplayOrder() != null && (provider.getDisplayOrder() < 0 || provider.getDisplayOrder() > 9999)) {
+            log.info("供应商展示排序无效, providerId={}", provider.getId());
+            throw new ServiceException("展示排序超出范围");
         }
     }
 

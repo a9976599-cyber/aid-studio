@@ -82,7 +82,8 @@ export function runConfigTest(
   return request({
     url: '/system/config/test',
     method: 'post',
-    data: { testKey, payload }
+    data: { testKey, payload },
+    ...(testKey === 'ai-model' ? { timeout: 360000 } : {})
   });
 }
 

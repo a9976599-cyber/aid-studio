@@ -31,9 +31,11 @@ import com.aid.common.error.TaskSuccessValidator;
 import com.aid.common.constant.HttpConstants;
 import com.aid.common.exception.ServiceException;
 import com.aid.common.aid.redis.utils.RedisUtils;
+import com.aid.common.aid.oss.core.OssTemplate;
 import com.aid.common.oss.entity.UploadResult;
 import com.aid.common.oss.factory.OssFactory;
 import com.aid.common.satoken.utils.LoginHelper;
+import com.aid.common.utils.spring.SpringUtils;
 import com.aid.domain.vo.AiModelConfigVo;
 import com.aid.media.constants.ConfigurableAsyncMediaConstants;
 import com.aid.media.constants.DashscopeConstants;
@@ -61,8 +63,11 @@ import com.aid.media.enums.MediaType;
 import com.aid.media.eta.MediaEtaRecorder;
 import com.aid.media.eta.MediaEtaService;
 import com.aid.media.provider.ImageProviderClient;
+import com.aid.media.provider.ImageOutputItem;
 import com.aid.media.provider.KlingVideoRequestBuilder;
 import com.aid.media.provider.MinimaxH3VideoRequestBuilder;
+import com.aid.media.provider.DmcH3VideoRequestBuilder;
+import com.aid.media.provider.ProviderSubmissionOutcomeUnknownException;
 import com.aid.media.provider.ProviderSubmitResult;
 import com.aid.media.provider.ProviderErrorSanitizer;
 import com.aid.media.provider.ProviderUsageSupport;
@@ -94,6 +99,8 @@ import com.aid.media.util.ModelCapabilityResolver;
 import com.aid.media.util.ModelInputCapabilityValidator;
 import com.aid.media.util.ReferenceMediaRequestNormalizer;
 import com.aid.media.util.VideoDurationProber;
+import com.aid.model.definition.ModelParameterValidator;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.aid.rps.service.IExtractBillingService;
 import com.aid.rps.service.impl.TextTaskExecutionRejectedException;
 import com.aid.service.IAiModelConfigService;
@@ -183,6 +190,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     private final AidMediaResultMapper aidMediaResultMapper;
     // 模型配置服务：从 aid_ai_model + aid_ai_provider + aid_user_ai_config 获取模型配置。
     private final IAiModelConfigService aiModelConfigService;
+    private final com.aid.model.definition.ModelBusinessBindingService modelBusinessBindings;
     // 三阶段计费服务：预冻结 → 执行 → 结算/退回。
     private final IMediaBillingService mediaBillingService;
     // 计费门面服务：SKU规则解析+金额计算，委托mediaBillingService做账户操作。
@@ -228,7 +236,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     // 可灵创建阶段拒绝样本：只记录脱敏后的业务码/message/request_id，不影响退款与终态收口。
     private final KlingSubmissionFailureRecorder klingSubmissionFailureRecorder;
     // 外部模型输入资源仅在真正提交时生成临时签名 URL，普通页面展示地址保持不变。
-    private final com.aid.media.service.ModelResourceUrlSigner modelResourceUrlSigner;
+    private final com.aid.media.service.ModelOutboundResourcePreparer modelOutboundResourcePreparer;
+    /** 平台后处理只需要读取本站原始资源；不得套用仅供上游访问的图片代理。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.aid.media.service.ModelResourceUrlSigner modelResourceUrlSigner;
     // 滚动文本 child 创建门禁：与父周期回滚共用数据库行锁，阻断迟到 worker 跨周期建单。
     private final IExtractBillingService extractBillingService;
 
@@ -238,6 +249,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
 
     @org.springframework.beans.factory.annotation.Autowired
     private MediaEtaRecorder mediaEtaRecorder;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.redisson.api.RedissonClient redissonClient;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.aid.media.resolver.ReferenceVideoRecordResolver referenceVideoRecordResolver;
@@ -279,7 +293,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         {
             throw new ServiceException("请求不能为空");
         }
-        AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(request.getModelName(), MediaType.IMAGE), request.getCapabilityCode());
+        AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(request.getModelName(), MediaType.IMAGE,
+                request.getBusinessFuncCode(), request.getCapabilityCode()), request.getCapabilityCode());
+        // 区域编辑的真实原图尺寸必须先于模型参数默认值写回，避免默认 1024x1024 覆盖非 1024 原图。
+        validateAndNormalizeProtectedImageEdit(request, modelConfig);
         invocationResolver.normalize(modelConfig, request);
         validatePromptForModel(modelConfig, request.getPrompt());
         ModelCapabilityValidator.validatePrompt(modelConfig, request.getPrompt());
@@ -306,7 +323,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         {
             throw new ServiceException("请求不能为空");
         }
-        AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(request.getModelName(), MediaType.IMAGE), request.getCapabilityCode());
+        AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(request.getModelName(), MediaType.IMAGE,
+                request.getBusinessFuncCode(), request.getCapabilityCode()), request.getCapabilityCode());
+        validateAndNormalizeProtectedImageEdit(request, modelConfig);
         invocationResolver.normalizePlannedPrompt(modelConfig, request);
         ImageProviderClient imageClient = resolveImageClient(request.getModelName(), modelConfig);
         ModelInputCapabilityValidator.validateRawImageInputs(modelConfig, request);
@@ -339,12 +358,13 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         validatePromptForModel(modelConfig, request.getPrompt());
         ModelCapabilityValidator.validatePrompt(modelConfig, request.getPrompt());
         // 先解析权属与已有元数据；数量及模态通过后再统一探测，避免非法请求触发大量下载。
-        resolveReferenceVideoRecords(request, verifyMetadata);
+        VideoProviderClient videoClient = resolveVideoClient(request.getModelName(), modelConfig);
+        resolveReferenceVideoRecords(request,
+                verifyMetadata || videoClient.requiresVerifiedMetadataForQuote());
         validateVideoProviderContract(modelConfig, request);
         ModelInputCapabilityValidator.validateRawVideoInputs(modelConfig, request);
         Wan3VideoRequestBuilder.validateRawInputs(modelConfig, request);
         AgnesVideo25RequestBuilder.validateRawInputs(modelConfig, request);
-        VideoProviderClient videoClient = resolveVideoClient(request.getModelName(), modelConfig);
         videoClient.normalizeRequest(modelConfig, request);
         ReferenceMediaRequestNormalizer.normalize(modelConfig, request,
                 videoClient.fallbackMaxReferenceImages(modelConfig),
@@ -384,12 +404,12 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         }
         AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(request.getModelName(), MediaType.VIDEO), request.getCapabilityCode());
         invocationResolver.normalizePlannedPrompt(modelConfig, request);
-        resolveReferenceVideoRecords(request, false);
+        VideoProviderClient videoClient = resolveVideoClient(request.getModelName(), modelConfig);
+        resolveReferenceVideoRecords(request, videoClient.requiresVerifiedMetadataForQuote());
         validateVideoProviderContract(modelConfig, request);
         ModelInputCapabilityValidator.validateRawVideoInputs(modelConfig, request);
         Wan3VideoRequestBuilder.validateRawInputs(modelConfig, request);
         AgnesVideo25RequestBuilder.validateRawInputs(modelConfig, request);
-        VideoProviderClient videoClient = resolveVideoClient(request.getModelName(), modelConfig);
         videoClient.normalizeRequest(modelConfig, request);
         ReferenceMediaRequestNormalizer.normalize(modelConfig, request,
                 videoClient.fallbackMaxReferenceImages(modelConfig),
@@ -485,6 +505,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         voiceReferenceSampleService.prepare(modelConfig, request, verifyMetadata);
         if (verifyMetadata) verifiedMediaInputService.configured(modelConfig, request);
         com.aid.media.util.AudioModelCapabilityValidator.validate(modelConfig, request);
+        if (com.aid.media.provider.impl.MinimaxMusicProviderClient.PROTOCOL
+                .equalsIgnoreCase(StrUtil.trim(modelConfig.getProtocol()))) {
+            com.aid.media.provider.impl.MinimaxMusicProviderClient.buildBody(modelConfig, request);
+        }
         if (request.getExpectedModelConfigurationHash() != null
                 && !request.getExpectedModelConfigurationHash().equals(com.aid.model.ModelConfigurationFingerprint.of(modelConfig))) {
             throw new ServiceException("配置已变请重报价");
@@ -496,6 +520,15 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
 
     @Override
     public MediaTaskResponse generateImage(MediaImageGenerateRequest request) {
+        return createImageTask(request, false);
+    }
+
+    @Override
+    public MediaTaskResponse submitImage(MediaImageGenerateRequest request) {
+        return createImageTask(request, true);
+    }
+
+    private MediaTaskResponse createImageTask(MediaImageGenerateRequest request, boolean deferred) {
         //      SecurityContext 会丢失，仅靠 getCurrentUserIdSafe() 会取到 null，
         //      导致 task.userId 为空、预冻结/结算/退款全部被跳过造成漏扣费。
         //      业务调用方显式 setUserId 时优先采用，否则回退到登录上下文（保留同步接口行为）。
@@ -513,7 +546,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             return toResponse(existing);
         }
         // 四维并发准入（全局/用户/模型/供应商）：用规范模型编码抢占，与任务落库的 model_name 一致。
-        boolean canRun = concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
+        boolean canRun = !deferred && concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
 
         AidMediaTask task = new AidMediaTask();
         // 记录发起用户，匿名请求时允许为 null。
@@ -558,6 +591,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             requiresNewTxTemplate.executeWithoutResult(s -> {
                 // 先落库，避免外部成功但本地无任务记录。
                 aidMediaTaskMapper.insert(task);
+                com.aid.diagnostics.DiagnosticCapture.rememberTask(task);
                 // 预冻结计费（登录用户生效）：透传最终 modelCode 与 max_output_count，硬编码仅兜底。
                 billingFacadeService.prepareBilling(task, modelConfig, preparedBilling.billingInput());
                 // 预冻结成功后立即回写 FROZEN，确保 settleBilling/refundBilling 的 CAS 条件能命中 DB 状态。
@@ -573,6 +607,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             throw freezeEx;
         }
         // 并发超限：QUEUED，提交交由现有排队拉起逻辑（drainQueue）。
+        if (deferred) {
+            dispatchDeferredTask(task.getId());
+            return toResponse(task);
+        }
         if (!canRun) {
             return toResponse(task);
         }
@@ -586,6 +624,15 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
 
     @Override
     public MediaTaskResponse generateVideo(MediaVideoGenerateRequest request) {
+        return createVideoTask(request, false);
+    }
+
+    @Override
+    public MediaTaskResponse submitVideo(MediaVideoGenerateRequest request) {
+        return createVideoTask(request, true);
+    }
+
+    private MediaTaskResponse createVideoTask(MediaVideoGenerateRequest request, boolean deferred) {
         //      SecurityContext 会丢失，仅靠 getCurrentUserIdSafe() 会取到 null，
         //      导致 task.userId 为空、预冻结/结算/退款全部被跳过造成漏扣费。
         //      业务调用方显式 setUserId 时优先采用，否则回退到登录上下文（保留同步接口行为）。
@@ -602,7 +649,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             return toResponse(existing);
         }
         // 四维并发准入（全局/用户/模型/供应商）：用规范模型编码抢占，与任务落库的 model_name 一致。
-        boolean canRun = concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
+        boolean canRun = !deferred && concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
 
         AidMediaTask task = new AidMediaTask();
         // 记录用户上下文（优先显式入参，兜底登录态）。
@@ -643,6 +690,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         try {
             requiresNewTxTemplate.executeWithoutResult(s -> {
                 aidMediaTaskMapper.insert(task);
+                com.aid.diagnostics.DiagnosticCapture.rememberTask(task);
                 billingFacadeService.prepareBilling(task, modelConfig, preparedBilling.billingInput());
                 // 预冻结成功后回写 FROZEN，确保 settle/refund 的 CAS 条件能命中 DB 状态。
                 updateTaskWithPayloadArchive(task);
@@ -656,6 +704,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             throw freezeEx;
         }
         // 并发超限：QUEUED，提交交由现有排队拉起逻辑。
+        if (deferred) {
+            dispatchDeferredTask(task.getId());
+            return toResponse(task);
+        }
         if (!canRun) {
             return toResponse(task);
         }
@@ -732,6 +784,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         try {
             requiresNewTxTemplate.executeWithoutResult(s -> {
                 aidMediaTaskMapper.insert(task);
+                com.aid.diagnostics.DiagnosticCapture.rememberTask(task);
                 if (operatorAdminId == null) billingFacadeService.prepareBilling(task, modelConfig, preparedBilling.billingInput());
                 else billingFacadeService.prepareOperatorBilling(task, modelConfig, preparedBilling.billingInput(), operatorAdminId);
                 updateTaskWithPayloadArchive(task);
@@ -807,9 +860,13 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                 return byCode.get(0);
             }
             if (byCode.size() > 1) {
-                log.error("resolveAudioClient providerCode 命中多个 provider: providerCode={}, count={}",
-                        providerCode, byCode.size());
-                throw new ServiceException("系统繁忙");
+                List<com.aid.media.provider.AudioProviderClient> byProtocol = byCode.stream()
+                        .filter(it -> it.supportsProtocol(modelConfig.getProtocol()))
+                        .toList();
+                if (byProtocol.size() == 1) return byProtocol.get(0);
+                log.error("resolveAudioClient providerCode/protocol 路由不唯一: providerCode={}, protocol={}, count={}",
+                        providerCode, modelConfig.getProtocol(), byProtocol.size());
+                throw new ServiceException("音频协议不可用");
             }
             // 0 个命中：providerCode 不被任何 client 识别，降级到下一级
             log.info("resolveAudioClient providerCode 未命中任何 client，降级: providerCode={}", providerCode);
@@ -826,9 +883,13 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                 return byCapability.get(0);
             }
             if (byCapability.size() > 1) {
-                log.error("resolveAudioClient capability_json.provider 命中多个 provider: capabilityProvider={}, count={}",
-                        capabilityProvider, byCapability.size());
-                throw new ServiceException("系统繁忙");
+                List<com.aid.media.provider.AudioProviderClient> byProtocol = byCapability.stream()
+                        .filter(it -> it.supportsProtocol(modelConfig.getProtocol()))
+                        .toList();
+                if (byProtocol.size() == 1) return byProtocol.get(0);
+                log.error("resolveAudioClient capability_json.provider/protocol 路由不唯一: capabilityProvider={}, protocol={}, count={}",
+                        capabilityProvider, modelConfig.getProtocol(), byProtocol.size());
+                throw new ServiceException("音频协议不可用");
             }
             log.info("resolveAudioClient capability_json.provider 未命中任何 client，降级: capabilityProvider={}",
                     capabilityProvider);
@@ -881,6 +942,15 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
 
     @Override
     public MediaTaskResponse generateText(MediaTextGenerateRequest request) {
+        return createTextTask(request, false);
+    }
+
+    @Override
+    public MediaTaskResponse submitText(MediaTextGenerateRequest request) {
+        return createTextTask(request, true);
+    }
+
+    private MediaTaskResponse createTextTask(MediaTextGenerateRequest request, boolean deferred) {
         //      限流、幂等、入库、释放全部用同一个值，避免 anonymous 与真实 userId 错乱。
         Long effectiveUserId = request.getUserId() != null ? request.getUserId() : getCurrentUserIdSafe();
         PreparedMediaBillingInput preparedBilling = prepareTextBilling(request, true);
@@ -898,7 +968,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         TextProviderClient client = resolveTextClient(request.getModelName(), modelConfig);
         client.validateProviderConfiguration(modelConfig, request);
         // 四维并发准入（全局/用户/模型/供应商）：用规范模型编码抢占，与任务落库的 model_name 一致。
-        boolean canRun = concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
+        boolean canRun = !deferred && concurrencyLimiter.tryAcquire(effectiveUserId, modelConfig.getModelCode());
         if (!canRun && com.aid.tokendance.provider.text.TokenDanceToolMessages.isToolTurn(modelConfig, request)) {
             // 工具续轮含仅内存思考签名，不能降级为丢失上下文的磁盘排队请求。
             throw new ServiceException("并发已满请稍后重试");
@@ -934,6 +1004,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                             request.getBizTaskId(), effectiveUserId, request.getBillingAttemptId());
                 }
                 aidMediaTaskMapper.insert(task);
+                com.aid.diagnostics.DiagnosticCapture.rememberTask(task);
                 if (!exempt) {
                     billingFacadeService.prepareBilling(task, modelConfig, preparedBilling.billingInput());
                 }
@@ -962,6 +1033,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             throw freezeEx;
         }
         // 并发超限：QUEUED，提交交由现有排队拉起逻辑。
+        if (deferred) {
+            dispatchDeferredTask(task.getId());
+            return toResponse(task);
+        }
         if (!canRun) {
             return toResponse(task);
         }
@@ -1009,6 +1084,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                             request.getBizTaskId(), effectiveUserId, request.getBillingAttemptId());
                 }
                 aidMediaTaskMapper.insert(task);
+                com.aid.diagnostics.DiagnosticCapture.rememberTask(task);
                 if (!exempt) {
                     BillingInput billingInput = BillingInputExtractor.fromTextRequest(request);
                     billingFacadeService.prepareBilling(task, modelConfig, billingInput);
@@ -1197,6 +1273,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         AtomicReference<Map<String, Object>> capturedUsage = new AtomicReference<>();
         AtomicReference<MediaTextGenerateRequest.TextMessageItem> toolMessage = new AtomicReference<>();
         try {
+            modelOutboundResourcePreparer.prepare(modelConfig, request);
             markTextProviderCallStarted(task, request);
             // 业务含义：阻塞读 SSE，增量同时推 sink 与本地聚合，供落库全文。
             client.streamChat(modelConfig, request, new TextStreamCallbacks() {
@@ -1641,6 +1718,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         }
         for (PreparedBatchUnit unit : prepared) {
             aidMediaTaskMapper.insert(unit.task());
+            com.aid.diagnostics.DiagnosticCapture.rememberTask(unit.task());
             billingFacadeService.prepareBilling(unit.task(), unit.modelConfig(), unit.billingInput());
             // 预冻结修改了 billingStatus / billingTraceId / frozenAmount，必须回写才能被后续 settle/refund 读到。
             fillUpdateInfo(unit.task());
@@ -1874,6 +1952,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             AidMediaTask::getUserId,
             AidMediaTask::getMediaType,
             AidMediaTask::getStatus,
+            AidMediaTask::getModelName,
+            AidMediaTask::getProtocol,
+            AidMediaTask::getProviderRouteSnapshotJson,
             AidMediaTask::getOriginUrl,
             AidMediaTask::getOssUrl,
             AidMediaTask::getOutputDurationSeconds,
@@ -2057,6 +2138,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             // base64 图片已在 provider 内部转 OSS，响应体不再入库，避免 aid_media_task.response_json 保留图片占位内容
             task.setResponseJson(null);
             task.setOssUrl(submitResult.getOssUrl());
+            persistSubmitResultManifest(task, submitResult, true);
             task.setErrorMessage(null);
             // 同步 TTS 音频时长（毫秒→秒向上取整，宁高勿低）：留档到任务表，
             // 供业务侧回填 aid_audio_record.duration_ms、对口型时长校验与合成对齐消费。
@@ -2074,10 +2156,24 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         // 3b) URL 落库模式：上游直接返回产物 URL，写 originUrl，后续 persistOssIfNeeded 下载转存 OSS。
         if (StringUtils.isNotBlank(submitResult.getDirectUrl())) {
             log.info("media submit succeeded (URL), taskId={}, protocol={}", task.getId(), task.getProtocol());
+            task.setOriginUrl(submitResult.getDirectUrl());
+            persistSubmitResultManifest(task, submitResult, false);
+            if (isLayerDecomposition(protectedImageEditRequest(task))) {
+                try {
+                    validateLayerManifestBeforeSettlement(task);
+                } catch (LayerOutputInvalidException invalid) {
+                    task.setStatus(MediaTaskStatus.FAILED.name());
+                    task.setErrorMessage(invalid.getMessage());
+                    task.setErrorDetailJson(TaskErrorSnapshot.write(
+                            TaskErrorResult.of(TaskErrorCode.RESULT_INVALID, invalid.getMessage())));
+                    aidMediaResultMapper.delete(new LambdaQueryWrapper<AidMediaResult>()
+                            .eq(AidMediaResult::getTaskId, task.getId()));
+                    return closeFailedSubmitBilling(task, null);
+                }
+            }
             // 模型健康采集：同步直出成功
             recordSubmitHealthSuccess(task);
             task.setStatus(MediaTaskStatus.SUCCEEDED.name());
-            task.setOriginUrl(submitResult.getDirectUrl());
             task.setErrorMessage(null);
             // 三阶段计费：图片任务同步成功时必须传入真实张数 usageData，避免按预扣封顶。
             Map<String, Object> usageData = buildImageSettleUsageForSubmit(task, submitResult);
@@ -2153,6 +2249,62 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         // 模型健康采集：上游返回 200 但无有效结果，同属上游侧异常
         modelHealthRecorder.recordFailure(task.getModelName(), task.getMediaType(), task.getErrorMessage());
         return closeFailedSubmitBilling(task, submitResult.getUsage());
+    }
+
+    /** 同步图片协议也必须保存全部有序结果，不能只依赖主任务上的第 0 项。 */
+    private void persistSubmitResultManifest(AidMediaTask task, ProviderSubmitResult submitResult,
+                                             boolean alreadyPersisted) {
+        if (task == null || submitResult == null || !MediaType.IMAGE.name().equals(task.getMediaType())) {
+            return;
+        }
+        if (submitResult.getImageOutputs() != null && !submitResult.getImageOutputs().isEmpty()) {
+            int index = 0;
+            for (ImageOutputItem output : submitResult.getImageOutputs()) {
+                String url = output.getUrl();
+                if (StringUtils.isBlank(url)) throw new ServiceException("图片结果地址缺失");
+                aidMediaResultMapper.upsertTaskResult(task.getId(), index, task.getMediaType(), url,
+                        task.getUserId() == null ? "" : String.valueOf(task.getUserId()));
+                Map<String, Object> metadata = new LinkedHashMap<>();
+                metadata.put("width", output.getWidth());
+                metadata.put("height", output.getHeight());
+                metadata.put("zIndex", output.getZIndex());
+                metadata.put("name", output.getName());
+                metadata.put("description", output.getDescription());
+                metadata.put("boundingBox", output.getBoundingBox());
+                metadata.put("outputFormat", output.getOutputFormat());
+                aidMediaResultMapper.update(null, new LambdaUpdateWrapper<AidMediaResult>()
+                        .eq(AidMediaResult::getTaskId, task.getId())
+                        .eq(AidMediaResult::getResultIndex, index)
+                        .set(AidMediaResult::getMetadataJson, com.alibaba.fastjson2.JSON.toJSONString(metadata)));
+                index++;
+            }
+            return;
+        }
+        LinkedHashSet<String> ordered = new LinkedHashSet<>();
+        if (StringUtils.isNotBlank(submitResult.getDirectUrl())) {
+            ordered.add(submitResult.getDirectUrl().trim());
+        }
+        if (submitResult.getResultUrls() != null) {
+            for (String url : submitResult.getResultUrls()) {
+                if (StringUtils.isNotBlank(url)) ordered.add(url.trim());
+            }
+        }
+        if (ordered.isEmpty() && StringUtils.isNotBlank(submitResult.getOssUrl())) {
+            ordered.add(submitResult.getOssUrl().trim());
+        }
+        String operator = task.getUserId() == null ? "" : String.valueOf(task.getUserId());
+        int index = 0;
+        for (String url : ordered) {
+            aidMediaResultMapper.upsertTaskResult(task.getId(), index, task.getMediaType(), url, operator);
+            if (alreadyPersisted) {
+                LambdaUpdateWrapper<AidMediaResult> update = new LambdaUpdateWrapper<>();
+                update.eq(AidMediaResult::getTaskId, task.getId());
+                update.eq(AidMediaResult::getResultIndex, index);
+                update.set(AidMediaResult::getOssUrl, url);
+                aidMediaResultMapper.update(null, update);
+            }
+            index++;
+        }
     }
 
     /** 文本调用失败保守结算；未产出可用正文、未发出请求或明确拒绝时退款。 */
@@ -2264,6 +2416,11 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         Map<String, Object> usage = new HashMap<>();
         usage.put("actualImageCount", actualCount);
         usage.put("resultCount", actualCount);
+        if (submitResult != null && submitResult.getImageOutputs() != null
+                && !submitResult.getImageOutputs().isEmpty()) {
+            usage.put("outputImagePixels", submitResult.getImageOutputs().stream()
+                    .map(item -> Math.multiplyExact((long) item.getWidth(), item.getHeight())).toList());
+        }
         // 合并 provider 返回的 token usage（如 Gemini 图片模型会带 prompt_tokens/completion_tokens/total_tokens）
         if (submitResult != null && submitResult.getUsage() != null) {
             usage.putAll(submitResult.getUsage());
@@ -2348,6 +2505,12 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
      * @param incrementRetry 上游仍 PROCESSING 时是否累加重试计数（内部编排轮询传 false）
      */
     private void refreshProcessingTask(AidMediaTask task, boolean failOnModelMissing, boolean incrementRetry) {
+        try (com.aid.diagnostics.DiagnosticCapture.TaskScope scope = com.aid.diagnostics.DiagnosticCapture.task(task)) {
+            refreshProcessingTaskCaptured(task, failOnModelMissing, incrementRetry);
+        }
+    }
+
+    private void refreshProcessingTaskCaptured(AidMediaTask task, boolean failOnModelMissing, boolean incrementRetry) {
         if (!MediaTaskStatus.PROCESSING.name().equals(task.getStatus())
             || StringUtils.isBlank(task.getProviderTaskId())) {
             return;
@@ -2503,6 +2666,16 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             return;
         }
         try {
+            MediaImageGenerateRequest editRequest = protectedImageEditRequest(task);
+            if (editRequest != null) {
+                persistProtectedImageResults(task, editRequest);
+                return;
+            }
+            if (MediaType.IMAGE.name().equals(task.getMediaType())
+                    && selectOrderedTaskResults(task.getId()).size() > 1) {
+                persistOrderedImageResults(task);
+                return;
+            }
             //    单次失败直接放弃会让业务层 resolveImageUrl 抛"存储失败"；同步重试可消除大多数瞬时抖动。
             byte[] bytes = downloadOriginBytesWithRetry(task);
             String suffix = detectSuffix(task.getOriginUrl(), task);
@@ -2531,6 +2704,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
      * 带同步重试的上游产物下载。
      */
     private byte[] downloadOriginBytesWithRetry(AidMediaTask task) {
+        return downloadOriginBytesWithRetry(task, task.getOriginUrl());
+    }
+
+    private byte[] downloadOriginBytesWithRetry(AidMediaTask task, String originUrl) {
         final int maxAttempts = 3;
         final int connTimeoutMs = 30_000;
         final int readTimeoutMs = 60_000;
@@ -2549,9 +2726,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             try {
                 byte[] bytes = isTokenDanceAudioTask(task, modelConfig)
                         ? TokenDancePublicMediaDownloader.download(
-                                task.getOriginUrl(), connTimeoutMs, readTimeoutMs)
+                                originUrl, connTimeoutMs, readTimeoutMs)
                         : downloadOriginBytesFollowingRedirects(
-                                task.getOriginUrl(), modelConfig, task.getId(), task.getModelName(),
+                                originUrl, modelConfig, task.getId(), task.getModelName(),
                                 connTimeoutMs, readTimeoutMs);
                 if (attempt > 1) {
                     log.info("origin 下载重试成功, taskId={}, attempt={}, size={}", task.getId(), attempt, bytes.length);
@@ -2578,7 +2755,8 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     static byte[] downloadOriginBytesFollowingRedirects(String originUrl, AiModelConfigVo modelConfig,
                                                         Long taskId, String modelCode,
                                                         int connectionTimeoutMs, int readTimeoutMs) {
-        String currentUrl = requireHttpUrl(originUrl);
+        OriginDownloadSource source = resolveOriginDownloadSource(originUrl);
+        String currentUrl = source.url();
         Set<String> visited = new HashSet<>();
         int redirectCount = 0;
         boolean initialRequest = true;
@@ -2586,8 +2764,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             if (!visited.add(currentUrl)) {
                 throw new ServiceException("产物重定向循环");
             }
-            HttpRequest request = buildOriginDownloadRequest(
-                    currentUrl, modelConfig, taskId, modelCode, initialRequest);
+            HttpRequest request = source.managedStorage()
+                    ? HttpRequest.get(currentUrl)
+                    : buildOriginDownloadRequest(currentUrl, modelConfig, taskId, modelCode, initialRequest);
             try (HttpResponse response = request
                     .setConnectionTimeout(connectionTimeoutMs)
                     .setReadTimeout(readTimeoutMs)
@@ -2744,11 +2923,13 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     private void upsertResultRecord(AidMediaTask task, String mimeType, long fileSize, Integer durationSeconds) {
         LambdaQueryWrapper<AidMediaResult> wrapper = new LambdaQueryWrapper<AidMediaResult>()
             .eq(AidMediaResult::getTaskId, task.getId())
+            .eq(AidMediaResult::getResultIndex, 0)
             .last("limit 1");
         AidMediaResult result = aidMediaResultMapper.selectOne(wrapper);
         if (result == null) {
             result = new AidMediaResult();
             result.setTaskId(task.getId());
+            result.setResultIndex(0);
             result.setMediaType(task.getMediaType());
             result.setOriginUrl(task.getOriginUrl());
             result.setOssUrl(task.getOssUrl());
@@ -3088,6 +3269,10 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             }
             return;
         }
+        if (modelConfig != null && StringUtils.isBlank(prompt)) {
+            JsonNode capability = ModelCapabilityResolver.parseCapability(modelConfig.getCapabilityJson());
+            if (capability != null && capability.path("promptOptional").asBoolean(false)) return;
+        }
         validatePrompt(prompt);
     }
 
@@ -3191,6 +3376,11 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     /** 执行视频 Provider 契约校验。 */
     static void validateVideoProviderContract(AiModelConfigVo modelConfig,
                                                MediaVideoGenerateRequest request) {
+        if (modelConfig != null
+            && MinimaxH3Constants.PROTOCOL_VIDEO.equalsIgnoreCase(StrUtil.trim(modelConfig.getProtocol()))) {
+            MinimaxH3VideoRequestBuilder.buildSubmissionBodyForValidation(modelConfig, request);
+            return;
+        }
         String internalAspectRatio = request == null ? null : request.getAspectRatio();
         boolean followInput = request != null
                 && ModelCapabilityResolver.isVideoAspectRatioFollowInput(modelConfig);
@@ -3204,8 +3394,8 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                 return;
             }
             if (modelConfig != null
-                && MinimaxH3Constants.PROTOCOL_VIDEO.equalsIgnoreCase(StrUtil.trim(modelConfig.getProtocol()))) {
-                MinimaxH3VideoRequestBuilder.buildSubmissionBodyForValidation(modelConfig, request);
+                && DmcH3VideoRequestBuilder.PROTOCOL.equalsIgnoreCase(StrUtil.trim(modelConfig.getProtocol()))) {
+                DmcH3VideoRequestBuilder.build(modelConfig, request, false);
                 return;
             }
             if (modelConfig != null
@@ -3408,6 +3598,27 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             return requireModelType(byCategory, mediaType);
         }
         throw new ServiceException("未找到" + mediaType.name() + "模型配置，请先配置 aid_ai_model");
+    }
+
+    /** 未指定模型时仅从当前业务池选择首个支持目标能力的可用模型。 */
+    private AiModelConfigVo resolveModel(String requestedModel, MediaType mediaType,
+                                         String businessFuncCode, String capabilityCode) {
+        if (StringUtils.isNotBlank(requestedModel) || StringUtils.isBlank(businessFuncCode)) {
+            return resolveModel(requestedModel, mediaType);
+        }
+        java.util.LinkedHashSet<Long> orderedModelIds = modelBusinessBindings.forFunction(businessFuncCode).stream()
+                .filter(binding -> StringUtils.isBlank(capabilityCode)
+                        ? Boolean.TRUE.equals(binding.getDefaultCapability())
+                        : Objects.equals(capabilityCode, binding.getCapabilityCode()))
+                .map(com.aid.aid.domain.AidAiBusinessModelBinding::getModelId)
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        for (Long modelId : orderedModelIds) {
+            AiModelConfigVo candidate = aiModelConfigService.selectByModelId(modelId);
+            if (candidate == null || !mediaType.name().equalsIgnoreCase(candidate.getModelType())) continue;
+            return candidate;
+        }
+        log.info("业务模型池无可用模型, funcCode={}, capabilityCode={}", businessFuncCode, capabilityCode);
+        throw new ServiceException("业务暂无可用模型");
     }
 
     /**
@@ -3709,6 +3920,7 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                 throw new ServiceException("图片参数不能为空");
             }
             AiModelConfigVo modelConfig = invocationResolver.select(resolveModel(imgReq.getModelName(), MediaType.IMAGE), imgReq.getCapabilityCode());
+            validateAndNormalizeProtectedImageEdit(imgReq, modelConfig);
             invocationResolver.normalize(modelConfig, imgReq);
             validatePromptForModel(modelConfig, imgReq.getPrompt());
             ModelCapabilityValidator.validatePrompt(modelConfig, imgReq.getPrompt());
@@ -3970,9 +4182,29 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         return req;
     }
 
-    /**
-     * 批量场景：事务已提交、扣费已成功后，由线程池异步调用；尝试抢占并发坑位后提交上游。
-     */
+    /** The durable QUEUED row is the fallback when the shared executor is saturated or shutting down. */
+    private void dispatchDeferredTask(Long taskId) {
+        Thread caller = Thread.currentThread();
+        AtomicBoolean callerFallback = new AtomicBoolean();
+        try {
+            threadPoolTaskExecutor.execute(new FutureTask<Void>(() -> {
+                // The shared executor uses CallerRunsPolicy; never submit to a provider on the HTTP thread.
+                if (Thread.currentThread() != caller) {
+                    submitSingleTaskAsync(taskId);
+                } else {
+                    callerFallback.set(true);
+                }
+                return null;
+            }));
+            if (callerFallback.get()) {
+                log.warn("异步提交线程池已满，任务留在队列等待补偿调度, taskId={}", taskId);
+            }
+        } catch (RuntimeException rejected) {
+            log.warn("异步提交暂不可用，任务留在队列等待补偿调度, taskId={}", taskId, rejected);
+        }
+    }
+
+    /** 批量及非流式提交共用：任务已落库、预冻结后抢占并发槽，CAS 入执行态。 */
     private void submitSingleTaskAsync(Long taskId) {
         AidMediaTask task = aidMediaTaskMapper.selectById(taskId);
         if (task == null) {
@@ -4214,6 +4446,12 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     }
 
     private void doSubmitToProvider(AidMediaTask task, MediaTextGenerateRequest liveTextRequest) {
+        try (com.aid.diagnostics.DiagnosticCapture.TaskScope scope = com.aid.diagnostics.DiagnosticCapture.task(task)) {
+            doSubmitToProviderCaptured(task, liveTextRequest);
+        }
+    }
+
+    private void doSubmitToProviderCaptured(AidMediaTask task, MediaTextGenerateRequest liveTextRequest) {
         // COMPOSE 合成任务走独立提交分支（MPS Provider + ComposeBillingService），
         // 不与图片/视频/TTS/文本共用 billingFacadeService 计费链路；非 COMPOSE 任务逻辑保持不变。
         if (com.aid.compose.ComposeConstants.MEDIA_TYPE_COMPOSE.equals(task.getMediaType())) {
@@ -4241,16 +4479,25 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             submitStartMs = System.currentTimeMillis();
             if (Objects.equals(task.getMediaType(), MediaType.IMAGE.name())) {
                 MediaImageGenerateRequest imgReq = JSONUtil.toBean(task.getRequestJson(), MediaImageGenerateRequest.class);
-                modelResourceUrlSigner.sign(imgReq);
+                modelOutboundResourcePreparer.prepare(modelConfig, imgReq);
                 ImageProviderClient client = resolveImageClient(imgReq.getModelName(), modelConfig);
                 submitResult = client.submit(modelConfig, imgReq);
             } else if (Objects.equals(task.getMediaType(), MediaType.VIDEO.name())) {
                 MediaVideoGenerateRequest vidReq = JSONUtil.toBean(task.getRequestJson(), MediaVideoGenerateRequest.class);
-                if ("tokendance".equalsIgnoreCase(modelConfig.getProviderCode())
-                        && vidReq.getReferenceVideoRecordIds() != null && !vidReq.getReferenceVideoRecordIds().isEmpty()) {
+                if (vidReq.getReferenceVideoRecordIds() != null
+                        && !vidReq.getReferenceVideoRecordIds().isEmpty()) {
                     // 内部可信 DTO 不写任务 JSON；队列拉起后按任务归属重建，不能把裸 URL 当已核验素材。
                     vidReq.setUserId(task.getUserId());
                     vidReq.setProjectId(task.getProjectId());
+                    // 任务快照中的 referenceVideos 是首次权属解析生成的 URL。对象签名可能在
+                    // 排队期间过期或变化；重放时必须按记录 ID 重新生成，不能把旧签名当用户输入校验。
+                    if (vidReq.getOptions() != null) {
+                        Map<String, Object> replayOptions = new LinkedHashMap<>(vidReq.getOptions());
+                        replayOptions.remove("referenceVideos");
+                        replayOptions.remove("referenceVideoDurations");
+                        replayOptions.remove("referenceVideoSeconds");
+                        vidReq.setOptions(replayOptions);
+                    }
                     referenceVideoRecordResolver.resolveAndApply(vidReq, task.getUserId(), true);
                     ModelInputCapabilityValidator.validateVideo(modelConfig, vidReq);
                 }
@@ -4259,20 +4506,29 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                     // 归一化后的临时 URL 必须先持久化，应用重启后仍可继续提交并在终态清理。
                     requiresNewTxTemplate.executeWithoutResult(s -> updateTaskWithPayloadArchive(task));
                 }
-                modelResourceUrlSigner.sign(vidReq);
                 VideoProviderClient client = resolveVideoClient(vidReq.getModelName(), modelConfig);
+                if (client.requiresVerifiedMetadataForQuote()) {
+                    // Task JSON does not persist resolvedReferenceVideos. Rebuild cost inputs from
+                    // the newly authorized source before an asynchronous upstream submission.
+                    client.normalizeRequest(modelConfig, vidReq);
+                }
+                modelOutboundResourcePreparer.prepare(modelConfig, vidReq);
+                vidReq.setProviderIdempotencyKey(
+                        "dmc-h3-video".equalsIgnoreCase(modelConfig.getProtocol())
+                                ? "aid-dmc-" + task.getId() : "aid-media-" + task.getId());
                 submitResult = client.submit(modelConfig, vidReq);
             } else if (Objects.equals(task.getMediaType(), MediaType.AUDIO.name())) {
                 com.aid.media.dto.MediaAudioGenerateRequest audioReq =
                         JSONUtil.toBean(task.getRequestJson(), com.aid.media.dto.MediaAudioGenerateRequest.class);
                 audioReq.setUserId(task.getUserId());
-                modelResourceUrlSigner.sign(audioReq);
+                modelOutboundResourcePreparer.prepare(modelConfig, audioReq);
                 com.aid.media.provider.AudioProviderClient audioClient =
                         resolveAudioClient(audioReq.getModelName(), modelConfig);
                 submitResult = audioClient.submit(modelConfig, audioReq);
             } else if (Objects.equals(task.getMediaType(), MediaType.TEXT.name())) {
                 MediaTextGenerateRequest textReq = liveTextRequest != null ? liveTextRequest
                         : JSONUtil.toBean(task.getRequestJson(), MediaTextGenerateRequest.class);
+                modelOutboundResourcePreparer.prepare(modelConfig, textReq);
                 TextProviderClient client = resolveTextClient(textReq.getModelName(), modelConfig);
                 TextGenerationControl.normalize(textReq, false);
                 client.validateProviderConfiguration(modelConfig, textReq);
@@ -4334,6 +4590,11 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
                 cleanupNormalizedVideoInputs(task);
                 publishTextTaskCompletedSafely(task);
             }
+        } catch (ProviderSubmissionOutcomeUnknownException ex) {
+            // POST 可能已被上游接受；冻结款和并发占用保持原状，等待人工核对。
+            task.setErrorMessage("上游提交结果待核对");
+            requiresNewTxTemplate.executeWithoutResult(s -> updateTaskWithPayloadArchive(task));
+            log.error("上游提交结果未知，保留 PENDING, taskId={}", task.getId());
         } catch (Exception ex) {
             long submitElapsedMs = System.currentTimeMillis() - submitStartMs;
             boolean textTask = MediaType.TEXT.name().equals(task.getMediaType());
@@ -4608,10 +4869,13 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
     }
 
     private MediaTaskResponse toResponse(AidMediaTask task) {
+        boolean protectedResultPending = isProtectedImageEditResultPending(task);
+        String exposedStatus = protectedResultPending
+                ? MediaTaskStatus.PROCESSING.name() : task.getStatus();
         // 将数据库任务实体统一转换为对外响应对象。
         // 排队任务额外返回排队位置，供前端展示等待排名。
         Integer queuePosition = null;
-        if (MediaTaskStatus.QUEUED.name().equals(task.getStatus())) {
+        if (MediaTaskStatus.QUEUED.name().equals(exposedStatus)) {
             queuePosition = concurrencyLimiter.getQueuePosition(task.getUserId(), task.getId());
         }
         // 从计费快照中提取计费模式
@@ -4631,8 +4895,9 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
         boolean needRecharge = false;
         String rechargeOwner = null;
         boolean retryable = false;
-        String userMessage = task.getErrorMessage();
-        if (StringUtils.isNotBlank(task.getErrorMessage()) || StringUtils.isNotBlank(task.getErrorDetailJson())) {
+        String userMessage = protectedResultPending ? null : task.getErrorMessage();
+        if (!protectedResultPending
+                && (StringUtils.isNotBlank(task.getErrorMessage()) || StringUtils.isNotBlank(task.getErrorDetailJson()))) {
             TaskErrorResult normalized = TaskErrorSnapshot.fromTask(task);
             errorCode = normalized.getErrorCode();
             errorType = normalized.getErrorType();
@@ -4648,11 +4913,12 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             .mediaType(task.getMediaType())
             .protocol(task.getProtocol())
             .modelName(task.getModelName())
-            .status(task.getStatus())
+            .status(exposedStatus)
             .queuePosition(queuePosition)
-            .eta(mediaEtaService == null ? null : mediaEtaService.estimateMediaTask(task, queuePosition))
+            .eta(protectedResultPending || mediaEtaService == null
+                    ? null : mediaEtaService.estimateMediaTask(task, queuePosition))
             .providerTaskId(task.getProviderTaskId())
-            .originUrl(task.getOriginUrl())
+            .originUrl(protectedResultPending ? null : task.getOriginUrl())
             .ossUrl(task.getOssUrl())
             .textContent(task.getResultText())
             .toolMessage(toolResult)
@@ -4667,13 +4933,358 @@ public class MediaGenerationServiceImpl implements IMediaGenerationService, Medi
             .retryable(retryable)
             .billingStatus(task.getBillingStatus())
             .refundStatus(RefundStatusMapper.resolveWithFrozen(
-                    task.getStatus(), task.getBillingStatus(),
+                    exposedStatus, task.getBillingStatus(),
                     task.getFrozenAmount() != null && task.getFrozenAmount().signum() > 0))
             .preHoldAmount(task.getFrozenAmount())
             .actualCost(task.getActualCost())
             .billingMode(billingMode)
             .outputDurationSeconds(task.getOutputDurationSeconds())
             .build();
+    }
+
+    /**
+     * 上游已经成功、账务已经按原 CAS 收口，但像素保护和平台存储尚未完成时，对外仍表现为处理中。
+     * 原始上游地址只作为 oss_pending 的可恢复检查点，不得在此阶段返回给业务方。
+     */
+    private static boolean isProtectedImageEditResultPending(AidMediaTask task) {
+        if (task == null
+                || !MediaType.IMAGE.name().equals(task.getMediaType())
+                || !MediaTaskStatus.SUCCEEDED.name().equals(task.getStatus())
+                || StringUtils.isNotBlank(task.getOssUrl())
+                || StringUtils.isBlank(task.getRequestJson())) {
+            return false;
+        }
+        try {
+            MediaImageGenerateRequest request = JSONUtil.toBean(task.getRequestJson(),
+                    MediaImageGenerateRequest.class);
+            return com.aid.media.provider.ImageEditAssetSupport.requiresResultProtection(request)
+                    || isLayerDecomposition(request);
+        } catch (RuntimeException ex) {
+            log.warn("图片编辑后处理状态解析失败, taskId={}, errorType={}", task.getId(),
+                    ex.getClass().getSimpleName());
+            return task.getRequestJson().contains("image_inpainting")
+                    || task.getRequestJson().contains("image_outpainting")
+                    || task.getRequestJson().contains("image_layer_decomposition");
+        }
+    }
+
+    private record OriginDownloadSource(String url, boolean managedStorage) { }
+
+    /**
+     * Provider 已将 base64 结果先落入本站存储时，origin 会是可信相对路径。
+     * 通过当前存储配置生成短期读取地址，读取时不携带模型网关凭证；保护完成后仍另存最终结果。
+     */
+    private static OriginDownloadSource resolveOriginDownloadSource(String originUrl) {
+        String value = StringUtils.trimToNull(originUrl);
+        if (value == null) throw new ServiceException("资源地址无效");
+        URI parsed;
+        try {
+            parsed = URI.create(value);
+            if (parsed.isAbsolute()) return new OriginDownloadSource(requireHttpUrl(value), false);
+        } catch (IllegalArgumentException ex) {
+            throw new ServiceException("资源地址无效");
+        }
+        String decodedPath = parsed.getPath();
+        if (!value.startsWith("/") || value.startsWith("//") || value.contains("..")
+                || value.contains("\\") || value.contains("?") || value.contains("#")
+                || value.chars().anyMatch(Character::isISOControl)
+                || StringUtils.isBlank(decodedPath) || !decodedPath.startsWith("/")
+                || decodedPath.startsWith("//") || decodedPath.contains("..")
+                || decodedPath.contains("\\")
+                || decodedPath.chars().anyMatch(Character::isISOControl)) {
+            throw new ServiceException("资源地址无效");
+        }
+        OssTemplate storage;
+        try {
+            storage = SpringUtils.getBean(OssTemplate.class);
+        } catch (RuntimeException ex) {
+            throw new ServiceException("存储资源读取配置异常");
+        }
+        if (storage == null || !storage.isManagedResourceUrl(value)) {
+            throw new ServiceException("资源地址无效");
+        }
+        String readable = storage.getSignedUrl(value, 600);
+        if (StringUtils.isBlank(readable) || readable.equals(value)) {
+            readable = storage.toModelProxyUnsignedSourceUrl(value);
+        }
+        return new OriginDownloadSource(requireHttpUrl(readable), true);
+    }
+
+    /**
+     * 在预冻结和 Provider 调用前校验蒙版/扩图几何，并把受保护结果尺寸规范为真实像素尺寸。
+     * 这样不会出现已付费生成后才发现结果无法按像素回贴、随后永久补偿的任务。
+     */
+    private static void validateAndNormalizeProtectedImageEdit(MediaImageGenerateRequest request,
+                                                                 AiModelConfigVo modelConfig) {
+        if (!com.aid.media.provider.ImageEditAssetSupport.requiresResultProtection(request)) {
+            return;
+        }
+        com.aid.media.provider.ImageEditAssetSupport.PreparedProtection protection =
+                com.aid.media.provider.ImageEditAssetSupport.prepareResultProtection(request);
+        int width;
+        int height;
+        if (com.aid.media.provider.ImageEditAssetSupport.isOutpainting(request)) {
+            width = request.getTargetWidth();
+            height = request.getTargetHeight();
+        } else {
+            width = protection.source().getWidth();
+            height = protection.source().getHeight();
+        }
+        String expected = width + "x" + height;
+        if (StringUtils.isNotBlank(request.getSize())
+                && !expected.equals(normalizeImageDimensions(request.getSize()))) {
+            throw new ServiceException("图片编辑输出尺寸必须与受保护画布一致");
+        }
+        Map<String, Object> options = request.getOptions();
+        if (options != null) {
+            Object optionSize = options.get("size");
+            if (optionSize != null && !expected.equals(normalizeImageDimensions(String.valueOf(optionSize)))) {
+                throw new ServiceException("图片编辑输出尺寸与模型参数冲突");
+            }
+            Object ratio = options.containsKey("aspectRatio")
+                    ? options.get("aspectRatio") : options.get("aspect_ratio");
+            if (ratio != null && !matchesImageRatio(width, height, String.valueOf(ratio))) {
+                throw new ServiceException("图片编辑输出比例与受保护画布冲突");
+            }
+        }
+        // 输出尺寸只写入模型明确声明的参数。Wan 等扩图/区域编辑协议通过独立几何参数
+        // 表达目标画布，强行写入 size 会被其“无规格档位”能力正确拒绝。
+        applyProtectedOutputSize(request, modelConfig, expected);
+    }
+
+    private static void applyProtectedOutputSize(MediaImageGenerateRequest request,
+                                                   AiModelConfigVo modelConfig, String expected) {
+        if (modelConfig != null && modelConfig.getResolvedDefinition() != null
+                && ModelParameterValidator.parameterPaths(modelConfig.getResolvedDefinition()).contains("size")) {
+            request.setSize(expected);
+        }
+    }
+
+    private static String normalizeImageDimensions(String value) {
+        if (StringUtils.isBlank(value)) return null;
+        String[] parts = value.trim().split("[*xX×]");
+        if (parts.length != 2) return null;
+        try {
+            int width = Integer.parseInt(parts[0].trim());
+            int height = Integer.parseInt(parts[1].trim());
+            return width > 0 && height > 0 ? width + "x" + height : null;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private static boolean matchesImageRatio(int width, int height, String value) {
+        String[] parts = StringUtils.defaultString(value).trim().split("[:/]");
+        if (parts.length != 2) return false;
+        try {
+            double expected = Double.parseDouble(parts[0].trim()) / Double.parseDouble(parts[1].trim());
+            return expected > 0 && Math.abs(width / (double) height - expected) < 0.000001d;
+        } catch (RuntimeException ex) {
+            return false;
+        }
+    }
+
+    private MediaImageGenerateRequest protectedImageEditRequest(AidMediaTask task) {
+        if (task == null || !MediaType.IMAGE.name().equals(task.getMediaType())
+                || StringUtils.isBlank(task.getRequestJson())) {
+            return null;
+        }
+        MediaImageGenerateRequest request = JSONUtil.toBean(task.getRequestJson(), MediaImageGenerateRequest.class);
+        if (!com.aid.media.provider.ImageEditAssetSupport.requiresResultProtection(request)
+                && !isLayerDecomposition(request)) {
+            return null;
+        }
+        if (!isLayerDecomposition(request)) modelResourceUrlSigner.sign(request);
+        return request;
+    }
+
+    private static boolean isLayerDecomposition(MediaImageGenerateRequest request) {
+        return request != null && "image_layer_decomposition".equals(request.getCapabilityCode());
+    }
+
+    private static final class LayerOutputInvalidException extends RuntimeException {
+        private LayerOutputInvalidException(String message) {
+            super(message);
+        }
+    }
+
+    /** Invalid layer bytes are permanent; reject them before the success ledger transition. */
+    private void validateLayerManifestBeforeSettlement(AidMediaTask task) {
+        List<AidMediaResult> results = selectOrderedTaskResults(task.getId());
+        if (results.isEmpty()) throw new LayerOutputInvalidException("图层分离结果清单缺失");
+        for (AidMediaResult result : results) {
+            if (StringUtils.isBlank(result.getOriginUrl())) {
+                throw new LayerOutputInvalidException("图层分离结果地址缺失");
+            }
+            byte[] bytes;
+            try {
+                bytes = downloadOriginBytesWithRetry(task, result.getOriginUrl());
+            } catch (RuntimeException unavailable) {
+                // Settlement must never succeed before every ordered output is readable and valid.
+                // A later persistence retry cannot safely reverse an already completed billing CAS.
+                log.warn("图层分离预校验下载失败，按失败退款收口, taskId={}, resultIndex={}",
+                        task.getId(), result.getResultIndex(), unavailable);
+                throw new LayerOutputInvalidException("图层分离结果暂时无法校验，请稍后重试");
+            }
+            validateLayerImageBytes(result, bytes);
+        }
+    }
+
+    private void validateLayerImageBytes(AidMediaResult result, byte[] generated) {
+        if (generated.length > 50L * 1024 * 1024) {
+            throw new LayerOutputInvalidException("图层图片超过文件大小上限");
+        }
+        if (generated.length < 8 || generated[0] != (byte) 0x89 || generated[1] != 'P'
+                || generated[2] != 'N' || generated[3] != 'G') {
+            throw new LayerOutputInvalidException("图层图片必须是 PNG");
+        }
+        java.awt.image.BufferedImage image;
+        try (javax.imageio.stream.ImageInputStream input = javax.imageio.ImageIO
+                .createImageInputStream(new java.io.ByteArrayInputStream(generated))) {
+            java.util.Iterator<javax.imageio.ImageReader> readers = javax.imageio.ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw new LayerOutputInvalidException("图层图片无法解码");
+            javax.imageio.ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
+                if (pixels <= 0 || pixels > 20_000_000L) {
+                    throw new LayerOutputInvalidException("图层图片像素超过上限");
+                }
+                image = reader.read(0);
+            } finally {
+                reader.dispose();
+            }
+        } catch (java.io.IOException invalid) {
+            throw new LayerOutputInvalidException("图层图片无法解码");
+        }
+        if (image == null || (result.getResultIndex() != null && result.getResultIndex() > 0
+                && !image.getColorModel().hasAlpha())) {
+            throw new LayerOutputInvalidException("透明图层缺少 Alpha 通道");
+        }
+        com.alibaba.fastjson2.JSONObject metadata = result.getMetadataJson() == null
+                ? null : com.alibaba.fastjson2.JSON.parseObject(result.getMetadataJson());
+        if (metadata == null || image.getWidth() != metadata.getIntValue("width")
+                || image.getHeight() != metadata.getIntValue("height")) {
+            throw new LayerOutputInvalidException("图层图片尺寸与上游元数据不符");
+        }
+    }
+
+    /**
+     * 逐项保护有序结果。已经完成的结果保留，补偿只处理空项；全部完成后才开放主任务结果。
+     */
+    private void persistProtectedImageResults(AidMediaTask task, MediaImageGenerateRequest request) {
+        org.redisson.api.RLock lock = redissonClient == null ? null
+                : redissonClient.getLock("aid:media:image-edit:persist:" + task.getId());
+        boolean locked = lock == null;
+        try {
+            if (lock != null) {
+                locked = lock.tryLock();
+                if (!locked) return;
+            }
+            persistProtectedImageResultsLocked(task, request);
+        } finally {
+            if (lock != null && locked && lock.isHeldByCurrentThread()) lock.unlock();
+        }
+    }
+
+    private void persistProtectedImageResultsLocked(AidMediaTask task, MediaImageGenerateRequest request) {
+        List<AidMediaResult> results = selectOrderedTaskResults(task.getId());
+        if (results.isEmpty()) {
+            String operator = task.getUserId() == null ? "" : String.valueOf(task.getUserId());
+            aidMediaResultMapper.upsertTaskResult(task.getId(), 0, task.getMediaType(), task.getOriginUrl(), operator);
+            results = selectOrderedTaskResults(task.getId());
+        }
+        if (results.isEmpty()) throw new ServiceException("图片编辑结果清单缺失");
+
+        boolean layerDecomposition = isLayerDecomposition(request);
+        com.aid.media.provider.ImageEditAssetSupport.PreparedProtection protection = layerDecomposition
+                ? null : com.aid.media.provider.ImageEditAssetSupport.prepareResultProtection(request);
+        for (AidMediaResult result : results) {
+            if (StringUtils.isNotBlank(result.getOssUrl())) continue;
+            if (StringUtils.isBlank(result.getOriginUrl())) throw new ServiceException("图片编辑结果地址缺失");
+            byte[] generated = downloadOriginBytesWithRetry(task, result.getOriginUrl());
+            byte[] protectedBytes = layerDecomposition ? generated
+                    : com.aid.media.provider.ImageEditAssetSupport.protectResult(protection, generated);
+            if (layerDecomposition) {
+                validateLayerImageBytes(result, generated);
+            }
+            UploadResult upload;
+            try {
+                upload = OssFactory.instance().uploadSuffix(protectedBytes, ".png", "image/png");
+            } catch (java.io.IOException ex) {
+                log.warn("图片编辑结果保存失败, taskId={}, resultIndex={}",
+                        task.getId(), result.getResultIndex(), ex);
+                throw new ServiceException("图片编辑结果保存失败");
+            }
+            LambdaUpdateWrapper<AidMediaResult> update = new LambdaUpdateWrapper<>();
+            update.eq(AidMediaResult::getId, result.getId());
+            update.isNull(AidMediaResult::getOssUrl);
+            update.set(AidMediaResult::getOssUrl, upload.getUrl());
+            update.set(AidMediaResult::getMimeType, "image/png");
+            update.set(AidMediaResult::getFileSize, (long) protectedBytes.length);
+            update.set(AidMediaResult::getUpdateBy,
+                    task.getUserId() == null ? "" : String.valueOf(task.getUserId()));
+            update.set(AidMediaResult::getUpdateTime, new Date());
+            aidMediaResultMapper.update(null, update);
+        }
+
+        results = selectOrderedTaskResults(task.getId());
+        if (results.isEmpty() || results.stream().anyMatch(value -> StringUtils.isBlank(value.getOssUrl()))) {
+            throw new ServiceException("图片编辑结果仍在持久化");
+        }
+        task.setOssUrl(results.get(0).getOssUrl());
+        task.setErrorMessage(null);
+    }
+
+    /** 多图任务逐张转存。主任务 OSS 地址仅在全部结果就绪后写入，沿用已有补偿索引。 */
+    private void persistOrderedImageResults(AidMediaTask task) {
+        org.redisson.api.RLock lock = redissonClient == null ? null
+                : redissonClient.getLock("aid:media:image-results:persist:" + task.getId());
+        boolean locked = lock == null;
+        try {
+            if (lock != null) {
+                locked = lock.tryLock();
+                if (!locked) return;
+            }
+            List<AidMediaResult> results = selectOrderedTaskResults(task.getId());
+            for (AidMediaResult result : results) {
+                if (StringUtils.isNotBlank(result.getOssUrl())) continue;
+                if (StringUtils.isBlank(result.getOriginUrl())) throw new ServiceException("图片结果地址缺失");
+                byte[] bytes = downloadOriginBytesWithRetry(task, result.getOriginUrl());
+                String suffix = detectSuffix(result.getOriginUrl(), task);
+                String contentType = resolveContentType(task, suffix);
+                UploadResult upload;
+                try {
+                    upload = OssFactory.instance().uploadSuffix(bytes, suffix, contentType);
+                } catch (java.io.IOException ex) {
+                    throw new ServiceException("图片结果保存失败");
+                }
+                LambdaUpdateWrapper<AidMediaResult> update = new LambdaUpdateWrapper<>();
+                update.eq(AidMediaResult::getId, result.getId());
+                update.isNull(AidMediaResult::getOssUrl);
+                update.set(AidMediaResult::getOssUrl, upload.getUrl());
+                update.set(AidMediaResult::getMimeType, contentType);
+                update.set(AidMediaResult::getFileSize, (long) bytes.length);
+                update.set(AidMediaResult::getUpdateBy,
+                        task.getUserId() == null ? "" : String.valueOf(task.getUserId()));
+                update.set(AidMediaResult::getUpdateTime, new Date());
+                aidMediaResultMapper.update(null, update);
+            }
+            results = selectOrderedTaskResults(task.getId());
+            if (results.isEmpty() || results.stream().anyMatch(value -> StringUtils.isBlank(value.getOssUrl()))) {
+                throw new ServiceException("图片结果仍在持久化");
+            }
+            task.setOssUrl(results.get(0).getOssUrl());
+            task.setErrorMessage(null);
+        } finally {
+            if (lock != null && locked && lock.isHeldByCurrentThread()) lock.unlock();
+        }
+    }
+
+    private List<AidMediaResult> selectOrderedTaskResults(Long taskId) {
+        return aidMediaResultMapper.selectList(new LambdaQueryWrapper<AidMediaResult>()
+                .eq(AidMediaResult::getTaskId, taskId)
+                .orderByAsc(AidMediaResult::getResultIndex, AidMediaResult::getId));
     }
     @Override
     public List<MediaTaskListItem> listUserTasks(MediaTaskListRequest request, Long userId) {

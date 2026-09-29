@@ -19,8 +19,13 @@ public interface IMediaGenerationService {
     // 业务含义：创建图片任务，可能异步 PROCESSING 或同步 SUCCEEDED。
     MediaTaskResponse generateImage(MediaImageGenerateRequest request);
 
+    /** Persist and bill first, then submit through the existing durable queue without waiting for the provider. */
+    MediaTaskResponse submitImage(MediaImageGenerateRequest request);
+
     // 业务含义：创建视频任务，可能异步 PROCESSING 或同步 SUCCEEDED。
     MediaTaskResponse generateVideo(MediaVideoGenerateRequest request);
+
+    MediaTaskResponse submitVideo(MediaVideoGenerateRequest request);
 
     /**
      * 业务含义：创建音频（TTS）任务，目前统一为异步 PROCESSING（豆包 TTS 协议下无同步直出）。
@@ -42,6 +47,8 @@ public interface IMediaGenerationService {
 
     // 业务含义：创建文本任务，内部走上游流式并聚合为整段后落库 result_text。
     MediaTaskResponse generateText(MediaTextGenerateRequest request);
+
+    MediaTaskResponse submitText(MediaTextGenerateRequest request);
 
     // 业务含义：文本流式生成，立即返回由 Controller 持有 SSE，业务线程推送增量与 taskId。
     void generateTextStream(MediaTextGenerateRequest request, MediaTextStreamSink sink);

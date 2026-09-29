@@ -1,6 +1,7 @@
 package com.aid.model.probe.impl;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,8 @@ public class AgnesProbe extends AbstractReadOnlyProbe {
 
     private static final String PROVIDER_CODE = "agnes";
     private static final String VIDEO_PROTOCOL = "agnes-video";
+    private static final Pattern TASK_MISSING_WITH_REQUEST_ID = Pattern.compile(
+            "task not found \\(request id: [A-Za-z0-9_-]+\\)", Pattern.CASE_INSENSITIVE);
 
     @Override
     public String protocol() {
@@ -42,7 +45,8 @@ public class AgnesProbe extends AbstractReadOnlyProbe {
 
     @Override
     protected ProbeResult interpret(AidAiModel model, AidAiProvider provider, ProbeHttpResponse response) {
-        if (ProbeBusinessResponseSupport.isKnownTaskMissing(response.body())) {
+        if (ProbeBusinessResponseSupport.isKnownTaskMissing(response.body())
+                || isTaskMissingWithRequestId(response)) {
             return success(model);
         }
         JSONObject root = ProbeHttpSupport.parseObject(response.body());
@@ -52,6 +56,16 @@ public class AgnesProbe extends AbstractReadOnlyProbe {
             return success(model);
         }
         return ProbeHttpSupport.unexpected(response);
+    }
+
+    private boolean isTaskMissingWithRequestId(ProbeHttpResponse response) {
+        if (response.status() != 404) {
+            return false;
+        }
+        JSONObject root = ProbeHttpSupport.parseObject(response.body());
+        JSONObject error = root == null ? null : root.getJSONObject("error");
+        return error != null && Objects.equals("404", error.getString("code"))
+                && TASK_MISSING_WITH_REQUEST_ID.matcher(StrUtil.trimToEmpty(error.getString("message"))).matches();
     }
 
     private ProbeResult success(AidAiModel model) {

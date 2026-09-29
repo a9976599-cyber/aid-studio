@@ -34,6 +34,9 @@ public class BillingSku {
     /** 官方原价（元；图片单张价 / 视频整包价等） */
     private BigDecimal price;
 
+    /** 可选：每个价格单位覆盖的输出像素数。仅 PER_IMAGE 使用；未配置时仍按张固定价。 */
+    private Long outputPixelsPerUnit;
+
     /** 官方每秒原价（元/秒），仅 PER_SECOND 使用；只对未声明 SKU meterType 的旧规则保留反推兼容 */
     private BigDecimal pricePerSecond;
 

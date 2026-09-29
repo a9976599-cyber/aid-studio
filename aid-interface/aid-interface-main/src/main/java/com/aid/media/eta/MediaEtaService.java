@@ -35,7 +35,8 @@ public class MediaEtaService {
     private static final String PREDICTION_VERSION = "histogram-v1";
     private static final List<String> TERMINAL_STATUSES = List.of(
         "SUCCEEDED", "FAILED", "CANCELLED", "PARTIAL_FAILED");
-    private static final List<String> ELIGIBLE_MEDIA = List.of("IMAGE", "VIDEO", "AUDIO", "COMPOSE");
+    private static final List<String> ELIGIBLE_MEDIA = List.of("TEXT", "IMAGE", "VIDEO", "AUDIO", "COMPOSE");
+    private static final List<String> PARENT_ELIGIBLE_MEDIA = List.of("IMAGE", "VIDEO", "AUDIO", "COMPOSE");
 
     private final AidMediaEtaStatMapper statMapper;
     private final AidMediaTaskMapper mediaTaskMapper;
@@ -228,7 +229,7 @@ public class MediaEtaService {
                 AidMediaTask::getStatus, AidMediaTask::getCreateTime, AidMediaTask::getUpstreamAcceptTime,
                 AidMediaTask::getTerminalTime, AidMediaTask::getBizTaskId, AidMediaTask::getBizTaskType,
                 AidMediaTask::getParentTaskId);
-            wrapper.in(AidMediaTask::getMediaType, ELIGIBLE_MEDIA);
+            wrapper.in(AidMediaTask::getMediaType, PARENT_ELIGIBLE_MEDIA);
             wrapper.and(q -> q.eq(AidMediaTask::getParentTaskId, parentTaskId)
                 .or().eq(AidMediaTask::getBizTaskId, parentTaskId)
                 .or(encoded -> encoded.ge(AidMediaTask::getBizTaskId, lo)

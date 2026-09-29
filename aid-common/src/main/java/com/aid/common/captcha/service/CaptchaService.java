@@ -9,6 +9,7 @@ import java.util.Objects;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.core.io.ClassPathResource;
 
 import com.aid.common.captcha.config.CaptchaProperties;
 import com.aid.common.captcha.store.RedisCacheStore;
@@ -390,6 +391,13 @@ public class CaptchaService {
             String trimmed = url.trim();
             File dest = new File(dir, "bg_" + (idx++) + guessExt(trimmed));
             try {
+                if (trimmed.matches("/captcha-backgrounds/[1-4]\\.png")) {
+                    try (var input = new ClassPathResource("static" + trimmed).getInputStream()) {
+                        java.nio.file.Files.copy(input, dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    result.add(dest);
+                    continue;
+                }
                 if (resolveLocal(trimmed, dest)) {
                     // 命中本地 profile：从磁盘直接拷贝
                     if (dest.exists() && dest.length() > 0) {

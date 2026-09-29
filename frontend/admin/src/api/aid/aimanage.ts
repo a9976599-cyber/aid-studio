@@ -470,7 +470,9 @@ export function getModel(id) {
 }
 
 export function addModel(data) {
-  return request({ url: '/aid/aidmodel', method: 'post', data })
+  const newApiGeneration = data?.protocol === 'newapi-image'
+    || (data?.protocol === 'openai-compatible-text' && String(data?.modelCode || '').startsWith('newapi_'))
+  return request({ url: '/aid/aidmodel', method: 'post', data, ...(newApiGeneration ? { timeout: 360000 } : {}) })
 }
 
 export function updateModel(data) {

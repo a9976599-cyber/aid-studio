@@ -53,11 +53,12 @@ public class MediaEtaSettings {
     public record Snapshot(boolean enabled, int windowDays, int retentionDays, int minSamples,
                            int cacheTtlSeconds, long imageP50, long imageP90,
                            long videoP50, long videoP90, long audioP50, long audioP90,
+                           long textP50, long textP90,
                            long queueP50, long queueP90) {
 
         static Snapshot defaults() {
             return new Snapshot(true, 7, 30, 20, 60,
-                60, 180, 300, 900, 60, 180, 15, 60);
+                60, 180, 300, 900, 60, 180, 30, 90, 15, 60);
         }
 
         static Snapshot from(Map<String, String> values) {
@@ -74,6 +75,8 @@ public class MediaEtaSettings {
                 intValue(values, "video_p90_seconds", (int) d.videoP90, 1, 86400),
                 intValue(values, "audio_p50_seconds", (int) d.audioP50, 1, 86400),
                 intValue(values, "audio_p90_seconds", (int) d.audioP90, 1, 86400),
+                intValue(values, "text_p50_seconds", (int) d.textP50, 1, 86400),
+                intValue(values, "text_p90_seconds", (int) d.textP90, 1, 86400),
                 intValue(values, "queue_p50_seconds", (int) d.queueP50, 1, 86400),
                 intValue(values, "queue_p90_seconds", (int) d.queueP90, 1, 86400));
         }
@@ -82,6 +85,7 @@ public class MediaEtaSettings {
             return switch (normalize(mediaType)) {
                 case "VIDEO", "COMPOSE" -> videoP50;
                 case "AUDIO" -> audioP50;
+                case "TEXT" -> textP50;
                 default -> imageP50;
             };
         }
@@ -90,6 +94,7 @@ public class MediaEtaSettings {
             return switch (normalize(mediaType)) {
                 case "VIDEO", "COMPOSE" -> videoP90;
                 case "AUDIO" -> audioP90;
+                case "TEXT" -> textP90;
                 default -> imageP90;
             };
         }

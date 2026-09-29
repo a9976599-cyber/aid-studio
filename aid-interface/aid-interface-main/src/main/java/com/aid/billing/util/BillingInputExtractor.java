@@ -41,6 +41,8 @@ public final class BillingInputExtractor {
     private static final int TEXT_ESTIMATED_OUTPUT_TOKENS_HARD_CAP = 1_600_000;
     /** 图片 expectedImageCount 硬上限（在 capability 上限之上再加一层绝对兜底）。 */
     private static final int IMAGE_EXPECTED_COUNT_HARD_CAP = 16;
+    /** 图层拆分的底图与透明图层共用一个请求，仍由所选能力的 maxOutputCount 再限制。 */
+    private static final int IMAGE_LAYER_EXPECTED_COUNT_HARD_CAP = 64;
     /** 视频 durationSeconds 硬上限：300 秒足够覆盖任何合法视频生成。 */
     private static final int VIDEO_DURATION_HARD_CAP_SECONDS = 300;
     /** TTS text 字符硬上限（与 StoryboardWorkbenchServiceImpl.TTS_TEXT_MAX_LENGTH 对齐）。 */
@@ -162,7 +164,7 @@ public final class BillingInputExtractor {
             return Long.MAX_VALUE;
         }
         String normalized = size.trim().replace('×', 'x').replace('*', 'x').toUpperCase();
-        if (normalized.matches("\\d{2,5}X\\d{2,5}")) {
+        if (normalized.matches("\\d{1,5}X\\d{1,5}")) {
             String[] dimensions = normalized.split("X", 2);
             try {
                 return Math.multiplyExact(Long.parseLong(dimensions[0]), Long.parseLong(dimensions[1]));
@@ -220,6 +222,8 @@ public final class BillingInputExtractor {
             return 1;
         }
         Map<String, Object> options = request.getOptions();
+        int hardCap = "image_layer_decomposition".equals(request.getCapabilityCode())
+                ? IMAGE_LAYER_EXPECTED_COUNT_HARD_CAP : IMAGE_EXPECTED_COUNT_HARD_CAP;
         if (options != null) {
             Object forceSingle = options.get("force_single");
             if (forceSingle != null && Boolean.parseBoolean(String.valueOf(forceSingle))) {
@@ -228,9 +232,9 @@ public final class BillingInputExtractor {
         }
         Integer explicit = request.getExpectedImageCount();
         if (explicit != null && explicit > 0) {
-            if (explicit > IMAGE_EXPECTED_COUNT_HARD_CAP) {
+            if (explicit > hardCap) {
                 log.info("图片生成数量超过系统安全上限: actual={}, max={}",
-                        explicit, IMAGE_EXPECTED_COUNT_HARD_CAP);
+                        explicit, hardCap);
                 throw new ServiceException("图片数量超限");
             }
             return explicit;
@@ -240,9 +244,9 @@ public final class BillingInputExtractor {
             if (n != null) {
                 int parsed = toInt(n);
                 if (parsed > 0) {
-                    if (parsed > IMAGE_EXPECTED_COUNT_HARD_CAP) {
+                    if (parsed > hardCap) {
                         log.info("图片生成数量超过系统安全上限: actual={}, max={}",
-                                parsed, IMAGE_EXPECTED_COUNT_HARD_CAP);
+                                parsed, hardCap);
                         throw new ServiceException("图片数量超限");
                     }
                     return parsed;
@@ -330,14 +334,29 @@ public final class BillingInputExtractor {
         if (rawDuration < 1) {
             rawDuration = 5;
         }
+        // WaveSpeed Depth Anything bills input video by rounded-up seconds with a 3-second minimum.
+        if (modelConfig != null && "wavespeed:depth-anything-video".equals(modelConfig.getProtocol())) {
+            rawDuration = Math.max(3, rawDuration);
+        }
+        if (modelConfig != null && "topaz:video-express".equals(modelConfig.getProtocol())) {
+            params.put("interpolationMode", extractFromOptions(request.getOptions(), "interpolationMode"));
+            params.put("estimatedProviderCredits", extractFromOptions(request.getOptions(), "estimatedProviderCredits"));
+        }
         // 多帧视频（Vidu multiframe 等）：durationSeconds 是"每段"时长，真实出片长度 = 段数 × 每段时长，
         // 计费必须按总时长，否则 9 段视频只按 1 段扣费
         int segments = countMultiFrameSegments(request.getOptions());
         if (segments > 1) {
             rawDuration = rawDuration * segments;
         }
-        if (rawDuration > VIDEO_DURATION_HARD_CAP_SECONDS) {
-            rawDuration = VIDEO_DURATION_HARD_CAP_SECONDS;
+        String protocol = modelConfig == null ? null : modelConfig.getProtocol();
+        // 腾讯云数据万象按已核验的素材时长计费。人声分离可处理近 45 分钟，
+        // 人像分割也不能因为生成视频的 300 秒保护值而少预冻结或少结算。
+        int durationCap = "tencent-ci-async-media".equals(protocol)
+                ? Integer.MAX_VALUE
+                : "wavespeed:depth-anything-video".equals(protocol)
+                    ? 600 : VIDEO_DURATION_HARD_CAP_SECONDS;
+        if (rawDuration > durationCap) {
+            rawDuration = durationCap;
         }
         params.put("duration", rawDuration);
         params.put("autoDuration", autoDuration);
@@ -346,6 +365,10 @@ public final class BillingInputExtractor {
         String resolution = extractFromOptions(request.getOptions(), "resolution");
         if (CharSequenceUtil.isBlank(resolution)) {
             resolution = extractFromOptions(request.getOptions(), "size");
+        }
+        if (CharSequenceUtil.isBlank(resolution) && modelConfig != null
+                && "topaz:video-express".equals(modelConfig.getProtocol())) {
+            resolution = extractFromOptions(request.getOptions(), "targetResolution");
         }
         if (CharSequenceUtil.isNotBlank(resolution)) {
             String tier = ResolutionUtil.parseTier(resolution);

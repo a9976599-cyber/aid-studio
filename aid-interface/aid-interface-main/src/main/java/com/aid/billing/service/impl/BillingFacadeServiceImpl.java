@@ -108,7 +108,8 @@ public class BillingFacadeServiceImpl implements BillingFacadeService {
             return settleImageBilling(task, snapshot, usageData);
         }
 
-        if (meterType == MeterType.TOKEN || meterType == MeterType.PER_SECOND) {
+        if (meterType == MeterType.TOKEN || meterType == MeterType.PER_SECOND
+                || meterType == MeterType.PER_CREDIT) {
             // TOKEN / PER_SECOND：走差额结算（实际用量重算，只退不补）
             // 先完成账户层结算，再走差额退款
         } else {
@@ -168,7 +169,11 @@ public class BillingFacadeServiceImpl implements BillingFacadeService {
             if (actualAmount != null && actualAmount.compareTo(preHoldAmount) < 0) {
                 // 执行差额退款
                 BigDecimal refundAmount = preHoldAmount.subtract(actualAmount);
-                String refundDesc = meterType == MeterType.PER_SECOND ? "按秒差额退款" : "文本生成差额退款";
+                String refundDesc = switch (meterType) {
+                    case PER_SECOND -> "按秒差额退款";
+                    case PER_CREDIT -> "供应商积分差额退款";
+                    default -> "文本生成差额退款";
+                };
                 refundDifference(task.getUserId(), refundAmount, task.getBillingTraceId(), refundDesc);
                 task.setActualCost(actualAmount);
                 // 快照写入倍率后的金额
@@ -504,8 +509,8 @@ public class BillingFacadeServiceImpl implements BillingFacadeService {
                 && snapshot.getInputMediaAmount().compareTo(BigDecimal.ZERO) > 0
                 ? snapshot.getInputMediaAmount() : BigDecimal.ZERO;
 
-        BigDecimal actualAmount = unitPrice
-                .multiply(BigDecimal.valueOf(actualImageCount))
+        BigDecimal imageBase = imageOutputPixelBase(snapshot, usageData, actualImageCount, unitPrice);
+        BigDecimal actualAmount = imageBase
                 .add(inputMediaBase)
                 .multiply(finalMultiplier);
         actualAmount = BillingConstants.normalizeAccountAmount(actualAmount);
@@ -539,6 +544,48 @@ public class BillingFacadeServiceImpl implements BillingFacadeService {
             updateTaskSnapshotActualCost(task, actualAmount);
         }
         return true;
+    }
+
+    /** Missing or inconsistent measured pixels settle at the frozen maximum unit price. */
+    private BigDecimal imageOutputPixelBase(BillingSnapshot snapshot, Map<String, Object> usageData,
+                                            int actualCount, BigDecimal maximumUnitPrice) {
+        if (snapshot == null || snapshot.getBillingRuleJson() == null) {
+            return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+        }
+        com.aid.billing.model.BillingRule rule;
+        try {
+            rule = com.alibaba.fastjson2.JSON.parseObject(snapshot.getBillingRuleJson(),
+                    com.aid.billing.model.BillingRule.class);
+        } catch (RuntimeException invalid) {
+            return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+        }
+        var tiers = rule == null || rule.getSettleRule() == null
+                ? null : rule.getSettleRule().getImageOutputPixelTiers();
+        if (tiers == null || tiers.isEmpty()) {
+            return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+        }
+        Object rawPixels = usageData == null ? null : usageData.get("outputImagePixels");
+        if (!(rawPixels instanceof java.util.List<?> pixels) || pixels.size() != actualCount) {
+            return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (Object raw : pixels) {
+            if (!(raw instanceof Number number) || number.longValue() <= 0) {
+                return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+            }
+            long pixelCount = number.longValue();
+            BigDecimal price = null;
+            for (var tier : tiers) {
+                if (tier == null || tier.getPrice() == null || tier.getPrice().signum() < 0) continue;
+                if (tier.getMaxPixels() == null || pixelCount <= tier.getMaxPixels()) {
+                    price = tier.getPrice();
+                    break;
+                }
+            }
+            if (price == null) return maximumUnitPrice.multiply(BigDecimal.valueOf(actualCount));
+            total = total.add(price.min(maximumUnitPrice));
+        }
+        return total;
     }
 
     /**

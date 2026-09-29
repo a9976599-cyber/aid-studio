@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, AutoComplete, Button, Input, InputNumber, Modal, Select, Space, Switch, Form, message, Tag } from 'antd';
-import { CalculatorOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, CalculatorOutlined, DeleteOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons';
 import type { CapabilityModel, InputPricing, Sku, SkuEditData, PreviewResult } from './types';
 import { makeEmptySku } from './helpers';
 import { METER_TYPE_OPTIONS } from '@/utils/enums';
@@ -150,6 +150,14 @@ export default function SkuEditor({
   const enabledSkuCount = data.skuList.filter((sku) => sku.enabled).length;
   const pricedSkuCount = data.skuList.filter((sku) => sku.enabled
     && isSkuMainPriceConfigured(sku as unknown as Record<string, unknown>, mt)).length;
+  const pixelTiers = data.imageOutputPixelTiers || [];
+  const pixelTierInvalid = pixelTiers.length > 0 && (pixelTiers.some((tier, index) =>
+    tier.price == null || tier.price < 0 || (index < pixelTiers.length - 1
+      ? tier.maxPixels == null || tier.maxPixels <= 0
+        || (index > 0 && tier.maxPixels <= (pixelTiers[index - 1].maxPixels || 0))
+      : tier.maxPixels != null))
+    || pixelTiers.some((tier) => (tier.price || 0) > Math.max(0, ...data.skuList
+      .filter((sku) => sku.enabled).map((sku) => Number(sku.price || 0)))));
   const [matchDlgOpen, setMatchDlgOpen] = useState(false);
   const [matchTargetIdx, setMatchTargetIdx] = useState<number | null>(null);
   const [matchNewKey, setMatchNewKey] = useState('');
@@ -207,7 +215,27 @@ export default function SkuEditor({
     const resolution = sku.match?.resolution;
     const values = scalarStrings(resolution);
     const supported = new Set((capability?.sizeOptions || []).map((value) => formatSizeLabel(value).toLowerCase()));
-    if (values.some((value) => supported.size > 0 && !supported.has(formatSizeLabel(value).toLowerCase()))) {
+    // OpenAI image billing derives a tier from pixel dimensions before SKU matching.
+    // A tier such as 2K is therefore valid even when sizeOptions stores 2048x2048.
+    const derivedTiers = new Set<string>();
+    if (modelType === 'image' && protocol === 'openai-image') {
+      for (const size of capability?.sizeOptions || []) {
+        if (String(size).toLowerCase() === 'auto') {
+          derivedTiers.add('1k');
+          continue;
+        }
+        const dimensions = String(size).match(/^(\d+)\s*[x×*]\s*(\d+)$/i);
+        if (!dimensions) continue;
+        const maxDimension = Math.max(Number(dimensions[1]), Number(dimensions[2]));
+        derivedTiers.add(maxDimension >= 3840 ? '4k' : maxDimension >= 2048 ? '2k' : maxDimension >= 1024 ? '1k' : 'sd');
+      }
+    }
+    const validTierInSku = values.some((value) => derivedTiers.has(String(value).toLowerCase()));
+    if (values.some((value) => {
+      const normalized = formatSizeLabel(value).toLowerCase();
+      return supported.size > 0 && !supported.has(normalized) && !derivedTiers.has(normalized)
+        && !(normalized === 'sd' && validTierInSku);
+    })) {
       capabilityWarnings.push(`SKU-${index + 1} 使用了能力中未启用的规格`);
     }
     if ((sku.match?.audio === true || sku.match?.generateAudio === true) && capability?.supportsAudio !== true) {
@@ -266,6 +294,14 @@ export default function SkuEditor({
   const updateSkuInputPricing = (idx: number, patch: Partial<InputPricing>) => {
     const sku = data.skuList[idx];
     updateSku(idx, { inputPricing: { ...(sku.inputPricing || {}), ...patch } });
+  };
+  const [draggedSkuIndex, setDraggedSkuIndex] = useState<number | null>(null);
+  const moveSku = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || to >= data.skuList.length) return;
+    const list = [...data.skuList];
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    update({ skuList: list.map((sku, index) => ({ ...sku, priority: (index + 1) * 10 })) });
   };
   const addSku = () => update({ skuList: [...data.skuList, makeEmptySku(isTokenBilling, data.skuList.length + 1)] });
   const removeSku = (idx: number) => update({ skuList: data.skuList.filter((_, i) => i !== idx) });
@@ -367,6 +403,52 @@ export default function SkuEditor({
           <Button size="small" type="primary" icon={<PlusOutlined />} onClick={addSku}>添加SKU</Button>
         </Space>
       </div>
+      {modelType === 'image' && mt === 'PER_IMAGE' && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+          <Space wrap style={{ marginBottom: pixelTiers.length ? 10 : 0 }}>
+            <strong>按每张实际输出像素结算</strong>
+            <Button size="small" disabled={data.parseError} onClick={() => update({
+              imageOutputPixelTiers: pixelTiers.length ? [] : [
+                { maxPixels: 2610000, price: null }, { maxPixels: null, price: null }
+              ]
+            })}>{pixelTiers.length ? '关闭阶梯价' : '启用阶梯价'}</Button>
+          </Space>
+          {pixelTiers.length > 0 && <>
+            <div style={{ color: '#64748b', marginBottom: 10 }}>
+              按供应商实际返回的每张图片尺寸计费；上方 SKU 单张价应为最高档，用于最多输出张数的预冻结。
+            </div>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {pixelTiers.map((tier, index) => <Space key={index} wrap align="end">
+                <Field label={`档位 ${index + 1} · 像素上限`} width={170}>
+                  {index === pixelTiers.length - 1 ? <Input value="以上像素" disabled /> :
+                    <InputNumber aria-label={`档位 ${index + 1} 像素上限`} min={1} precision={0}
+                      value={tier.maxPixels} style={{ width: '100%' }}
+                      onChange={(value) => update({ imageOutputPixelTiers: pixelTiers.map((item, i) =>
+                        i === index ? { ...item, maxPixels: value } : item) })} />}
+                </Field>
+                <Field label="基础价（元／张）" width={170}>
+                  <InputNumber aria-label={`档位 ${index + 1} 基础价`} min={0} precision={6}
+                    value={tier.price} style={{ width: '100%' }}
+                    onChange={(value) => update({ imageOutputPixelTiers: pixelTiers.map((item, i) =>
+                      i === index ? { ...item, price: value } : item) })} />
+                </Field>
+                {index < pixelTiers.length - 1 && <Button size="small" danger
+                  onClick={() => update({ imageOutputPixelTiers: pixelTiers.filter((_, i) => i !== index) })}>移除</Button>}
+              </Space>)}
+              <Button size="small" disabled={data.parseError} onClick={() => update({
+                imageOutputPixelTiers: [
+                  ...pixelTiers.slice(0, -1),
+                  { maxPixels: (pixelTiers[pixelTiers.length - 2]?.maxPixels || 0) + 1000000, price: null },
+                  pixelTiers[pixelTiers.length - 1]
+                ]
+              })}>增加档位</Button>
+            </Space>
+            {pixelTierInvalid && <Alert type="error" showIcon style={{ marginTop: 10 }}
+              message="阶梯价格不完整"
+              description="各档像素上限必须递增，最后一档为以上像素；每档填写价格，且不得高于已启用 SKU 的最高单张预冻结价。" />}
+          </>}
+        </div>
+      )}
       {coverage && (
         <div style={{ marginBottom: 12, padding: 10, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc' }}>
           <Space wrap>
@@ -482,7 +564,9 @@ export default function SkuEditor({
         const priceMissing = sku.enabled
           && !isSkuMainPriceConfigured(sku as unknown as Record<string, unknown>, mt);
         return (
-        <div key={idx} className={`sku-editor__card${sku.enabled ? '' : ' disabled'}${priceMissing ? ' price-missing' : ''}`}>
+        <div key={idx} className={`sku-editor__card${sku.enabled ? '' : ' disabled'}${priceMissing ? ' price-missing' : ''}`}
+          onDragOver={(event) => { if (draggedSkuIndex !== null) event.preventDefault(); }}
+          onDrop={(event) => { event.preventDefault(); if (draggedSkuIndex !== null) moveSku(draggedSkuIndex, idx); setDraggedSkuIndex(null); }}>
           <div className="sku-editor__card-header">
             <div className="sku-editor__card-identity">
               <span className="sku-editor__index">SKU-{idx + 1}</span>
@@ -492,6 +576,15 @@ export default function SkuEditor({
               </div>
             </div>
             <Space wrap>
+              <Button size="small" icon={<ArrowUpOutlined />} disabled={idx === 0}
+                aria-label={`上移 ${sku.skuName || `SKU-${idx + 1}`}`} onClick={() => moveSku(idx, idx - 1)} />
+              <Button size="small" icon={<ArrowDownOutlined />} disabled={idx === data.skuList.length - 1}
+                aria-label={`下移 ${sku.skuName || `SKU-${idx + 1}`}`} onClick={() => moveSku(idx, idx + 1)} />
+              <span draggable aria-hidden="true"
+                title="拖动调整 SKU 顺序，也可使用左右两侧的上下按钮"
+                style={{ cursor: 'grab', color: '#64748b', display: 'inline-flex', padding: 4 }}
+                onDragStart={(event) => { setDraggedSkuIndex(idx); event.dataTransfer.effectAllowed = 'move'; }}
+                onDragEnd={() => setDraggedSkuIndex(null)}><HolderOutlined /></span>
               <Tag color={priceMissing ? 'error' : sku.enabled ? 'success' : 'default'}>{sku.enabled ? skuPrice : '已停用'}</Tag>
               <Switch size="small" checked={sku.enabled} checkedChildren="启用" unCheckedChildren="停用"
                 aria-label={`SKU-${idx + 1}启用状态`} onChange={(v) => updateSku(idx, { enabled: v })} />
@@ -594,7 +687,9 @@ export default function SkuEditor({
             ) : (
               <Space wrap align="end">
                 <Field
-                  label={effectiveMeterType(sku) === 'PER_IMAGE' ? '每张官方原价（元/张）'
+                  label={effectiveMeterType(sku) === 'PER_IMAGE' && sku.outputPixelsPerUnit ? '每输出像素单位原价（元/单位）'
+                    : effectiveMeterType(sku) === 'PER_IMAGE' ? '每张官方原价（元/张）'
+                    : effectiveMeterType(sku) === 'PER_CREDIT' ? '每供应商积分单价（元/积分）'
                     : effectiveMeterType(sku) === 'SKU_PACKAGE' ? '整包官方原价（元/次）'
                     : '固定官方原价（元/次）'}
                   width={260}
@@ -603,7 +698,11 @@ export default function SkuEditor({
                 </Field>
                 {effectiveMeterType(sku) === 'PER_IMAGE' && (
                   <>
-                <Field label="输入图片官方原价（元/张，选填；覆盖模型级输入计费）" width={330}>
+                    <Field label="每价格单位覆盖输出像素（可选；如 24000000 = 24 MP，不足一单位按一单位）" width={380}>
+                      <InputNumber size="small" style={{ width: '100%' }} min={1} precision={0}
+                        value={sku.outputPixelsPerUnit} onChange={(v) => updateSku(idx, { outputPixelsPerUnit: v })} />
+                    </Field>
+                    <Field label="输入图片官方原价（元/张，选填；覆盖模型级输入计费）" width={330}>
                       <InputNumber size="small" style={{ width: 130 }} min={0} precision={8}
                         value={sku.inputPricing?.image?.unitPrice ?? null}
                         onChange={(v) => updateSkuInputPricing(idx, { image: { ...(sku.inputPricing?.image || {}), unitPrice: v } })} />

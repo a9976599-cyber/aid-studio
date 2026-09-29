@@ -76,7 +76,6 @@ interface StoryScriptAgentPanelProps {
     answers: UserSkillInputAnswer[]
   ) => boolean | Promise<boolean>
   onStop: () => void
-  onPauseReceiving: () => void
   onResumeReceiving: () => void
   references: EditorTextSelection[]
   onReferencesChange: (references: EditorTextSelection[]) => void
@@ -400,7 +399,6 @@ export function StoryScriptAgentPanel({
   stopping,
   onRetry,
   onStop,
-  onPauseReceiving,
   onResumeReceiving,
   onSend,
   onSubmitInputRequest,
@@ -458,20 +456,14 @@ export function StoryScriptAgentPanel({
   const showResumeButton = paused && (!sending || runtimeFeedbackEnabled)
   const selectedSkill = skills.find((skill) => skill.skillCode === selectedSkillCode)
   const selectedSkillLabel = selectedSkill?.name || selectedSkill?.skillCode || '创作'
-  const softPauseEnabled = runtimeFeedbackEnabled && !hasPendingInput
-  const pauseAction = softPauseEnabled ? onPauseReceiving : onStop
   const pauseTooltip = hasPendingInput
     ? '取消本次任务'
-    : softPauseEnabled
-      ? '暂停接收（任务继续在后台处理）'
-      : activeResponseMode === 'DIAGNOSTIC'
+    : activeResponseMode === 'DIAGNOSTIC'
         ? '停止诊断'
         : '停止生成'
   const pauseAriaLabel = hasPendingInput
     ? '取消本次任务'
-    : softPauseEnabled
-      ? '暂停接收'
-      : activeResponseMode === 'DIAGNOSTIC'
+    : activeResponseMode === 'DIAGNOSTIC'
         ? '停止诊断'
         : '停止生成'
 
@@ -623,13 +615,13 @@ export function StoryScriptAgentPanel({
                   showResume={showResumeButton}
                   pauseTooltip={pauseTooltip}
                   pauseAriaLabel={pauseAriaLabel}
-                  pauseBusyTooltip={softPauseEnabled ? '正在暂停…' : '正在停止…'}
+                  pauseBusyTooltip="正在停止…"
                   resumeTooltip="恢复生成"
                   resumeAriaLabel="恢复生成"
                   disabled={!selectedSkillCode || stopping}
                   className="story-script-agent-panel__send"
                   onSend={submit}
-                  onPause={pauseAction}
+                  onPause={onStop}
                   onResume={onResumeReceiving}
                 />
               </div>
@@ -690,7 +682,7 @@ export function StoryScriptAgentPanel({
           )
         })}
         {runtimeFeedbackEnabled && paused ? (
-          <AgentPausedRuntimeNotice onResume={onResumeReceiving} disabled={stopping} />
+          <AgentPausedRuntimeNotice onResume={onResumeReceiving} onStop={onStop} disabled={stopping} />
         ) : null}
         {showErrorNotice ? (
           <div className="story-agent-error-notice" role="alert">

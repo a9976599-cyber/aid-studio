@@ -12,6 +12,7 @@ import {
   WalletOutlined, WechatOutlined
 } from '@ant-design/icons'
 import PageHeader from '@/components/PageHeader'
+import { resolveProviderLogo } from '@/utils/builtinImages'
 import Auth from '@/components/Auth'
 import {
   acknowledgeBalanceIncident, addBalanceAdjustment, addBalanceRecipient, addBalanceRule, BalanceOverview,
@@ -238,7 +239,7 @@ function ProviderPanel({ providers, loading, moduleEnabled, onChanged }: { provi
   const columns: any[] = [
     {
       title: '供应商', width: 220, fixed: 'left',
-      render: (_: any, row: BalanceProvider) => <Space><Image width={30} height={30} preview={false} src={row.logoUrl} fallback="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" /><div><div className="provider-name">{row.providerName}</div><Text type="secondary">{row.providerCode}</Text></div></Space>
+      render: (_: any, row: BalanceProvider) => <Space><Image width={30} height={30} preview={false} src={resolveProviderLogo(row.providerCode, row.logoUrl)} fallback="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" /><div><div className="provider-name">{row.providerName}</div><Text type="secondary">{row.providerCode}</Text></div></Space>
     },
     { title: '监控', width: 90, render: (_: any, row: BalanceProvider) => <Tag color={row.enabled ? 'blue' : 'default'}>{row.enabled ? '已选择' : '未选择'}</Tag> },
     { title: '当前状态', width: 130, render: (_: any, row: BalanceProvider) => row.enabled

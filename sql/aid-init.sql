@@ -187,6 +187,8 @@ CREATE TABLE `aid_ai_model`  (
   `extra_body` json NULL COMMENT '模型级请求体附加参数（JSON 对象，覆盖厂商级 extra_body）',
   `official_price_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模型官方定价页直链（为空回退所属服务商的 official_price_url）',
   `is_free` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否免费：0收费，1免费',
+  `image_url_proxy_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '模型输入图片是否使用代理模板',
+  `image_url_proxy_template` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片代理URL模板，使用{url}占位',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_aid_ai_model_model_code`(`model_code`) USING BTREE,
   INDEX `idx_provider_id`(`provider_id`) USING BTREE
@@ -195,52 +197,52 @@ CREATE TABLE `aid_ai_model`  (
 -- ----------------------------
 -- Records of aid_ai_model
 -- ----------------------------
-INSERT INTO `aid_ai_model` VALUES (1,1,'qwen3.7-max','qwen3.7-max','千问3.7-Max','text','text',NULL,0.000000,1.2000,'/compatible-mode/v1/chat/completions','openai-compatible-text',100,'0','0','2026-04-18 22:50:07','admin','2026-07-17 02:14:35','system','纯文本输入、文本输出，1M上下文，最大输出64K；固定非思考、非流式；支持Function Calling；支持结构化输出JSON Mode（官方结构化输出文档点名Qwen3.7-Max系列可正常返回标准JSON，消息含JSON关键词时自动注入response_format=json_object并保留输出上限）；官方原价输入12元/百万Token、输出36元/百万Token；限流30000 RPM、5000000 TPM','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"qwen3.7-max 0-1M窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_MAX_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 12, \"outputPricePerMillion\": 36.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"enable_thinking\": false}','https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (2,1,'qwen3.7-plus','qwen3.7-plus','千问3.7-Plus','text','text',NULL,0.000000,1.6000,'/compatible-mode/v1/chat/completions','openai-compatible-text',90,'0','0','2026-04-18 22:50:32','admin','2026-07-17 02:14:35','system','官方支持文本/图像/视频输入（系统文本链路当前仅接入纯文本，故图片输入能力标0），文本输出，1M上下文，最大输出64K；固定非思考、非流式；支持结构化输出JSON Mode（官方支持列表含Qwen3.7-Plus系列非思考模式，消息含JSON关键词时自动注入response_format=json_object并保留输出上限）；限流30000 RPM、5000000 TPM；SKU按中国内地官方原价维护','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 0}, \"remark\": \"qwen3.7-plus 0-256K窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_PLUS_0_256K\", \"skuName\": \"输入Token 0-256K\", \"priority\": 1, \"inputPricePerMillion\": 2, \"outputPricePerMillion\": 8}, {\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 256001}, \"remark\": \"qwen3.7-plus 256K-1M窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_PLUS_256K_1M\", \"skuName\": \"输入Token 256K-1M\", \"priority\": 2, \"inputPricePerMillion\": 6, \"outputPricePerMillion\": 24.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',5,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"enable_thinking\": false}','https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (3,2,'doubao-seed-2.0-pro-260215','doubao-seed-2-0-pro-260215','豆包Seed 2.0 Pro','text','text',NULL,0.000000,1.4000,'/api/v3/chat/completions','openai-compatible-text',100,'1','0','2026-04-18 22:51:18','admin','2026-07-22 18:28:20','admin',NULL,'SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 32000, \"inputTokensMin\": 0}, \"remark\": \"doubao-pro 0-32K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_0_32K\", \"skuName\": \"输入Token 0-32K\", \"priority\": 1, \"inputPricePerMillion\": 3.2, \"outputPricePerMillion\": 16}, {\"match\": {\"inputTokensMax\": 128000, \"inputTokensMin\": 32001}, \"remark\": \"doubao-pro 32K-128K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_32K_128K\", \"skuName\": \"输入Token 32K-128K\", \"priority\": 2, \"inputPricePerMillion\": 4.8, \"outputPricePerMillion\": 24}, {\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 128001}, \"remark\": \"doubao-pro 128K-256K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_128K_256K\", \"skuName\": \"输入Token 128K-256K\", \"priority\": 3, \"inputPricePerMillion\": 9.6, \"outputPricePerMillion\": 48.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false}',NULL,0);
-INSERT INTO `aid_ai_model` VALUES (4,2,'doubao-seed-2-1-pro-260628','doubao-seed-2-1-pro-260628','豆包Seed 2.1 Pro','text','text',NULL,0.000000,1.3000,'/api/v3/chat/completions','openai-compatible-text',90,'1','0','2026-04-18 22:52:09','admin','2026-07-22 18:27:52','admin','豆包Seed 2.1 Pro；官方原价输入6/输出30元每百万Token；固定非流式；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 0}, \"remark\": \"官方原价输入6.00/输出30.00元每百万token=600/3000积分\", \"enabled\": true, \"skuCode\": \"DOUBAO_SEED21_PRO_0_256K\", \"skuName\": \"输入Token 0-256K\", \"priority\": 1, \"inputPricePerMillion\": 6, \"outputPricePerMillion\": 30.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,NULL,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false}',NULL,0);
-INSERT INTO `aid_ai_model` VALUES (5,1,'wan2.7-image-pro','wan2.7-image-pro','万相2.7 Pro','image','image_to_image',NULL,0.000000,1.6000,'/api/v1/services/aigc/image-generation/generation','dashscope-image',100,'0','0','2026-04-18 22:53:03','admin','2026-07-29 00:22:48','system','万相2.7 Pro；中国内地官方0.50元/张=50积分；参考图0~9张（输入不计费）；限流RPS5并发5；Provider固定thinking_mode=false、n按计费张数显式下发；不支持negative_prompt/prompt_extend；4K仅纯文生图','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.5, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27_PRO_TEXT_TO_IMAGE\", \"skuName\": \"万相2.7 Pro文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.5, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27_PRO_IMAGE_EDIT\", \"skuName\": \"万相2.7 Pro图生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.500000000000000000, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27PRO_FALLBACK\", \"skuName\": \"万相2.7 Pro通用\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"resolution\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',6,'{\"maxConcurrency\": 5}',2,1,0,1,0,4,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"7:9\", \"9:7\", \"9:16\", \"9:21\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 9, \"minReferenceImages\": 0}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (6,1,'wan2.7-image','wan2.7-image','万相2.7','image','image_to_image',NULL,0.000000,1.0000,'/api/v1/services/aigc/image-generation/generation','dashscope-image',90,'0','0','2026-04-18 22:53:15','admin','2026-07-29 00:22:48','system','万相2.7；中国内地官方0.20元/张=20积分；参考图0~9张（输入不计费）；限流RPS5并发5；Provider固定thinking_mode=false、n按计费张数显式下发；不支持negative_prompt/prompt_extend；仅1K/2K','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_TEXT_TO_IMAGE\", \"skuName\": \"万相2.7文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_IMAGE_EDIT\", \"skuName\": \"万相2.7图生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_FALLBACK\", \"skuName\": \"万相2.7通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"resolution\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 5}',2,1,0,1,0,4,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"7:9\", \"9:7\", \"9:16\", \"9:21\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 9, \"minReferenceImages\": 0}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (7,1,'wan2.6-image','wan2.6-image','万相2.6图片编辑','image','image_edit',NULL,0.000000,1.0000,'/api/v1/services/aigc/multimodal-generation/generation','dashscope-image',95,'0','0','2026-04-18 22:53:26','admin','2026-07-19 21:55:27','system','万相2.6图像编辑；中国内地官方0.20元/张=20积分；限流RPS5并发5；编辑模式1~4张参考图、比例跟随输入图；Provider固定enable_interleave=false、n按计费张数显式下发；纯文生图请用wan2.6-t2i','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN26_IMAGE_EDIT\", \"skuName\": \"万相2.6图片编辑单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN26_FALLBACK\", \"skuName\": \"万相2.6通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 5}',4,1,0,1,1,4,1,0,1,0,0,0,'2K',NULL,NULL,'{\"sizeOptions\":[\"1K\",\"2K\"],\"defaultSize\":\"2K\",\"allowCustomWH\":true,\"maxReferenceImages\":4,\"minReferenceImages\":1,\"sceneRules\":{\"imageToImage\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":true}}}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (8,2,'doubao-seedream-5-0-pro-260628','doubao-seedream-5-0-pro-260628','豆包Seedream 5.0 Pro','image','text_to_image',NULL,0.006000,1.0000,'/api/v3/images/generations','seedream-image',90,'1','0','2026-04-18 22:53:36','admin','2026-07-29 00:22:48','system','豆包Seedream 5.0 Pro；官方1K=30/2K=60积分；输入图拍平2积分/张上限10；仅单图输出；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"1K\"}, \"price\": 0.3, \"remark\": \"官方≤236万像素0.30元/张=30积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_1K\", \"skuName\": \"Seedream5.0 Pro 1K\", \"priority\": 1}, {\"match\": {\"resolution\": \"2K\"}, \"price\": 0.6, \"remark\": \"官方>236万像素0.60元/张=60积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_2K\", \"skuName\": \"Seedream5.0 Pro 2K\", \"priority\": 2}, {\"match\": {}, \"price\": 0.6, \"remark\": \"默认按2K官方价0.60元=60积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_FALLBACK\", \"skuName\": \"Seedream5.0 Pro通用\", \"priority\": 999}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1K\", \"2K\"], \"required\": false}, {\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"inputPricing\": {\"image\": {\"maxCount\": 10, \"unitPrice\": 0.020000000000000000}}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,1,1,0,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 10, \"minReferenceImages\": 0}',NULL,1,NULL,NULL,0);
-INSERT INTO `aid_ai_model` VALUES (12,1,'wan2.2-kf2v-flash','wan2.2-kf2v-flash','万相2.2首尾帧视频','video','image_to_video',NULL,0.000000,1.0000,'/api/v1/services/aigc/image2video/video-synthesis','dashscope-video',100,'0','0','2026-04-18 22:54:52','admin','2026-07-29 00:22:48','system','万相2.2首尾帧；中国内地官方原价480P=10、720P=20、1080P=48积分/秒；限流RPS2并发2；时长固定5秒（Provider强制下发5）；首帧必选尾帧可选；宽高比跟随首帧；官方默认分辨率720P；无思考模式参数','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"480P\"}, \"price\": 0.5, \"remark\": \"官方0.10元/秒=10积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_480P\", \"skuName\": \"首尾帧480P\", \"priority\": 1, \"pricePerSecond\": 0.1}, {\"match\": {\"resolution\": \"720P\"}, \"price\": 1, \"remark\": \"官方0.20元/秒=20积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_720P\", \"skuName\": \"首尾帧720P\", \"priority\": 2, \"pricePerSecond\": 0.2}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 2.4, \"remark\": \"官方0.48元/秒=48积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_1080P\", \"skuName\": \"首尾帧1080P\", \"priority\": 3, \"pricePerSecond\": 0.480000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"480P\", \"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',1,'{\"maxConcurrency\": 2}',NULL,1,0,1,1,1,1,0,1,1,1,1,'720P','16:9',5,'{\"sceneRules\": {\"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 1, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (13,1,'wan2.7-videoedit','wan2.7-videoedit','万相2.7视频编辑','video','video_to_video','',0.000000,1.2000,'/api/v1/services/aigc/video-generation/video-synthesis','dashscope-video',95,'0','0','2026-04-18 22:55:06','admin','2026-07-27 00:15:08','system','万相2.7视频编辑；中国内地官方原价720P=0.6元/秒、1080P=1元/秒且输入输出双计（输出秒价+输入视频秒价各一份）；限流RPS5并发5；必传1个视频+最多4张参考图；时长2~10截断；官方默认分辨率1080P；无思考模式参数；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 3, \"remark\": \"官方原价0.6元/秒输入输出双计:输出60积分/秒+输入视频60积分/秒,官方输入限1段2~10秒\", \"enabled\": true, \"skuCode\": \"WAN_VIDEOEDIT_720P\", \"skuName\": \"视频编辑720P\", \"priority\": 1, \"inputPricing\": {\"video\": {\"maxCount\": 1, \"unitPrice\": 0.6, \"maxSeconds\": 10}}, \"pricePerSecond\": 0.6}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 5, \"remark\": \"官方原价1元/秒输入输出双计:输出100积分/秒+输入视频100积分/秒,官方输入限1段2~10秒\", \"enabled\": true, \"skuCode\": \"WAN_VIDEOEDIT_1080P\", \"skuName\": \"视频编辑1080P\", \"priority\": 2, \"inputPricing\": {\"video\": {\"maxCount\": 1, \"unitPrice\": 1.000000000000000000, \"maxSeconds\": 10}}, \"pricePerSecond\": 1}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}, {\"code\": \"inputVideoCount\", \"name\": \"输入视频段数\", \"type\": \"NUMBER\", \"required\": false}, {\"code\": \"inputVideoSeconds\", \"name\": \"输入视频总秒数\", \"type\": \"NUMBER\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,'{\"maxConcurrency\": 5}',NULL,1,0,1,1,1,1,1,1,1,0,0,'1080P','16:9',5,'{\"sceneRules\": {\"videoToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"1080P\", \"durationMax\": 10, \"durationMin\": 2, \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [2, 3, 4, 5, 6, 7, 8, 9, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 4, \"maxReferenceVideos\": 1, \"minReferenceImages\": 0, \"supportsVideoInput\": true, \"maxInputVideoSeconds\": 10, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (14,2,'doubao-seedance-2.0','doubao-seedance-2-0-260128','豆包Seedance 2.0','video','image_to_video','',0.000000,1.0000,'/api/v3/contents/generations/tasks','seedance-video',100,'0','0','2026-04-18 22:55:24','admin','2026-07-29 00:22:48','system','豆包Seedance 2.0；官方原价token精确换算积分/秒；含/不含输入视频双档；参考图最多9、输入视频最多3段总时长≤15秒；音画同生；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_SECOND\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEEDANCE20_480P_INVIDEO\",\"skuName\":\"Seedance2.0 480P含输入视频\",\"enabled\":true,\"priority\":1,\"match\":{\"resolution\":\"480P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频28元/百万token精确换算0.281232元/秒,输入输出同价双计\",\"price\":1.41,\"pricePerSecond\":0.281232,\"inputPricing\":{\"video\":{\"unitPrice\":0.281232,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_720P_INVIDEO\",\"skuName\":\"Seedance2.0 720P含输入视频\",\"enabled\":true,\"priority\":2,\"match\":{\"resolution\":\"720P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频28元/百万token精确换算0.6048元/秒,输入输出同价双计\",\"price\":3.03,\"pricePerSecond\":0.6048,\"inputPricing\":{\"video\":{\"unitPrice\":0.6048,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_1080P_INVIDEO\",\"skuName\":\"Seedance2.0 1080P含输入视频\",\"enabled\":true,\"priority\":3,\"match\":{\"resolution\":\"1080P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频31元/百万token精确换算1.5066元/秒,输入输出同价双计\",\"price\":7.54,\"pricePerSecond\":1.5066,\"inputPricing\":{\"video\":{\"unitPrice\":1.5066,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_4K_INVIDEO\",\"skuName\":\"Seedance2.0 4K含输入视频\",\"enabled\":true,\"priority\":4,\"match\":{\"resolution\":\"4K\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频16元/百万token精确换算3.1104元/秒,输入输出同价双计\",\"price\":15.56,\"pricePerSecond\":3.1104,\"inputPricing\":{\"video\":{\"unitPrice\":3.1104,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_480P\",\"skuName\":\"Seedance2.0 480P\",\"enabled\":true,\"priority\":11,\"match\":{\"resolution\":\"480P\"},\"remark\":\"官方原价46元/百万token精确换算0.462024元/秒=46.2024积分/秒\",\"price\":2.31,\"pricePerSecond\":0.462024},{\"skuCode\":\"SEEDANCE20_720P\",\"skuName\":\"Seedance2.0 720P\",\"enabled\":true,\"priority\":12,\"match\":{\"resolution\":\"720P\"},\"remark\":\"官方原价46元/百万token精确换算0.9936元/秒=99.36积分/秒\",\"price\":4.97,\"pricePerSecond\":0.9936},{\"skuCode\":\"SEEDANCE20_1080P\",\"skuName\":\"Seedance2.0 1080P\",\"enabled\":true,\"priority\":13,\"match\":{\"resolution\":\"1080P\"},\"remark\":\"官方原价51元/百万token精确换算2.4786元/秒=247.86积分/秒\",\"price\":12.4,\"pricePerSecond\":2.4786},{\"skuCode\":\"SEEDANCE20_4K\",\"skuName\":\"Seedance2.0 4K\",\"enabled\":true,\"priority\":14,\"match\":{\"resolution\":\"4K\"},\"remark\":\"官方原价26元/百万token精确换算5.0544元/秒=505.44积分/秒\",\"price\":25.28,\"pricePerSecond\":5.0544}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\", \"1080P\", \"4K\"], \"supportsAudio\": true, \"durationOptions\": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceAudios\": 3, \"maxReferenceImages\": 9, \"minReferenceImages\": 0, \"referenceAudioFormats\": [\"wav\", \"mp3\"], \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": true, \"referenceAudioMaxDurationSeconds\": 15, \"referenceAudioMinDurationSeconds\": 2, \"referenceAudioMaxTotalDurationSeconds\": 15}',NULL,1,NULL,NULL,0);
-INSERT INTO `aid_ai_model` VALUES (16,3,'jimeng-video-3.0-pro','jimeng-video-3.0-pro','即梦视频3.0 Pro','video','image_to_video','',0.000000,1.0000,'/','jimeng-video',100,'1','0','2026-04-18 22:55:51','admin','2026-07-29 00:22:48','system','即梦视频3.0Pro；官方原价1元/秒=100积分/秒（仅1080P档）；文生视频+图生首帧（单图，无首尾帧）；时长仅5s/10s；文生比例16:9/4:3/1:1/3:4/9:16/21:9、图生跟随输入图；免费并发1、付费并发2；req_key固定jimeng_ti2v_v30_pro','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"price\": 5, \"remark\": \"官方原价1元/秒=100积分/秒,仅1080P档,任意分辨率入参均命中\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30PRO\", \"skuName\": \"即梦视频3.0Pro\", \"priority\": 1, \"pricePerSecond\": 1.000000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1080P\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 1}',NULL,1,1,1,0,1,1,1,1,1,1,0,'1080P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"1080P\", \"sizeOptions\": [\"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 1, \"minReferenceImages\": 0, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (17,3,'jimeng-video-3.0','jimeng-video-3.0','即梦视频3.0','video','image_to_video',NULL,0.000000,1.0000,'/','jimeng-video',90,'1','0','2026-04-18 22:56:10','admin','2026-07-29 00:22:48','system','即梦视频3.0；官方原价720P=28、1080P=63积分/秒；文生/图生首帧/图生首尾帧（首尾帧2张图且比例一致）；时长仅5s/10s；req_key按场景×分辨率6选1自动路由；平台默认720P与计费缺省口径一致；免费并发1、付费并发2','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 1.4, \"remark\": \"官方原价0.28元/秒=28积分/秒\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30_720P\", \"skuName\": \"即梦视频3.0 720P\", \"priority\": 1, \"pricePerSecond\": 0.28}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 3.15, \"remark\": \"官方原价0.63元/秒=63积分/秒\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30_1080P\", \"skuName\": \"即梦视频3.0 1080P\", \"priority\": 2, \"pricePerSecond\": 0.630000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 0, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (18,3,'jimeng-image-3.1','jimeng-image-3.1','即梦文生图3.1','image','text_to_image',NULL,0.002000,1.0000,'/','jimeng-image',90,'1','0','2026-04-22 22:12:08','system','2026-07-19 21:11:26','system','即梦文生图3.1；官方原价0.2元/次（单次出图1张）=20积分/张；纯文生图无图片输入；1K基准1328*1328、2K上限2048*2048（无4K）；宽高比1:3~3:1；Provider固定use_pre_llm=false关闭扩写、prompt上限800字符','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.2, \"remark\": \"官方原价0.2元/次单次1张=20积分\", \"enabled\": true, \"skuCode\": \"JIMENG_31_TEXT_TO_IMAGE\", \"skuName\": \"即梦3.1文生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方原价0.2元/次单次1张=20积分\", \"enabled\": true, \"skuCode\": \"JIMENG_31_FALLBACK\", \"skuName\": \"即梦3.1通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,0,0,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"1K\",\"2K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"2:3\",\"3:2\",\"3:4\",\"4:3\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":0,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true}}}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (19,3,'jimeng-image-4.0','jimeng-image-4.0','即梦图片4.0','image','image_to_image',NULL,0.002200,1.0000,'/','jimeng-image',92,'1','0','2026-04-22 22:12:08','system','2026-07-29 00:22:48','system','即梦图片4.0；官方原价0.22元/张=22积分（按生成张数计费）；输入0~10张图（建议≤6）；最大输出=15-输入图数、稳定组图建议≤9；1K~4K；scale[0,1]默认0.5；Provider预期1张时强制force_single防超预扣','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_40_TEXT_TO_IMAGE\", \"skuName\": \"即梦4.0文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_40_IMAGE_EDIT\", \"skuName\": \"即梦4.0参考图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.220000000000000000, \"remark\": \"官方原价0.22元/张=22积分\", \"enabled\": true, \"skuCode\": \"JIMENG_40_FALLBACK\", \"skuName\": \"即梦4.0通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,2,1,1,1,1,9,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\", \"9:21\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 10, \"minReferenceImages\": 0}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (20,3,'jimeng-image-4.6','jimeng-image-4.6','即梦图片4.6','image','image_to_image',NULL,0.002200,1.0000,'/','jimeng-image',94,'1','0','2026-04-22 22:12:08','system','2026-07-29 00:22:48','system','即梦图片4.6；官方原价0.22元/张=22积分（按生成张数计费）；输入0~14张图（建议≤6）；最大输出=15-输入图数、建议输出≤6；1K~4K；scale[1,100]默认50；Provider预期1张时强制force_single防超预扣','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_46_TEXT_TO_IMAGE\", \"skuName\": \"即梦4.6文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_46_IMAGE_EDIT\", \"skuName\": \"即梦4.6参考图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.220000000000000000, \"remark\": \"官方原价0.22元/张=22积分\", \"enabled\": true, \"skuCode\": \"JIMENG_46_FALLBACK\", \"skuName\": \"即梦4.6通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,2,1,1,1,1,6,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\", \"9:21\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 14, \"minReferenceImages\": 0}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (21,3,'jimeng-image-ultra','jimeng-image-ultra','即梦智能超清','image','image_upscale',NULL,0.004000,1.0000,'/','jimeng-image',88,'1','0','2026-04-22 22:12:08','system','2026-07-19 21:11:26','system','即梦智能超清；官方原价0.4元/次（单次出图1张）=40积分/张；必须且只能1张输入图、无prompt；超清到4K/8K（上游取值小写4k/8k由Provider归一）；输入图上限4.7MB、4096*4096、宽高比1:3~3:1；scale[0,100]默认50','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"UPSCALE\"}, \"price\": 0.4, \"remark\": \"官方原价0.4元/次单次1张=40积分\", \"enabled\": true, \"skuCode\": \"JIMENG_ULTRA_UPSCALE\", \"skuName\": \"即梦超清放大单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.400000000000000000, \"remark\": \"官方原价0.4元/次单次1张=40积分\", \"enabled\": true, \"skuCode\": \"JIMENG_ULTRA_FALLBACK\", \"skuName\": \"即梦超清通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,3,0,1,1,0,1,1,0,1,0,0,0,'4K',NULL,NULL,'{\"sizeOptions\":[\"4K\",\"8K\"],\"defaultSize\":\"4K\",\"allowCustomWH\":false,\"maxReferenceImages\":1,\"minReferenceImages\":1,\"sceneRules\":{\"imageToImage\":{\"supportsSizePreset\":true,\"supportsAspectRatio\":false,\"aspectRatioFollowInput\":true}}}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0);
-INSERT INTO `aid_ai_model` VALUES (22,4,'gemini-3.1-pro-preview','gemini-3.1-pro-preview','Gemini 3.1 Pro Preview','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',95,'0','0','2026-05-01 00:00:00','system','2026-07-29 00:28:33','system','Gemini 3.1 Pro Preview（官方Pro线最新，仍为Preview无正式版）；官方Standard原价≤200K输入$2/输出$12、>200K输入$4/输出$18每百万Token=1400/8400、2800/12600 Credits；固定非流式；支持结构化输出JSON Mode；思考压至官方最低档low（Pro不支持minimal，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 200000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3.1-pro-preview 0-200K窗口（$2/$12 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_PRO_0_200K\", \"skuName\": \"输入Token 0-200K\", \"priority\": 1, \"inputPricePerMillion\": 14, \"outputPricePerMillion\": 84}, {\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 200001}, \"remark\": \"gemini-3.1-pro-preview 200K-1M窗口（$4/$18 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_PRO_200K_1M\", \"skuName\": \"输入Token 200K-1M\", \"priority\": 2, \"inputPricePerMillion\": 28, \"outputPricePerMillion\": 126.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',6,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"low\"}','https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (23,4,'gemini-3-flash-preview','gemini-3-flash-preview','Gemini 3 Flash Preview','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',94,'0','0','2026-05-02 00:21:43','system','2026-07-29 00:28:33','system','Gemini 3 Flash Preview（官方仍为Preview，保留不删除；官方建议迁移3.5 Flash GA）；官方Standard原价输入$0.5/输出$3每百万Token=350/2100 Credits；固定非流式；支持结构化输出JSON Mode；思考压至minimal贴近非思考（输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3-flash-preview（$0.5/$3 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_3_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 3.5, \"outputPricePerMillion\": 21.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (24,4,'gemini-3.1-flash-lite','gemini-3.1-flash-lite','Gemini 3.1 Flash-Lite','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',93,'0','0','2026-05-02 00:21:48','system','2026-07-29 00:28:33','system','Gemini 3.1 Flash-Lite（官方GA正式版，原preview转正）；官方原价输入$0.25/输出$1.5每百万Token=175/1050 Credits；固定非流式；支持结构化输出JSON Mode（消息含JSON关键词自动注入）；思考档位minimal（官方该型默认即minimal，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3.1-flash-lite-preview text（$0.25/$1.5 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_FLASH_LITE_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 1.75, \"outputPricePerMillion\": 10.500000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',7,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (27,4,'gemini-3.1-flash-image','gemini-3.1-flash-image','Nano Banana 2','image','image_to_image',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent',NULL,90,'0','0','2026-05-02 00:00:00','system','2026-07-29 00:28:33','system','Nano Banana 2（gemini-3.1-flash-image，官方GA正式版，原preview转正）；官方Standard原价输入$0.5、图片输出$60每百万Token（0.5K=747tok/1K=1120tok/2K=1680tok/4K=2520tok）；按token计价与官方一致；参考图上限10张对应官方单流程10个物体高保真（角色一致性官方建议≤4个，Provider下载转Base64内联，超限截断）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 128000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$0.5/图片输出$60每百万Token=350/42000 Credits(1K图1120tok约$0.067,2K图1680tok约$0.101,4K图2520tok约$0.151)\", \"enabled\": true, \"skuCode\": \"GEMINI_FLASH_IMAGE_TOKEN\", \"skuName\": \"Gemini Flash Image Token\", \"priority\": 1, \"inputPricePerMillion\": 3.5, \"outputPricePerMillion\": 420.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,2,1,1,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"512\",\"1K\",\"2K\",\"4K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"1:4\",\"1:8\",\"2:3\",\"3:2\",\"3:4\",\"4:1\",\"4:3\",\"4:5\",\"5:4\",\"8:1\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":14,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":false}}}',NULL,1,NULL,'https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (28,4,'gemini-3-pro-image','gemini-3-pro-image','Nano Banana Pro','image','image_to_image',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent',NULL,85,'0','0','2026-05-02 00:00:00','system','2026-07-29 00:28:33','system','Nano Banana Pro（gemini-3-pro-image，官方GA正式版，原preview转正）；官方Standard原价输入$2（图输入560tok约$0.0011/张）、文本输出$12、图片输出$120每百万Token（1K/2K=1120tok、4K=2000tok）；按token计价与官方一致；参考图上限14张对应官方总输入上限（其中高保真5张，Provider下载转Base64内联，超限截断）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 65000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$2/图片输出$120每百万Token=1400/84000 Credits(1K与2K图1120tok约$0.134,4K图2000tok约$0.24)\", \"enabled\": true, \"skuCode\": \"GEMINI_PRO_IMAGE_TOKEN\", \"skuName\": \"Gemini Pro Image Token\", \"priority\": 1, \"inputPricePerMillion\": 14, \"outputPricePerMillion\": 840.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,2,1,1,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"1K\",\"2K\",\"4K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"2:3\",\"3:2\",\"3:4\",\"4:3\",\"4:5\",\"5:4\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":14,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":false}}}',NULL,1,NULL,'https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (35,6,'gpt-5.5','gpt-5.5','GPT-5.5','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',85,'0','0','2026-05-05 23:10:17','system','2026-07-17 02:14:35','system','GPT-5.5；官方Standard原价≤272K输入$5/输出$30每百万Token=3500/21000 Credits（>272K长档沿用模型页核对值$10/$45）；官方默认思考档medium，固定reasoning_effort=none非思考+非流式（Chat Completions顶层参数形态）；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 272000, \"inputTokensMin\": 0}, \"remark\": \"官方 input $5, output $30 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT55_STD\", \"skuName\": \"GPT-5.5 标准(≤272K)\", \"priority\": 1, \"inputPricePerMillion\": 35, \"outputPricePerMillion\": 210}, {\"match\": {\"inputTokensMax\": 100000000, \"inputTokensMin\": 272001}, \"remark\": \"官方长上下文 input $10, output $45 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT55_LONG\", \"skuName\": \"GPT-5.5 长上下文(>272K)\", \"priority\": 2, \"inputPricePerMillion\": 70, \"outputPricePerMillion\": 315.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',12,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (37,6,'gpt-5.4','gpt-5.4','GPT-5.4','text','text','',0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',83,'0','0','2026-05-05 23:10:17','system','2026-07-17 02:14:35','system','GPT-5.4；官方Standard原价≤272K输入$2.5/输出$15每百万Token=1750/10500 Credits（>272K长档沿用模型页核对值$5/$22.5）；官方默认reasoning_effort=none（已显式固定）+非流式；1M上下文；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 272000, \"inputTokensMin\": 0}, \"remark\": \"官方 input $2.50, output $15 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT54_STD\", \"skuName\": \"GPT-5.4 标准(≤272K)\", \"priority\": 1, \"inputPricePerMillion\": 17.5, \"outputPricePerMillion\": 105}, {\"match\": {\"inputTokensMax\": 100000000, \"inputTokensMin\": 272001}, \"remark\": \"官方长上下文 input $5, output $22.5 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT54_LONG\", \"skuName\": \"GPT-5.4 长上下文(>272K)\", \"priority\": 2, \"inputPricePerMillion\": 35, \"outputPricePerMillion\": 157.500000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',15,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (42,9,'seed-tts-2.0','seed-tts-2.0','豆包语音合成2.0','audio','audio','',0.000000,1.0000,'/api/v3/tts/unidirectional','volcengine-tts',100,'0','0','2026-05-10 23:04:07','system','2026-07-23 22:52:20','admin','豆包语音合成大模型2.0（官方现役，1.0已於2026-06-30下线大批音色并被本系统移除）；单向流式/api/v3/tts/unidirectional，X-Api-Resource-Id=seed-tts-2.0；SKU单价2.8元/万字符为公开资料估价，官方文档快照未含字符版单价数字，待运营核对；现网配音主力保持启用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_CHAR\",\"chargeType\":\"AUDIO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEED_TTS_20\",\"skuName\":\"豆包语音合成2.0\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"官方按量约2.8元/万字符=0.028积分/字符(公开资料,请运营核对)\",\"price\":0,\"pricePerChar\":0.00028}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',3,'{\"maxConcurrency\": 3}',1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sizeOptions\":[],\"defaultSize\":\"\",\"aspectRatioOptions\":[],\"defaultAspectRatio\":\"\"}',NULL,0,NULL,'https://www.volcengine.com/docs/6561/1359370',0);
-INSERT INTO `aid_ai_model` VALUES (44,9,'seed-icl-2.0','seed-icl-2.0','豆包声音复刻2.0','audio','audio','',0.000000,1.0000,'/api/v3/tts/unidirectional','volcengine-tts',85,'0','0','2026-05-10 23:04:07','system','2026-07-23 22:52:24','admin','豆包声音复刻大模型2.0（官方现役，icl-1.0已移除）；单向流式/api/v3/tts/unidirectional，X-Api-Resource-Id=seed-icl-2.0，复刻音色调用时req_params.model默认seed-tts-2.0-standard（standard不支持语音指令context_texts）；SKU单价5元/万字符为公开资料估价待运营核对；保持启用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_CHAR\",\"chargeType\":\"AUDIO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEED_ICL_20\",\"skuName\":\"豆包声音复刻2.0\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"估5元/万字符=0.05积分/字符(公开资料,请运营核对)\",\"price\":0,\"pricePerChar\":0.0005}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',3,'{\"maxConcurrency\": 3}',1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sizeOptions\":[],\"defaultSize\":\"\",\"aspectRatioOptions\":[],\"defaultAspectRatio\":\"\"}',NULL,0,NULL,'https://www.volcengine.com/docs/6561/1359370',0);
-INSERT INTO `aid_ai_model` VALUES (45,11,'speech-2.8-hd','speech-2.8-hd','MiniMax Speech 2.8 HD','audio','audio',NULL,0.000000,1.0000,'/v1/t2a_v2','minimax-tts',110,'0','0','2026-05-12 14:38:50','system','2026-07-17 02:14:35','system','MiniMax现役最新HD旗舰；官方按量原价3.5元/万字符=0.07 Credits/汉字；同步/v1/t2a_v2直返hex音频(text上限1万字符)；情绪渲染融合语气词标签(laughs)(sighs)等；7情绪白名单(2.8不支持whisper)；配音在用(音色库绑定)保持启用；官方限速T2A充值用户RPM=20(主子账号共享,超限上游拒绝)','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"remark\": \"官方按量原价3.5元/万字符(1汉字=2字符即0.0007元/汉字=0.07 Credits/字);系统按Java字符数从严预收(英文字母亦按汉字口径);同步/异步接口同价;试听不落库不扣费\", \"enabled\": true, \"skuCode\": \"MINIMAX_TTS_28_HD\", \"skuName\": \"MiniMax语音合成2.8 HD\", \"priority\": 1, \"pricePerChar\": 0.000700000000000000}], \"params\": [{\"code\": \"chars\", \"name\": \"文本字符数\", \"type\": \"NUMBER\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_CHAR\", \"chargeType\": \"AUDIO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"emotions\": [\"happy\", \"sad\", \"angry\", \"fearful\", \"disgusted\", \"surprised\", \"calm\"], \"provider\": \"minimax\", \"maxTextChars\": 10000, \"rateLimitRpm\": 20, \"channelOptions\": [1, 2], \"defaultChannel\": 1, \"rateLimitRpmFree\": 10, \"defaultSampleRate\": 32000, \"sampleRateOptions\": [8000, 16000, 22050, 24000, 32000, 44100], \"audioFormatOptions\": [\"mp3\", \"pcm\", \"flac\", \"wav\", \"pcmu_raw\", \"pcmu_wav\", \"opus\"], \"defaultAudioFormat\": \"mp3\", \"inlineSsmlSupported\": true, \"languageBoostSupported\": true}',NULL,0,NULL,'https://platform.minimaxi.com/docs/guides/pricing-paygo',0);
-INSERT INTO `aid_ai_model` VALUES (46,11,'speech-2.8-turbo','speech-2.8-turbo','MiniMax Speech 2.8 Turbo','audio','audio',NULL,0.000000,1.0000,'/v1/t2a_v2','minimax-tts',109,'0','0','2026-05-12 14:38:50','system','2026-07-17 02:14:35','system','MiniMax现役最新Turbo；官方按量原价2元/万字符=0.04 Credits/汉字；同步/v1/t2a_v2直返hex音频(text上限1万字符)；极致生成速度支持语气词标签；7情绪白名单(2.8不支持whisper)；保持启用；官方限速T2A充值用户RPM=20(主子账号共享,超限上游拒绝)','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"remark\": \"官方按量原价2元/万字符(1汉字=2字符即0.0004元/汉字=0.04 Credits/字);系统按Java字符数从严预收(英文字母亦按汉字口径);同步/异步接口同价;试听不落库不扣费\", \"enabled\": true, \"skuCode\": \"MINIMAX_TTS_28_TURBO\", \"skuName\": \"MiniMax语音合成2.8 Turbo\", \"priority\": 1, \"pricePerChar\": 0.000400000000000000}], \"params\": [{\"code\": \"chars\", \"name\": \"文本字符数\", \"type\": \"NUMBER\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_CHAR\", \"chargeType\": \"AUDIO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"emotions\": [\"happy\", \"sad\", \"angry\", \"fearful\", \"disgusted\", \"surprised\", \"calm\"], \"provider\": \"minimax\", \"maxTextChars\": 10000, \"rateLimitRpm\": 20, \"channelOptions\": [1, 2], \"defaultChannel\": 1, \"rateLimitRpmFree\": 10, \"defaultSampleRate\": 32000, \"sampleRateOptions\": [8000, 16000, 22050, 24000, 32000, 44100], \"audioFormatOptions\": [\"mp3\", \"pcm\", \"flac\", \"wav\", \"pcmu_raw\", \"pcmu_wav\", \"opus\"], \"defaultAudioFormat\": \"mp3\", \"inlineSsmlSupported\": true, \"languageBoostSupported\": true}',NULL,0,NULL,'https://platform.minimaxi.com/docs/guides/pricing-paygo',0);
-INSERT INTO `aid_ai_model` VALUES (66,17,'agnes-image-2.0-flash','agnes-image-2.0-flash','Agnes 图片 2.0 Flash','image','image_to_image','',0.010000,1.0000,'/v1/images/generations','agnes-image',90,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system','','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_IMAGE\",\"chargeType\":\"IMAGE\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_IMG_20_TEXT_TO_IMAGE\",\"skuName\":\"Agnes图2.0文生图单张\",\"enabled\":true,\"priority\":100,\"match\":{\"generateMode\":\"TEXT_TO_IMAGE\"},\"remark\":\"厂商未给费用标准，低价策略：单张1积分\",\"price\":0.01},{\"skuCode\":\"AGNES_IMG_20_IMAGE_EDIT\",\"skuName\":\"Agnes图2.0图生图单张\",\"enabled\":true,\"priority\":110,\"match\":{\"generateMode\":\"IMAGE_EDIT\"},\"remark\":\"厂商未给费用标准，低价策略：单张1积分\",\"price\":0.01},{\"skuCode\":\"AGNES_IMG_20_FALLBACK\",\"skuName\":\"Agnes图2.0通用单张\",\"enabled\":true,\"priority\":999,\"match\":{},\"remark\":\"兜底单张价1积分\",\"price\":0.01}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',4,'{\"maxConcurrency\": 1}',2,1,0,1,1,1,1,0,1,0,0,0,'1024x1024',NULL,NULL,'{\r\n        \"sceneRules\": {\r\n            \"textToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": false\r\n            },\r\n            \"imageToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": false,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"1024x1024\",\r\n        \"sizeOptions\": [\r\n            \"1024x768\",\r\n            \"1024x1024\",\r\n            \"768x1024\"\r\n        ],\r\n        \"allowCustomWH\": false,\r\n        \"maxReferenceImages\": 4,\r\n        \"minReferenceImages\": 0,\r\n        \"supportsBase64Image\": true,\r\n        \"base64ImageEnabled\": false\r\n    }',NULL,1,NULL,NULL,0);
-INSERT INTO `aid_ai_model` VALUES (67,17,'agnes-image-2.1-flash','agnes-image-2.1-flash','Agnes 图片 2.1 Flash','image','image_to_image','',0.010000,1.0000,'/v1/images/generations','agnes-image',92,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system',NULL,'SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.01, \"remark\": \"厂商未给费用标准，低价策略：单张1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_TEXT_TO_IMAGE\", \"skuName\": \"Agnes图2.1文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.01, \"remark\": \"厂商未给费用标准，低价策略：单张1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_IMAGE_EDIT\", \"skuName\": \"Agnes图2.1图生图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.010000000000000000, \"remark\": \"兜底单张价1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_FALLBACK\", \"skuName\": \"Agnes图2.1通用单张\", \"priority\": 999}], \"params\": [], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 1}',2,1,0,1,1,1,1,1,1,0,0,0,'1K','1:1',NULL,'{\r\n        \"sceneRules\": {\r\n            \"textToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true\r\n            },\r\n            \"imageToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"1K\",\r\n        \"sizeOptions\": [\r\n            \"1K\",\r\n            \"2K\",\r\n            \"3K\",\r\n            \"4K\"\r\n        ],\r\n        \"aspectRatioOptions\": [\r\n            \"1:1\",\r\n            \"3:4\",\r\n            \"4:3\",\r\n            \"16:9\",\r\n            \"9:16\",\r\n            \"2:3\",\r\n            \"3:2\",\r\n            \"21:9\"\r\n        ],\r\n        \"defaultAspectRatio\": \"1:1\",\r\n        \"allowCustomWH\": false,\r\n        \"maxReferenceImages\": 4,\r\n        \"minReferenceImages\": 0,\r\n        \"supportsBase64Image\": true,\r\n        \"base64ImageEnabled\": false\r\n    }',NULL,1,NULL,NULL,0);
-INSERT INTO `aid_ai_model` VALUES (68,17,'agnes-video-v2.0','agnes-video-v2.0','Agnes 视频 v2.0','video','image_to_video','',0.010000,1.0000,'/v1/videos','agnes-video',90,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system','','SKU','{\"mode\":\"SKU\",\"meterType\":\"SKU_PACKAGE\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_VIDEO_V20_PER_TASK\",\"skuName\":\"Agnes视频v2.0单次\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"厂商未给费用标准，低价策略：单次1积分（不分时长/分辨率）\",\"price\":0.01}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',4,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 1, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 60, \"baseIntervalSeconds\": 20, \"firstPollDelaySeconds\": 30, \"progressTimeoutSeconds\": 600}',NULL,1,0,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{\r\n        \"sceneRules\": {\r\n            \"textToVideo\": {\r\n                \"supportsDuration\": true,\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true\r\n            },\r\n            \"imageToVideo\": {\r\n                \"supportsDuration\": true,\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"720P\",\r\n        \"sizeOptions\": [\r\n            \"480P\",\r\n            \"720P\",\r\n            \"1080P\"\r\n        ],\r\n        \"supportsAudio\": false,\r\n        \"durationOptions\": [\r\n            4,\r\n            5,\r\n            8,\r\n            10,\r\n            15,\r\n            18\r\n        ],\r\n        \"aspectRatioOptions\": [\r\n            \"16:9\",\r\n            \"9:16\",\r\n            \"1:1\",\r\n            \"4:3\",\r\n            \"3:4\"\r\n        ],\r\n        \"defaultAspectRatio\": \"16:9\",\r\n        \"maxReferenceImages\": 2,\r\n        \"minReferenceImages\": 0,\r\n        \"defaultDurationSeconds\": 5,\r\n        \"supportsReferenceAudio\": false\r\n    }',NULL,1,NULL,NULL,0);
-INSERT INTO `aid_ai_model` VALUES (69,6,'gpt-image-2','gpt-image-2','GPT Image 2','image','image_to_image','',0.220000,1.0000,'/v1/images/{operation}','openai-image',50,'0','0','2026-06-10 01:05:26','system','2026-08-14 16:30:00','system','GPT Image 2；按生成张数计费，2K及以下0.10元/张，4K 0.22元/张，未识别尺寸按0.22元/张兜底；参考图经images/edits多图输入；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_IMAGE\",\"chargeType\":\"IMAGE\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[{\"code\":\"resolution\",\"name\":\"分辨率\",\"type\":\"ENUM\",\"options\":[\"SD\",\"1K\",\"2K\",\"4K\"],\"required\":false},{\"code\":\"expectedImageCount\",\"name\":\"生成张数\",\"type\":\"INT\",\"required\":false}],\"skus\":[{\"skuCode\":\"GPT_IMAGE_2_UP_TO_2K\",\"skuName\":\"GPT Image 2 2K及以下\",\"enabled\":true,\"priority\":10,\"match\":{\"resolution\":[\"SD\",\"1K\",\"2K\"]},\"remark\":\"2K及以下0.10元/张\",\"price\":0.1},{\"skuCode\":\"GPT_IMAGE_2_4K\",\"skuName\":\"GPT Image 2 4K\",\"enabled\":true,\"priority\":20,\"match\":{\"resolution\":\"4K\"},\"remark\":\"4K 0.22元/张\",\"price\":0.22},{\"skuCode\":\"GPT_IMAGE_2_FALLBACK\",\"skuName\":\"GPT Image 2 兜底\",\"enabled\":true,\"priority\":999,\"match\":{},\"remark\":\"未识别尺寸按0.22元/张兜底\",\"price\":0.22}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',2,1,1,1,1,1,1,1,1,0,0,0,'1024x1024','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"1024x1024\", \"sizeOptions\": [\"auto\", \"1024x1024\", \"1536x1024\", \"1024x1536\", \"1536x864\", \"864x1536\", \"2048x2048\", \"2048x1152\", \"3840x2160\", \"2160x3840\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"3:2\", \"2:3\", \"16:9\", \"9:16\"], \"base64ImageEnabled\": true, \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 16, \"minReferenceImages\": 0, \"supportsBase64Image\": true}',NULL,1,NULL,'https://developers.openai.com/api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (70,1,'happyhorse-1.0-r2v','happyhorse-1.0-r2v','HappyHorse 参考生视频','video','image_to_video',NULL,0.000000,1.0000,'/api/v1/services/aigc/video-generation/video-synthesis','dashscope-video',50,'0','0','2026-06-10 14:45:19','system','2026-07-27 00:15:08','system','HappyHorse参考生视频；中国内地官方原价720P=90、1080P=160积分/秒（限时折扣不采用）；限流RPS10并发5；参考图1~9张按[Image N]指代且prompt必选；时长3~15默认5；官方水印默认开启已在Provider固定关闭；官方默认分辨率1080P、平台默认720P显式下发；无思考模式参数','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 4.5, \"remark\": \"官方原价0.9元/秒=90积分/秒\", \"enabled\": true, \"skuCode\": \"HAPPYHORSE_720P\", \"skuName\": \"参考生视频720P\", \"priority\": 1, \"pricePerSecond\": 0.9}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 8, \"remark\": \"官方原价1.6元/秒=160积分/秒\", \"enabled\": true, \"skuCode\": \"HAPPYHORSE_1080P\", \"skuName\": \"参考生视频1080P\", \"priority\": 2, \"pricePerSecond\": 1.600000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',1,'{\"maxConcurrency\": 5}',1,1,0,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720P\", \"durationMax\": 15, \"durationMin\": 3, \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"3:4\", \"4:3\", \"4:5\", \"5:4\", \"1:1\", \"9:21\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 9, \"minReferenceImages\": 1, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0);
-INSERT INTO `aid_ai_model` VALUES (72,18,'vidu-q3-pro-img2video','viduq3-pro','Vidu Q3-Pro图生视频','video','image_to_video',NULL,0.625000,1.0000,'/ent/v2/img2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-29 00:22:48','system','Vidu Q3-Pro图生视频（图生视频保留款）；官方原价540p=9/720p=20/1080p=24 Vidu积分每秒（1Vidu积分=0.03125元）；时长1~16秒；仅1张首帧图、比例跟随输入图；音画同出默认开且不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 4.5, \"remark\": \"官方9Vidu积分/秒=28.125系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_540P\", \"skuName\": \"Q3-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.28125}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 10, \"remark\": \"官方20Vidu积分/秒=62.5系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_720P\", \"skuName\": \"Q3-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.625}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_1080P\", \"skuName\": \"Q3-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 10, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_FALLBACK\", \"skuName\": \"Q3-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.625000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}, {\"code\": \"audio\", \"name\": \"音画同出\", \"type\": \"BOOL\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,0,1,1,0,1,1,1,0,'720p','16:9',5,'{\"sceneRules\": {\"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 1, \"minReferenceImages\": 1, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (73,18,'vidu-q3-pro-startend2video','viduq3-pro','Vidu Q3-Pro首尾帧','video','start_end_to_video',NULL,0.625000,1.0000,'/ent/v2/start-end2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-29 00:22:48','system','Vidu Q3-Pro首尾帧（首尾帧保留款）；官方原价与图生视频同价540p=9/720p=20/1080p=24 Vidu积分每秒；恰好2张图（首帧+尾帧，两图分辨率比0.8~1.25）；时长1~16秒；音画同出默认开且不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 4.5, \"remark\": \"官方9Vidu积分/秒=28.125系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_540P\", \"skuName\": \"Q3-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.28125}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 10, \"remark\": \"官方20Vidu积分/秒=62.5系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_720P\", \"skuName\": \"Q3-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.625}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_1080P\", \"skuName\": \"Q3-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 10, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_FALLBACK\", \"skuName\": \"Q3-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.625000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}, {\"code\": \"audio\", \"name\": \"音画同出\", \"type\": \"BOOL\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,1,1,1,0,1,1,1,1,'720p','16:9',5,'{\"sceneRules\": {\"startEndToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 2, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (74,18,'vidu-q3-reference2video','viduq3','Vidu多维视频','video','reference_to_video',NULL,0.000000,1.0000,'/ent/v2/reference2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-27 00:15:08','system','Vidu多维视频（主体调用参考生，底层viduq3）；官方原价540p=7/720p=12/1080p=15 Vidu积分每秒；主体调用subjects（主体≤7个、每主体图≤3张）+@主体名引用，官方主体绑定语义、一致性最好；时长3~16秒；比例仅16:9/9:16/1:1；音画同出默认开不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 3.5, \"remark\": \"官方7Vidu积分/秒=21.875Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_540P\", \"skuName\": \"主体参考生Q3 540p\", \"priority\": 10, \"pricePerSecond\": 0.21875}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 6, \"remark\": \"官方12Vidu积分/秒=37.5Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_720P\", \"skuName\": \"主体参考生Q3 720p\", \"priority\": 20, \"pricePerSecond\": 0.375}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 7.5, \"remark\": \"官方15Vidu积分/秒=46.875Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_1080P\", \"skuName\": \"主体参考生Q3 1080p\", \"priority\": 30, \"pricePerSecond\": 0.46875}, {\"match\": {}, \"price\": 6, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_FALLBACK\", \"skuName\": \"主体参考生Q3 兜底\", \"priority\": 999, \"pricePerSecond\": 0.375000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,0,1,1,1,1,1,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720p\", \"maxSubjects\": 7, \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"subjectReference\": true, \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 7, \"minReferenceImages\": 1, \"maxImagesPerSubject\": 3, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (76,18,'viduq2','viduq2','Vidu参考生图Q2','image','image_edit',NULL,0.002500,1.0000,'/ent/v2/reference2image','vidu-image',10,'0','0','2026-06-26 11:14:34','','2026-07-26 12:14:46','admin','Vidu参考生图Q2（参考生图保留款）；官方按输入图数×分辨率计价：0图6/8/10、1~3图8/12/20、4~7图10/16/30 Vidu积分（1080p/2K/4K），换算18.75~93.75系统积分/张；单次1张；参考图0~7张；比例支持16:9/9:16/1:1/4:3/3:4/21:9/2:3/3:2/auto；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.1875, \"remark\": \"官方6Vidu积分=18.75系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_1080P\", \"skuName\": \"文生图1080p\", \"priority\": 10}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.25, \"remark\": \"官方8Vidu积分=25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_2K\", \"skuName\": \"文生图2K\", \"priority\": 11}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.3125, \"remark\": \"官方10Vidu积分=31.25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_4K\", \"skuName\": \"文生图4K\", \"priority\": 12}, {\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.25, \"remark\": \"官方8Vidu积分=25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_1080P\", \"skuName\": \"参考生1-3图1080p\", \"priority\": 20}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.375, \"remark\": \"官方12Vidu积分=37.5系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_2K\", \"skuName\": \"参考生1-3图2K\", \"priority\": 21}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.625, \"remark\": \"官方20Vidu积分=62.5系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_4K\", \"skuName\": \"参考生1-3图4K\", \"priority\": 22}, {\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.3125, \"remark\": \"官方10Vidu积分=31.25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_1080P\", \"skuName\": \"参考生4-7图1080p\", \"priority\": 30}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.5, \"remark\": \"官方16Vidu积分=50系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_2K\", \"skuName\": \"参考生4-7图2K\", \"priority\": 31}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.9375, \"remark\": \"官方30Vidu积分=93.75系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_4K\", \"skuName\": \"参考生4-7图4K\", \"priority\": 32}, {\"match\": {}, \"price\": 0.312500000000000000, \"remark\": \"分辨率未识别时按官方默认1080p参考生4~7张档兜底\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_FALLBACK\", \"skuName\": \"参考生图兜底\", \"priority\": 999}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1080p\", \"2K\", \"4K\"], \"required\": false}, {\"code\": \"referenceImageCount\", \"name\": \"参考图张数\", \"type\": \"INT\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,4,1,1,1,1,1,1,1,1,0,0,0,'1080p','16:9',NULL,'{\"sizeOptions\":[\"1080p\",\"2K\",\"4K\"],\"defaultSize\":\"1080p\",\"aspectRatioOptions\":[\"16:9\",\"9:16\",\"1:1\",\"4:3\",\"3:4\",\"21:9\",\"2:3\",\"3:2\",\"auto\"],\"defaultAspectRatio\":\"16:9\",\"maxReferenceImages\":7,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true}}}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (85,18,'vidu-q3-lipsync','viduq3','Vidu对口型','video','video_to_video',NULL,0.125000,1.0000,'/ent/v2/lip-sync','vidu-video',9,'0','0','2026-06-26 12:27:36','','2026-07-27 00:15:08','system','Vidu对口型（保留款）；官方每生成5秒扣20Vidu积分=12.5系统积分/秒（5秒粒度，计费时长已向上取整到5秒倍数）；输入视频1~600秒（建议10~120秒）、H.264编码；音频驱动/文本驱动二选一；支持ref_photo_url指定目标人脸；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"durationMax\": 600, \"durationMin\": 1}, \"price\": 75, \"remark\": \"官方每5秒20Vidu积分=12.5系统积分/秒,业务层已按5秒粒度向上取整\", \"enabled\": true, \"skuCode\": \"VIDU_LIPSYNC_PER_SEC\", \"skuName\": \"对口型按秒\", \"priority\": 10, \"pricePerSecond\": 0.125000000000000000}], \"params\": [{\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"lipSync\": true, \"driveModes\": [\"audio\", \"text\"], \"sceneRules\": {\"videoToVideo\": {}}, \"supportsBgm\": false, \"supportsAudio\": false, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (91,18,'vidu-q3-mix-reference2video','viduq3-mix','Vidu原生视频','video','reference_to_video',NULL,0.750000,1.0000,'/ent/v2/reference2video','vidu-video',16,'0','0','2026-07-10 12:56:51','system','2026-07-27 00:15:08','system','Vidu原生视频（非主体图列表参考，底层viduq3-mix，官方mix不支持主体调用）；官方原价720p=24/1080p=29 Vidu积分每秒；无540p；时长3~16秒；参考图平铺1~7张；比例仅16:9/9:16/1:1（4:3、3:4仅q2系）；音画同出默认开且不加价；不支持错峰；主体调用请用vidu-q3-reference2video（多维视频）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_720P\", \"skuName\": \"参考生Mix 720p\", \"priority\": 20, \"pricePerSecond\": 0.75}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 14.5, \"remark\": \"官方29Vidu积分/秒=90.625系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_1080P\", \"skuName\": \"参考生Mix 1080p\", \"priority\": 30, \"pricePerSecond\": 0.90625}, {\"match\": {}, \"price\": 12, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_FALLBACK\", \"skuName\": \"参考生Mix 兜底\", \"priority\": 999, \"pricePerSecond\": 0.750000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,1,1,1,1,1,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 7, \"minReferenceImages\": 1, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (92,18,'vidu-q2-pro-multiframe','viduq2-pro','Vidu Q2-Pro多帧','video','multi_frame',NULL,0.437500,1.0000,'/ent/v2/multiframe','vidu-video',17,'0','0','2026-07-10 12:56:51','system','2026-07-29 00:22:48','system','Vidu Q2-Pro多帧（多帧保留款）；官方单段阶梯价540p=15起+5每秒/720p=30起+10每秒/1080p=60起+15每秒（Vidu积分），系统按5秒段均价拍平为21.875/43.75/75系统积分每秒；关键帧2~9个、每段2~7秒、总时长=段数×每段；无音画字段；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 1.09375, \"remark\": \"官方单段15起每秒+5,按5秒段均价7Vidu积分/秒=21.875系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_540P\", \"skuName\": \"多帧Q2-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.21875}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 2.1875, \"remark\": \"官方单段30起每秒+10,按5秒段均价14Vidu积分/秒=43.75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_720P\", \"skuName\": \"多帧Q2-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.4375}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 3.75, \"remark\": \"官方单段60起每秒+15,按5秒段均价24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_1080P\", \"skuName\": \"多帧Q2-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 2.1875, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_FALLBACK\", \"skuName\": \"多帧Q2-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.437500000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,1,1,1,1,0,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"multiFrame\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": false, \"durationOptions\": [2, 3, 4, 5, 6, 7], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 9, \"minReferenceImages\": 2, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (93,4,'gemini-3.5-flash','gemini-3.5-flash','Gemini 3.5 Flash','text','text',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent','gemini-text',100,'0','0','2026-07-15 01:40:43','system','2026-07-29 00:28:33','system','Gemini 3.5 Flash（Flash线新一代，官方GA稳定版，速度线最强）；官方Standard原价输入$1.5/输出$9每百万Token=1050/6300 Credits；固定非流式；支持结构化输出JSON Mode（消息含JSON关键词自动注入）；思考压至minimal贴近非思考（官方档位minimal~high默认medium，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$1.5/输出$9每百万Token=1050/6300 Credits\", \"enabled\": true, \"skuCode\": \"GEMINI_35_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 10.5, \"outputPricePerMillion\": 63.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (94,6,'gpt-5.6','gpt-5.6-sol','GPT-5.6 Sol','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',100,'0','0','2026-07-15 01:40:43','system','2026-07-17 09:28:41','admin','GPT-5.6 Sol；平台稳定编码保留gpt-5.6，真实上游使用gpt-5.6-sol；官方当前价按≤272K与>272K两档配置；固定reasoning_effort=none非思考+非流式；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\":\"SKU\",\"skus\":[{\"match\":{\"inputTokensMin\":0,\"inputTokensMax\":272000},\"remark\":\"官方当前价：输入 $4、缓存读取 $0.40、缓存写入 $5、输出 $20 每百万 Token；按互斥分桶结算\",\"enabled\":true,\"skuCode\":\"OPENAI_GPT56_STD\",\"skuName\":\"GPT-5.6 Sol 标准(≤272K)\",\"priority\":1,\"inputPricePerMillion\":28,\"cachedInputPricePerMillion\":2.8,\"cacheWritePricePerMillion\":35,\"outputPricePerMillion\":140,\"reasoningPricePerMillion\":140},{\"match\":{\"inputTokensMin\":272001,\"inputTokensMax\":100000000},\"remark\":\"官方长上下文价：输入 $8、缓存读取 $0.80、缓存写入 $10、输出 $30 每百万 Token；按互斥分桶结算\",\"enabled\":true,\"skuCode\":\"OPENAI_GPT56_LONG\",\"skuName\":\"GPT-5.6 Sol 长上下文(>272K)\",\"priority\":2,\"inputPricePerMillion\":56,\"cachedInputPricePerMillion\":5.6,\"cacheWritePricePerMillion\":70,\"outputPricePerMillion\":210,\"reasoningPricePerMillion\":210}],\"params\":[],\"preHold\":true,\"meterType\":\"TOKEN\",\"chargeType\":\"TEXT\",\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"allowRefund\":true,\"usageSource\":\"PROVIDER_USAGE\",\"allowExtraCharge\":false,\"charToTokenRatio\":2,\"usagePricingMode\":\"BUCKETED\"},\"matchStrategy\":\"FIRST_HIT\"}',2,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (95,20,'deepseek-v4-flash','deepseek-v4-flash','DeepSeek V4 Flash','text','text',NULL,0.000000,1.0000,'/chat/completions','openai-compatible-text',100,'0','0','2026-07-16 11:14:05','system','2026-07-17 02:14:35','system','DeepSeek-V4-Flash（官方现役；deepseek-chat 2026-07-24弃用后即本模型非思考态）；上下文1M/最大输出384K；官方原价输入1元(缓存未命中)/输出2元每百万Token=100/200 Credits；并发上限2500；钳制非思考({\"thinking\":{\"type\":\"disabled\"}})+非流；支持JSON Output；密钥填写后开启','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方原价：输入(缓存未命中)1元、输出2元每百万Token；缓存命中0.02元为上游折扣不入价\", \"enabled\": true, \"skuCode\": \"DEEPSEEK_V4_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 1, \"outputPricePerMillion\": 2.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"concurrencyLimit\":2500,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking\": {\"type\": \"disabled\"}}','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (96,20,'deepseek-v4-pro','deepseek-v4-pro','DeepSeek V4 Pro','text','text',NULL,0.000000,1.0000,'/chat/completions','openai-compatible-text',100,'0','0','2026-07-16 11:14:05','system','2026-07-17 02:14:35','system','DeepSeek-V4-Pro（官方现役旗舰）；上下文1M/最大输出384K；官方原价输入3元(缓存未命中)/输出6元每百万Token=300/600 Credits；并发上限500；钳制非思考({\"thinking\":{\"type\":\"disabled\"}})+非流；支持JSON Output；密钥填写后开启','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方原价：输入(缓存未命中)3元、输出6元每百万Token；缓存命中0.025元为上游折扣不入价\", \"enabled\": true, \"skuCode\": \"DEEPSEEK_V4_PRO_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 3, \"outputPricePerMillion\": 6.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"concurrencyLimit\":500,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking\": {\"type\": \"disabled\"}}','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',0);
-INSERT INTO `aid_ai_model` VALUES (97,17,'agnes-2.5-flash','agnes-2.5-flash','Agnes 2.5 Flash','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',100,'0','0','2026-07-19 15:14:22','system','2026-07-21 23:40:51','admin','Agnes 2.5 Flash（替换已下线的 agnes-1.5-flash；官方文档快照暂未收录 2.5 参数，上下文/价格沿用 2.0-flash 口径待文档更新核对）；低价策略输入/输出各0.1元每百万Token；钳制非思考+非流','SKU','{\"mode\":\"SKU\",\"meterType\":\"TOKEN\",\"chargeType\":\"TEXT\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_25_FLASH_0_512K\",\"skuName\":\"输入Token 0-512K\",\"enabled\":true,\"priority\":1,\"match\":{\"inputTokensMin\":0,\"inputTokensMax\":512000},\"remark\":\"官方标准价：输入$0.03/1M=0.21元、输出$0.15/1M=1.05元(1USD=7CNY)；灰度现价$0不采用，按标准原价维护\",\"inputPricePerMillion\":0.21,\"outputPricePerMillion\":1.05}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',1,NULL,NULL,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"chat_template_kwargs\": {\"enable_thinking\": false}}','https://wiki.agnes-ai.com',0);
-INSERT INTO `aid_ai_model` VALUES (98,2,'doubao-seedance-2.0-fast','doubao-seedance-2-0-fast-260128','豆包Seedance 2.0 Fast','video','image_to_video','',0.000000,1.0000,'/api/v3/contents/generations/tasks','seedance-video',100,'0','0','2026-07-22 18:41:06','admin','2026-07-29 00:22:48','system','豆包Seedance 2.0 Fast；官方原价token精确换算积分/秒；含/不含输入视频双档；仅480P/720P；参考图最多9、输入视频最多3段总时长≤15秒；音画同生；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_SECOND\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEEDANCE20_FAST_480P_INVIDEO\",\"skuName\":\"Seedance2.0 Fast 480P含输入视频\",\"enabled\":true,\"priority\":1,\"match\":{\"resolution\":\"480P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频22元/百万token精确换算0.220968元/秒,输入输出同价双计\",\"price\":1.1,\"pricePerSecond\":0.220968,\"inputPricing\":{\"video\":{\"unitPrice\":0.220968,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_FAST_720P_INVIDEO\",\"skuName\":\"Seedance2.0 Fast 720P含输入视频\",\"enabled\":true,\"priority\":2,\"match\":{\"resolution\":\"720P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频22元/百万token精确换算0.4752元/秒,输入输出同价双计\",\"price\":2.38,\"pricePerSecond\":0.4752,\"inputPricing\":{\"video\":{\"unitPrice\":0.4752,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_FAST_480P\",\"skuName\":\"Seedance2.0 Fast 480P\",\"enabled\":true,\"priority\":11,\"match\":{\"resolution\":\"480P\"},\"remark\":\"官方原价37元/百万token精确换算0.371628元/秒=37.1628积分/秒\",\"price\":1.86,\"pricePerSecond\":0.371628},{\"skuCode\":\"SEEDANCE20_FAST_720P\",\"skuName\":\"Seedance2.0 Fast 720P\",\"enabled\":true,\"priority\":12,\"match\":{\"resolution\":\"720P\"},\"remark\":\"官方原价37元/百万token精确换算0.7992元/秒=79.92积分/秒\",\"price\":4,\"pricePerSecond\":0.7992}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\"], \"supportsAudio\": true, \"durationOptions\": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceAudios\": 3, \"maxReferenceImages\": 9, \"minReferenceImages\": 0, \"referenceAudioFormats\": [\"wav\", \"mp3\"], \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": true, \"referenceAudioMaxDurationSeconds\": 15, \"referenceAudioMinDurationSeconds\": 2, \"referenceAudioMaxTotalDurationSeconds\": 15}',NULL,1,NULL,NULL,0);
+INSERT INTO `aid_ai_model` VALUES (1,1,'qwen3.7-max','qwen3.7-max','千问3.7-Max','text','text',NULL,0.000000,1.2000,'/compatible-mode/v1/chat/completions','openai-compatible-text',100,'0','0','2026-04-18 22:50:07','admin','2026-07-17 02:14:35','system','纯文本输入、文本输出，1M上下文，最大输出64K；固定非思考、非流式；支持Function Calling；支持结构化输出JSON Mode（官方结构化输出文档点名Qwen3.7-Max系列可正常返回标准JSON，消息含JSON关键词时自动注入response_format=json_object并保留输出上限）；官方原价输入12元/百万Token、输出36元/百万Token；限流30000 RPM、5000000 TPM','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"qwen3.7-max 0-1M窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_MAX_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 12, \"outputPricePerMillion\": 36.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"enable_thinking\": false}','https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (2,1,'qwen3.7-plus','qwen3.7-plus','千问3.7-Plus','text','text',NULL,0.000000,1.6000,'/compatible-mode/v1/chat/completions','openai-compatible-text',90,'0','0','2026-04-18 22:50:32','admin','2026-07-17 02:14:35','system','官方支持文本/图像/视频输入（系统文本链路当前仅接入纯文本，故图片输入能力标0），文本输出，1M上下文，最大输出64K；固定非思考、非流式；支持结构化输出JSON Mode（官方支持列表含Qwen3.7-Plus系列非思考模式，消息含JSON关键词时自动注入response_format=json_object并保留输出上限）；限流30000 RPM、5000000 TPM；SKU按中国内地官方原价维护','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 0}, \"remark\": \"qwen3.7-plus 0-256K窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_PLUS_0_256K\", \"skuName\": \"输入Token 0-256K\", \"priority\": 1, \"inputPricePerMillion\": 2, \"outputPricePerMillion\": 8}, {\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 256001}, \"remark\": \"qwen3.7-plus 256K-1M窗口（中国内地官方原价）\", \"enabled\": true, \"skuCode\": \"QWEN37_PLUS_256K_1M\", \"skuName\": \"输入Token 256K-1M\", \"priority\": 2, \"inputPricePerMillion\": 6, \"outputPricePerMillion\": 24.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',5,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"enable_thinking\": false}','https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (3,2,'doubao-seed-2.0-pro-260215','doubao-seed-2-0-pro-260215','豆包Seed 2.0 Pro','text','text',NULL,0.000000,1.4000,'/api/v3/chat/completions','openai-compatible-text',100,'1','0','2026-04-18 22:51:18','admin','2026-07-22 18:28:20','admin',NULL,'SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 32000, \"inputTokensMin\": 0}, \"remark\": \"doubao-pro 0-32K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_0_32K\", \"skuName\": \"输入Token 0-32K\", \"priority\": 1, \"inputPricePerMillion\": 3.2, \"outputPricePerMillion\": 16}, {\"match\": {\"inputTokensMax\": 128000, \"inputTokensMin\": 32001}, \"remark\": \"doubao-pro 32K-128K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_32K_128K\", \"skuName\": \"输入Token 32K-128K\", \"priority\": 2, \"inputPricePerMillion\": 4.8, \"outputPricePerMillion\": 24}, {\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 128001}, \"remark\": \"doubao-pro 128K-256K窗口\", \"enabled\": true, \"skuCode\": \"DOUBAO_PRO_128K_256K\", \"skuName\": \"输入Token 128K-256K\", \"priority\": 3, \"inputPricePerMillion\": 9.6, \"outputPricePerMillion\": 48.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false}',NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (4,2,'doubao-seed-2-1-pro-260628','doubao-seed-2-1-pro-260628','豆包Seed 2.1 Pro','text','text',NULL,0.000000,1.3000,'/api/v3/chat/completions','openai-compatible-text',90,'1','0','2026-04-18 22:52:09','admin','2026-07-22 18:27:52','admin','豆包Seed 2.1 Pro；官方原价输入6/输出30元每百万Token；固定非流式；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 256000, \"inputTokensMin\": 0}, \"remark\": \"官方原价输入6.00/输出30.00元每百万token=600/3000积分\", \"enabled\": true, \"skuCode\": \"DOUBAO_SEED21_PRO_0_256K\", \"skuName\": \"输入Token 0-256K\", \"priority\": 1, \"inputPricePerMillion\": 6, \"outputPricePerMillion\": 30.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,NULL,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false}',NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (5,1,'wan2.7-image-pro','wan2.7-image-pro','万相2.7 Pro','image','image_to_image',NULL,0.000000,1.6000,'/api/v1/services/aigc/image-generation/generation','dashscope-image',100,'0','0','2026-04-18 22:53:03','admin','2026-07-29 00:22:48','system','万相2.7 Pro；中国内地官方0.50元/张=50积分；参考图0~9张（输入不计费）；限流RPS5并发5；Provider固定thinking_mode=false、n按计费张数显式下发；不支持negative_prompt/prompt_extend；4K仅纯文生图','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.5, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27_PRO_TEXT_TO_IMAGE\", \"skuName\": \"万相2.7 Pro文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.5, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27_PRO_IMAGE_EDIT\", \"skuName\": \"万相2.7 Pro图生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.500000000000000000, \"remark\": \"官方0.50元/张=50积分\", \"enabled\": true, \"skuCode\": \"WAN27PRO_FALLBACK\", \"skuName\": \"万相2.7 Pro通用\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"resolution\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',6,'{\"maxConcurrency\": 5}',2,1,0,1,0,4,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"7:9\", \"9:7\", \"9:16\", \"9:21\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 9, \"minReferenceImages\": 0}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (6,1,'wan2.7-image','wan2.7-image','万相2.7','image','image_to_image',NULL,0.000000,1.0000,'/api/v1/services/aigc/image-generation/generation','dashscope-image',90,'0','0','2026-04-18 22:53:15','admin','2026-07-29 00:22:48','system','万相2.7；中国内地官方0.20元/张=20积分；参考图0~9张（输入不计费）；限流RPS5并发5；Provider固定thinking_mode=false、n按计费张数显式下发；不支持negative_prompt/prompt_extend；仅1K/2K','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_TEXT_TO_IMAGE\", \"skuName\": \"万相2.7文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_IMAGE_EDIT\", \"skuName\": \"万相2.7图生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN27_FALLBACK\", \"skuName\": \"万相2.7通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"resolution\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 5}',2,1,0,1,0,4,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"7:9\", \"9:7\", \"9:16\", \"9:21\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 9, \"minReferenceImages\": 0}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (7,1,'wan2.6-image','wan2.6-image','万相2.6图片编辑','image','image_edit',NULL,0.000000,1.0000,'/api/v1/services/aigc/multimodal-generation/generation','dashscope-image',95,'0','0','2026-04-18 22:53:26','admin','2026-07-19 21:55:27','system','万相2.6图像编辑；中国内地官方0.20元/张=20积分；限流RPS5并发5；编辑模式1~4张参考图、比例跟随输入图；Provider固定enable_interleave=false、n按计费张数显式下发；纯文生图请用wan2.6-t2i','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.2, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN26_IMAGE_EDIT\", \"skuName\": \"万相2.6图片编辑单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方0.20元/张=20积分\", \"enabled\": true, \"skuCode\": \"WAN26_FALLBACK\", \"skuName\": \"万相2.6通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 5}',4,1,0,1,1,4,1,0,1,0,0,0,'2K',NULL,NULL,'{\"sizeOptions\":[\"1K\",\"2K\"],\"defaultSize\":\"2K\",\"allowCustomWH\":true,\"maxReferenceImages\":4,\"minReferenceImages\":1,\"sceneRules\":{\"imageToImage\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":true}}}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (8,2,'doubao-seedream-5-0-pro-260628','doubao-seedream-5-0-pro-260628','豆包Seedream 5.0 Pro','image','text_to_image',NULL,0.006000,1.0000,'/api/v3/images/generations','seedream-image',90,'1','0','2026-04-18 22:53:36','admin','2026-07-29 00:22:48','system','豆包Seedream 5.0 Pro；官方1K=30/2K=60积分；输入图拍平2积分/张上限10；仅单图输出；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"1K\"}, \"price\": 0.3, \"remark\": \"官方≤236万像素0.30元/张=30积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_1K\", \"skuName\": \"Seedream5.0 Pro 1K\", \"priority\": 1}, {\"match\": {\"resolution\": \"2K\"}, \"price\": 0.6, \"remark\": \"官方>236万像素0.60元/张=60积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_2K\", \"skuName\": \"Seedream5.0 Pro 2K\", \"priority\": 2}, {\"match\": {}, \"price\": 0.6, \"remark\": \"默认按2K官方价0.60元=60积分\", \"enabled\": true, \"skuCode\": \"SEEDREAM50_PRO_FALLBACK\", \"skuName\": \"Seedream5.0 Pro通用\", \"priority\": 999}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1K\", \"2K\"], \"required\": false}, {\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"inputPricing\": {\"image\": {\"maxCount\": 10, \"unitPrice\": 0.020000000000000000}}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,1,1,0,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 10, \"minReferenceImages\": 0}',NULL,1,NULL,NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (12,1,'wan2.2-kf2v-flash','wan2.2-kf2v-flash','万相2.2首尾帧视频','video','image_to_video',NULL,0.000000,1.0000,'/api/v1/services/aigc/image2video/video-synthesis','dashscope-video',100,'0','0','2026-04-18 22:54:52','admin','2026-07-29 00:22:48','system','万相2.2首尾帧；中国内地官方原价480P=10、720P=20、1080P=48积分/秒；限流RPS2并发2；时长固定5秒（Provider强制下发5）；首帧必选尾帧可选；宽高比跟随首帧；官方默认分辨率720P；无思考模式参数','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"480P\"}, \"price\": 0.5, \"remark\": \"官方0.10元/秒=10积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_480P\", \"skuName\": \"首尾帧480P\", \"priority\": 1, \"pricePerSecond\": 0.1}, {\"match\": {\"resolution\": \"720P\"}, \"price\": 1, \"remark\": \"官方0.20元/秒=20积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_720P\", \"skuName\": \"首尾帧720P\", \"priority\": 2, \"pricePerSecond\": 0.2}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 2.4, \"remark\": \"官方0.48元/秒=48积分/秒\", \"enabled\": true, \"skuCode\": \"WAN_KF2V_1080P\", \"skuName\": \"首尾帧1080P\", \"priority\": 3, \"pricePerSecond\": 0.480000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"480P\", \"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',1,'{\"maxConcurrency\": 2}',NULL,1,0,1,1,1,1,0,1,1,1,1,'720P','16:9',5,'{\"sceneRules\": {\"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 1, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (13,1,'wan2.7-videoedit','wan2.7-videoedit','万相2.7视频编辑','video','video_to_video','',0.000000,1.2000,'/api/v1/services/aigc/video-generation/video-synthesis','dashscope-video',95,'0','0','2026-04-18 22:55:06','admin','2026-07-27 00:15:08','system','万相2.7视频编辑；中国内地官方原价720P=0.6元/秒、1080P=1元/秒且输入输出双计（输出秒价+输入视频秒价各一份）；限流RPS5并发5；必传1个视频+最多4张参考图；时长2~10截断；官方默认分辨率1080P；无思考模式参数；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 3, \"remark\": \"官方原价0.6元/秒输入输出双计:输出60积分/秒+输入视频60积分/秒,官方输入限1段2~10秒\", \"enabled\": true, \"skuCode\": \"WAN_VIDEOEDIT_720P\", \"skuName\": \"视频编辑720P\", \"priority\": 1, \"inputPricing\": {\"video\": {\"maxCount\": 1, \"unitPrice\": 0.6, \"maxSeconds\": 10}}, \"pricePerSecond\": 0.6}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 5, \"remark\": \"官方原价1元/秒输入输出双计:输出100积分/秒+输入视频100积分/秒,官方输入限1段2~10秒\", \"enabled\": true, \"skuCode\": \"WAN_VIDEOEDIT_1080P\", \"skuName\": \"视频编辑1080P\", \"priority\": 2, \"inputPricing\": {\"video\": {\"maxCount\": 1, \"unitPrice\": 1.000000000000000000, \"maxSeconds\": 10}}, \"pricePerSecond\": 1}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}, {\"code\": \"inputVideoCount\", \"name\": \"输入视频段数\", \"type\": \"NUMBER\", \"required\": false}, {\"code\": \"inputVideoSeconds\", \"name\": \"输入视频总秒数\", \"type\": \"NUMBER\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,'{\"maxConcurrency\": 5}',NULL,1,0,1,1,1,1,1,1,1,0,0,'1080P','16:9',5,'{\"sceneRules\": {\"videoToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"1080P\", \"durationMax\": 10, \"durationMin\": 2, \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [2, 3, 4, 5, 6, 7, 8, 9, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 4, \"maxReferenceVideos\": 1, \"minReferenceImages\": 0, \"supportsVideoInput\": true, \"maxInputVideoSeconds\": 10, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (14,2,'doubao-seedance-2.0','doubao-seedance-2-0-260128','豆包Seedance 2.0','video','image_to_video','',0.000000,1.0000,'/api/v3/contents/generations/tasks','seedance-video',100,'0','0','2026-04-18 22:55:24','admin','2026-07-29 00:22:48','system','豆包Seedance 2.0；官方原价token精确换算积分/秒；含/不含输入视频双档；参考图最多9、输入视频最多3段总时长≤15秒；音画同生；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_SECOND\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEEDANCE20_480P_INVIDEO\",\"skuName\":\"Seedance2.0 480P含输入视频\",\"enabled\":true,\"priority\":1,\"match\":{\"resolution\":\"480P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频28元/百万token精确换算0.281232元/秒,输入输出同价双计\",\"price\":1.41,\"pricePerSecond\":0.281232,\"inputPricing\":{\"video\":{\"unitPrice\":0.281232,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_720P_INVIDEO\",\"skuName\":\"Seedance2.0 720P含输入视频\",\"enabled\":true,\"priority\":2,\"match\":{\"resolution\":\"720P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频28元/百万token精确换算0.6048元/秒,输入输出同价双计\",\"price\":3.03,\"pricePerSecond\":0.6048,\"inputPricing\":{\"video\":{\"unitPrice\":0.6048,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_1080P_INVIDEO\",\"skuName\":\"Seedance2.0 1080P含输入视频\",\"enabled\":true,\"priority\":3,\"match\":{\"resolution\":\"1080P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频31元/百万token精确换算1.5066元/秒,输入输出同价双计\",\"price\":7.54,\"pricePerSecond\":1.5066,\"inputPricing\":{\"video\":{\"unitPrice\":1.5066,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_4K_INVIDEO\",\"skuName\":\"Seedance2.0 4K含输入视频\",\"enabled\":true,\"priority\":4,\"match\":{\"resolution\":\"4K\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频16元/百万token精确换算3.1104元/秒,输入输出同价双计\",\"price\":15.56,\"pricePerSecond\":3.1104,\"inputPricing\":{\"video\":{\"unitPrice\":3.1104,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_480P\",\"skuName\":\"Seedance2.0 480P\",\"enabled\":true,\"priority\":11,\"match\":{\"resolution\":\"480P\"},\"remark\":\"官方原价46元/百万token精确换算0.462024元/秒=46.2024积分/秒\",\"price\":2.31,\"pricePerSecond\":0.462024},{\"skuCode\":\"SEEDANCE20_720P\",\"skuName\":\"Seedance2.0 720P\",\"enabled\":true,\"priority\":12,\"match\":{\"resolution\":\"720P\"},\"remark\":\"官方原价46元/百万token精确换算0.9936元/秒=99.36积分/秒\",\"price\":4.97,\"pricePerSecond\":0.9936},{\"skuCode\":\"SEEDANCE20_1080P\",\"skuName\":\"Seedance2.0 1080P\",\"enabled\":true,\"priority\":13,\"match\":{\"resolution\":\"1080P\"},\"remark\":\"官方原价51元/百万token精确换算2.4786元/秒=247.86积分/秒\",\"price\":12.4,\"pricePerSecond\":2.4786},{\"skuCode\":\"SEEDANCE20_4K\",\"skuName\":\"Seedance2.0 4K\",\"enabled\":true,\"priority\":14,\"match\":{\"resolution\":\"4K\"},\"remark\":\"官方原价26元/百万token精确换算5.0544元/秒=505.44积分/秒\",\"price\":25.28,\"pricePerSecond\":5.0544}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\", \"1080P\", \"4K\"], \"supportsAudio\": true, \"durationOptions\": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceAudios\": 3, \"maxReferenceImages\": 9, \"minReferenceImages\": 0, \"referenceAudioFormats\": [\"wav\", \"mp3\"], \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": true, \"referenceAudioMaxDurationSeconds\": 15, \"referenceAudioMinDurationSeconds\": 2, \"referenceAudioMaxTotalDurationSeconds\": 15}',NULL,1,NULL,NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (16,3,'jimeng-video-3.0-pro','jimeng-video-3.0-pro','即梦视频3.0 Pro','video','image_to_video','',0.000000,1.0000,'/','jimeng-video',100,'1','0','2026-04-18 22:55:51','admin','2026-07-29 00:22:48','system','即梦视频3.0Pro；官方原价1元/秒=100积分/秒（仅1080P档）；文生视频+图生首帧（单图，无首尾帧）；时长仅5s/10s；文生比例16:9/4:3/1:1/3:4/9:16/21:9、图生跟随输入图；免费并发1、付费并发2；req_key固定jimeng_ti2v_v30_pro','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"price\": 5, \"remark\": \"官方原价1元/秒=100积分/秒,仅1080P档,任意分辨率入参均命中\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30PRO\", \"skuName\": \"即梦视频3.0Pro\", \"priority\": 1, \"pricePerSecond\": 1.000000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1080P\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 1}',NULL,1,1,1,0,1,1,1,1,1,1,0,'1080P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"1080P\", \"sizeOptions\": [\"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 1, \"minReferenceImages\": 0, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (17,3,'jimeng-video-3.0','jimeng-video-3.0','即梦视频3.0','video','image_to_video',NULL,0.000000,1.0000,'/','jimeng-video',90,'1','0','2026-04-18 22:56:10','admin','2026-07-29 00:22:48','system','即梦视频3.0；官方原价720P=28、1080P=63积分/秒；文生/图生首帧/图生首尾帧（首尾帧2张图且比例一致）；时长仅5s/10s；req_key按场景×分辨率6选1自动路由；平台默认720P与计费缺省口径一致；免费并发1、付费并发2','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 1.4, \"remark\": \"官方原价0.28元/秒=28积分/秒\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30_720P\", \"skuName\": \"即梦视频3.0 720P\", \"priority\": 1, \"pricePerSecond\": 0.28}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 3.15, \"remark\": \"官方原价0.63元/秒=63积分/秒\", \"enabled\": true, \"skuCode\": \"JIMENG_VIDEO30_1080P\", \"skuName\": \"即梦视频3.0 1080P\", \"priority\": 2, \"pricePerSecond\": 0.630000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [5, 10], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 0, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (18,3,'jimeng-image-3.1','jimeng-image-3.1','即梦文生图3.1','image','text_to_image',NULL,0.002000,1.0000,'/','jimeng-image',90,'1','0','2026-04-22 22:12:08','system','2026-07-19 21:11:26','system','即梦文生图3.1；官方原价0.2元/次（单次出图1张）=20积分/张；纯文生图无图片输入；1K基准1328*1328、2K上限2048*2048（无4K）；宽高比1:3~3:1；Provider固定use_pre_llm=false关闭扩写、prompt上限800字符','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.2, \"remark\": \"官方原价0.2元/次单次1张=20积分\", \"enabled\": true, \"skuCode\": \"JIMENG_31_TEXT_TO_IMAGE\", \"skuName\": \"即梦3.1文生图单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.200000000000000000, \"remark\": \"官方原价0.2元/次单次1张=20积分\", \"enabled\": true, \"skuCode\": \"JIMENG_31_FALLBACK\", \"skuName\": \"即梦3.1通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,0,0,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"1K\",\"2K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"2:3\",\"3:2\",\"3:4\",\"4:3\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":0,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true}}}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (19,3,'jimeng-image-4.0','jimeng-image-4.0','即梦图片4.0','image','image_to_image',NULL,0.002200,1.0000,'/','jimeng-image',92,'1','0','2026-04-22 22:12:08','system','2026-07-29 00:22:48','system','即梦图片4.0；官方原价0.22元/张=22积分（按生成张数计费）；输入0~10张图（建议≤6）；最大输出=15-输入图数、稳定组图建议≤9；1K~4K；scale[0,1]默认0.5；Provider预期1张时强制force_single防超预扣','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_40_TEXT_TO_IMAGE\", \"skuName\": \"即梦4.0文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_40_IMAGE_EDIT\", \"skuName\": \"即梦4.0参考图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.220000000000000000, \"remark\": \"官方原价0.22元/张=22积分\", \"enabled\": true, \"skuCode\": \"JIMENG_40_FALLBACK\", \"skuName\": \"即梦4.0通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,2,1,1,1,1,9,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\", \"9:21\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 10, \"minReferenceImages\": 0}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (20,3,'jimeng-image-4.6','jimeng-image-4.6','即梦图片4.6','image','image_to_image',NULL,0.002200,1.0000,'/','jimeng-image',94,'1','0','2026-04-22 22:12:08','system','2026-07-29 00:22:48','system','即梦图片4.6；官方原价0.22元/张=22积分（按生成张数计费）；输入0~14张图（建议≤6）；最大输出=15-输入图数、建议输出≤6；1K~4K；scale[1,100]默认50；Provider预期1张时强制force_single防超预扣','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_46_TEXT_TO_IMAGE\", \"skuName\": \"即梦4.6文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.22, \"remark\": \"官方原价0.22元/张=22积分,按生成张数计费\", \"enabled\": true, \"skuCode\": \"JIMENG_46_IMAGE_EDIT\", \"skuName\": \"即梦4.6参考图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.220000000000000000, \"remark\": \"官方原价0.22元/张=22积分\", \"enabled\": true, \"skuCode\": \"JIMENG_46_FALLBACK\", \"skuName\": \"即梦4.6通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,2,1,1,1,1,6,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"2K\", \"sizeOptions\": [\"1K\", \"2K\", \"4K\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"2:3\", \"3:2\", \"3:4\", \"4:3\", \"9:16\", \"16:9\", \"21:9\", \"9:21\"], \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 14, \"minReferenceImages\": 0}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (21,3,'jimeng-image-ultra','jimeng-image-ultra','即梦智能超清','image','image_upscale',NULL,0.004000,1.0000,'/','jimeng-image',88,'1','0','2026-04-22 22:12:08','system','2026-07-19 21:11:26','system','即梦智能超清；官方原价0.4元/次（单次出图1张）=40积分/张；必须且只能1张输入图、无prompt；超清到4K/8K（上游取值小写4k/8k由Provider归一）；输入图上限4.7MB、4096*4096、宽高比1:3~3:1；scale[0,100]默认50','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"UPSCALE\"}, \"price\": 0.4, \"remark\": \"官方原价0.4元/次单次1张=40积分\", \"enabled\": true, \"skuCode\": \"JIMENG_ULTRA_UPSCALE\", \"skuName\": \"即梦超清放大单张\", \"priority\": 100}, {\"match\": {}, \"price\": 0.400000000000000000, \"remark\": \"官方原价0.4元/次单次1张=40积分\", \"enabled\": true, \"skuCode\": \"JIMENG_ULTRA_FALLBACK\", \"skuName\": \"即梦超清通用单张\", \"priority\": 999}], \"params\": [{\"code\": \"generateMode\", \"type\": \"STRING\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,3,0,1,1,0,1,1,0,1,0,0,0,'4K',NULL,NULL,'{\"sizeOptions\":[\"4K\",\"8K\"],\"defaultSize\":\"4K\",\"allowCustomWH\":false,\"maxReferenceImages\":1,\"minReferenceImages\":1,\"sceneRules\":{\"imageToImage\":{\"supportsSizePreset\":true,\"supportsAspectRatio\":false,\"aspectRatioFollowInput\":true}}}',NULL,1,NULL,'https://docs.volcengine.com/docs/85621/2533614',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (22,4,'gemini-3.1-pro-preview','gemini-3.1-pro-preview','Gemini 3.1 Pro Preview','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',95,'0','0','2026-05-01 00:00:00','system','2026-07-29 00:28:33','system','Gemini 3.1 Pro Preview（官方Pro线最新，仍为Preview无正式版）；官方Standard原价≤200K输入$2/输出$12、>200K输入$4/输出$18每百万Token=1400/8400、2800/12600 Credits；固定非流式；支持结构化输出JSON Mode；思考压至官方最低档low（Pro不支持minimal，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 200000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3.1-pro-preview 0-200K窗口（$2/$12 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_PRO_0_200K\", \"skuName\": \"输入Token 0-200K\", \"priority\": 1, \"inputPricePerMillion\": 14, \"outputPricePerMillion\": 84}, {\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 200001}, \"remark\": \"gemini-3.1-pro-preview 200K-1M窗口（$4/$18 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_PRO_200K_1M\", \"skuName\": \"输入Token 200K-1M\", \"priority\": 2, \"inputPricePerMillion\": 28, \"outputPricePerMillion\": 126.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',6,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"low\"}','https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (23,4,'gemini-3-flash-preview','gemini-3-flash-preview','Gemini 3 Flash Preview','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',94,'0','0','2026-05-02 00:21:43','system','2026-07-29 00:28:33','system','Gemini 3 Flash Preview（官方仍为Preview，保留不删除；官方建议迁移3.5 Flash GA）；官方Standard原价输入$0.5/输出$3每百万Token=350/2100 Credits；固定非流式；支持结构化输出JSON Mode；思考压至minimal贴近非思考（输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3-flash-preview（$0.5/$3 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_3_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 3.5, \"outputPricePerMillion\": 21.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (24,4,'gemini-3.1-flash-lite','gemini-3.1-flash-lite','Gemini 3.1 Flash-Lite','text','text',NULL,0.000000,1.3000,'/v1beta/models/{model}:generateContent','gemini-text',93,'0','0','2026-05-02 00:21:48','system','2026-07-29 00:28:33','system','Gemini 3.1 Flash-Lite（官方GA正式版，原preview转正）；官方原价输入$0.25/输出$1.5每百万Token=175/1050 Credits；固定非流式；支持结构化输出JSON Mode（消息含JSON关键词自动注入）；思考档位minimal（官方该型默认即minimal，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"gemini-3.1-flash-lite-preview text（$0.25/$1.5 per 1M tokens）\", \"enabled\": true, \"skuCode\": \"GEMINI_31_FLASH_LITE_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 1.75, \"outputPricePerMillion\": 10.500000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',7,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (27,4,'gemini-3.1-flash-image','gemini-3.1-flash-image','Nano Banana 2','image','image_to_image',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent',NULL,90,'0','0','2026-05-02 00:00:00','system','2026-07-29 00:28:33','system','Nano Banana 2（gemini-3.1-flash-image，官方GA正式版，原preview转正）；官方Standard原价输入$0.5、图片输出$60每百万Token（0.5K=747tok/1K=1120tok/2K=1680tok/4K=2520tok）；按token计价与官方一致；参考图上限10张对应官方单流程10个物体高保真（角色一致性官方建议≤4个，Provider下载转Base64内联，超限截断）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 128000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$0.5/图片输出$60每百万Token=350/42000 Credits(1K图1120tok约$0.067,2K图1680tok约$0.101,4K图2520tok约$0.151)\", \"enabled\": true, \"skuCode\": \"GEMINI_FLASH_IMAGE_TOKEN\", \"skuName\": \"Gemini Flash Image Token\", \"priority\": 1, \"inputPricePerMillion\": 3.5, \"outputPricePerMillion\": 420.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,2,1,1,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"512\",\"1K\",\"2K\",\"4K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"1:4\",\"1:8\",\"2:3\",\"3:2\",\"3:4\",\"4:1\",\"4:3\",\"4:5\",\"5:4\",\"8:1\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":14,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":false}}}',NULL,1,NULL,'https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (28,4,'gemini-3-pro-image','gemini-3-pro-image','Nano Banana Pro','image','image_to_image',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent',NULL,85,'0','0','2026-05-02 00:00:00','system','2026-07-29 00:28:33','system','Nano Banana Pro（gemini-3-pro-image，官方GA正式版，原preview转正）；官方Standard原价输入$2（图输入560tok约$0.0011/张）、文本输出$12、图片输出$120每百万Token（1K/2K=1120tok、4K=2000tok）；按token计价与官方一致；参考图上限14张对应官方总输入上限（其中高保真5张，Provider下载转Base64内联，超限截断）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 65000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$2/图片输出$120每百万Token=1400/84000 Credits(1K与2K图1120tok约$0.134,4K图2000tok约$0.24)\", \"enabled\": true, \"skuCode\": \"GEMINI_PRO_IMAGE_TOKEN\", \"skuName\": \"Gemini Pro Image Token\", \"priority\": 1, \"inputPricePerMillion\": 14, \"outputPricePerMillion\": 840.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',9,NULL,2,1,1,1,1,1,1,1,1,0,0,0,'2K','1:1',NULL,'{\"sizeOptions\":[\"1K\",\"2K\",\"4K\"],\"defaultSize\":\"2K\",\"aspectRatioOptions\":[\"1:1\",\"2:3\",\"3:2\",\"3:4\",\"4:3\",\"4:5\",\"5:4\",\"9:16\",\"16:9\",\"21:9\"],\"defaultAspectRatio\":\"1:1\",\"allowCustomWH\":false,\"maxReferenceImages\":14,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true,\"aspectRatioFollowInput\":false}}}',NULL,1,NULL,'https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (35,6,'gpt-5.5','gpt-5.5','GPT-5.5','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',85,'0','0','2026-05-05 23:10:17','system','2026-07-17 02:14:35','system','GPT-5.5；官方Standard原价≤272K输入$5/输出$30每百万Token=3500/21000 Credits（>272K长档沿用模型页核对值$10/$45）；官方默认思考档medium，固定reasoning_effort=none非思考+非流式（Chat Completions顶层参数形态）；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 272000, \"inputTokensMin\": 0}, \"remark\": \"官方 input $5, output $30 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT55_STD\", \"skuName\": \"GPT-5.5 标准(≤272K)\", \"priority\": 1, \"inputPricePerMillion\": 35, \"outputPricePerMillion\": 210}, {\"match\": {\"inputTokensMax\": 100000000, \"inputTokensMin\": 272001}, \"remark\": \"官方长上下文 input $10, output $45 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT55_LONG\", \"skuName\": \"GPT-5.5 长上下文(>272K)\", \"priority\": 2, \"inputPricePerMillion\": 70, \"outputPricePerMillion\": 315.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',12,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (37,6,'gpt-5.4','gpt-5.4','GPT-5.4','text','text','',0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',83,'0','0','2026-05-05 23:10:17','system','2026-07-17 02:14:35','system','GPT-5.4；官方Standard原价≤272K输入$2.5/输出$15每百万Token=1750/10500 Credits（>272K长档沿用模型页核对值$5/$22.5）；官方默认reasoning_effort=none（已显式固定）+非流式；1M上下文；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 272000, \"inputTokensMin\": 0}, \"remark\": \"官方 input $2.50, output $15 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT54_STD\", \"skuName\": \"GPT-5.4 标准(≤272K)\", \"priority\": 1, \"inputPricePerMillion\": 17.5, \"outputPricePerMillion\": 105}, {\"match\": {\"inputTokensMax\": 100000000, \"inputTokensMin\": 272001}, \"remark\": \"官方长上下文 input $5, output $22.5 /1M ×700\", \"enabled\": true, \"skuCode\": \"OPENAI_GPT54_LONG\", \"skuName\": \"GPT-5.4 长上下文(>272K)\", \"priority\": 2, \"inputPricePerMillion\": 35, \"outputPricePerMillion\": 157.500000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',15,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (42,9,'seed-tts-2.0','seed-tts-2.0','豆包语音合成2.0','audio','audio','',0.000000,1.0000,'/api/v3/tts/unidirectional','volcengine-tts',100,'0','0','2026-05-10 23:04:07','system','2026-07-23 22:52:20','admin','豆包语音合成大模型2.0（官方现役，1.0已於2026-06-30下线大批音色并被本系统移除）；单向流式/api/v3/tts/unidirectional，X-Api-Resource-Id=seed-tts-2.0；SKU单价2.8元/万字符为公开资料估价，官方文档快照未含字符版单价数字，待运营核对；现网配音主力保持启用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_CHAR\",\"chargeType\":\"AUDIO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEED_TTS_20\",\"skuName\":\"豆包语音合成2.0\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"官方按量约2.8元/万字符=0.028积分/字符(公开资料,请运营核对)\",\"price\":0,\"pricePerChar\":0.00028}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',3,'{\"maxConcurrency\": 3}',1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sizeOptions\":[],\"defaultSize\":\"\",\"aspectRatioOptions\":[],\"defaultAspectRatio\":\"\"}',NULL,0,NULL,'https://www.volcengine.com/docs/6561/1359370',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (44,9,'seed-icl-2.0','seed-icl-2.0','豆包声音复刻2.0','audio','audio','',0.000000,1.0000,'/api/v3/tts/unidirectional','volcengine-tts',85,'0','0','2026-05-10 23:04:07','system','2026-07-23 22:52:24','admin','豆包声音复刻大模型2.0（官方现役，icl-1.0已移除）；单向流式/api/v3/tts/unidirectional，X-Api-Resource-Id=seed-icl-2.0，复刻音色调用时req_params.model默认seed-tts-2.0-standard（standard不支持语音指令context_texts）；SKU单价5元/万字符为公开资料估价待运营核对；保持启用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_CHAR\",\"chargeType\":\"AUDIO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEED_ICL_20\",\"skuName\":\"豆包声音复刻2.0\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"估5元/万字符=0.05积分/字符(公开资料,请运营核对)\",\"price\":0,\"pricePerChar\":0.0005}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',3,'{\"maxConcurrency\": 3}',1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sizeOptions\":[],\"defaultSize\":\"\",\"aspectRatioOptions\":[],\"defaultAspectRatio\":\"\"}',NULL,0,NULL,'https://www.volcengine.com/docs/6561/1359370',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (45,11,'speech-2.8-hd','speech-2.8-hd','MiniMax Speech 2.8 HD','audio','audio',NULL,0.000000,1.0000,'/v1/t2a_v2','minimax-tts',110,'0','0','2026-05-12 14:38:50','system','2026-07-17 02:14:35','system','MiniMax现役最新HD旗舰；官方按量原价3.5元/万字符=0.07 Credits/汉字；同步/v1/t2a_v2直返hex音频(text上限1万字符)；情绪渲染融合语气词标签(laughs)(sighs)等；7情绪白名单(2.8不支持whisper)；配音在用(音色库绑定)保持启用；官方限速T2A充值用户RPM=20(主子账号共享,超限上游拒绝)','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"remark\": \"官方按量原价3.5元/万字符(1汉字=2字符即0.0007元/汉字=0.07 Credits/字);系统按Java字符数从严预收(英文字母亦按汉字口径);同步/异步接口同价;试听不落库不扣费\", \"enabled\": true, \"skuCode\": \"MINIMAX_TTS_28_HD\", \"skuName\": \"MiniMax语音合成2.8 HD\", \"priority\": 1, \"pricePerChar\": 0.000700000000000000}], \"params\": [{\"code\": \"chars\", \"name\": \"文本字符数\", \"type\": \"NUMBER\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_CHAR\", \"chargeType\": \"AUDIO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"emotions\": [\"happy\", \"sad\", \"angry\", \"fearful\", \"disgusted\", \"surprised\", \"calm\"], \"provider\": \"minimax\", \"maxTextChars\": 10000, \"rateLimitRpm\": 20, \"channelOptions\": [1, 2], \"defaultChannel\": 1, \"rateLimitRpmFree\": 10, \"defaultSampleRate\": 32000, \"sampleRateOptions\": [8000, 16000, 22050, 24000, 32000, 44100], \"audioFormatOptions\": [\"mp3\", \"pcm\", \"flac\", \"wav\", \"pcmu_raw\", \"pcmu_wav\", \"opus\"], \"defaultAudioFormat\": \"mp3\", \"inlineSsmlSupported\": true, \"languageBoostSupported\": true}',NULL,0,NULL,'https://platform.minimaxi.com/docs/guides/pricing-paygo',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (46,11,'speech-2.8-turbo','speech-2.8-turbo','MiniMax Speech 2.8 Turbo','audio','audio',NULL,0.000000,1.0000,'/v1/t2a_v2','minimax-tts',109,'0','0','2026-05-12 14:38:50','system','2026-07-17 02:14:35','system','MiniMax现役最新Turbo；官方按量原价2元/万字符=0.04 Credits/汉字；同步/v1/t2a_v2直返hex音频(text上限1万字符)；极致生成速度支持语气词标签；7情绪白名单(2.8不支持whisper)；保持启用；官方限速T2A充值用户RPM=20(主子账号共享,超限上游拒绝)','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {}, \"remark\": \"官方按量原价2元/万字符(1汉字=2字符即0.0004元/汉字=0.04 Credits/字);系统按Java字符数从严预收(英文字母亦按汉字口径);同步/异步接口同价;试听不落库不扣费\", \"enabled\": true, \"skuCode\": \"MINIMAX_TTS_28_TURBO\", \"skuName\": \"MiniMax语音合成2.8 Turbo\", \"priority\": 1, \"pricePerChar\": 0.000400000000000000}], \"params\": [{\"code\": \"chars\", \"name\": \"文本字符数\", \"type\": \"NUMBER\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_CHAR\", \"chargeType\": \"AUDIO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"emotions\": [\"happy\", \"sad\", \"angry\", \"fearful\", \"disgusted\", \"surprised\", \"calm\"], \"provider\": \"minimax\", \"maxTextChars\": 10000, \"rateLimitRpm\": 20, \"channelOptions\": [1, 2], \"defaultChannel\": 1, \"rateLimitRpmFree\": 10, \"defaultSampleRate\": 32000, \"sampleRateOptions\": [8000, 16000, 22050, 24000, 32000, 44100], \"audioFormatOptions\": [\"mp3\", \"pcm\", \"flac\", \"wav\", \"pcmu_raw\", \"pcmu_wav\", \"opus\"], \"defaultAudioFormat\": \"mp3\", \"inlineSsmlSupported\": true, \"languageBoostSupported\": true}',NULL,0,NULL,'https://platform.minimaxi.com/docs/guides/pricing-paygo',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (66,17,'agnes-image-2.0-flash','agnes-image-2.0-flash','Agnes 图片 2.0 Flash','image','image_to_image','',0.010000,1.0000,'/v1/images/generations','agnes-image',90,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system','','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_IMAGE\",\"chargeType\":\"IMAGE\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_IMG_20_TEXT_TO_IMAGE\",\"skuName\":\"Agnes图2.0文生图单张\",\"enabled\":true,\"priority\":100,\"match\":{\"generateMode\":\"TEXT_TO_IMAGE\"},\"remark\":\"厂商未给费用标准，低价策略：单张1积分\",\"price\":0.01},{\"skuCode\":\"AGNES_IMG_20_IMAGE_EDIT\",\"skuName\":\"Agnes图2.0图生图单张\",\"enabled\":true,\"priority\":110,\"match\":{\"generateMode\":\"IMAGE_EDIT\"},\"remark\":\"厂商未给费用标准，低价策略：单张1积分\",\"price\":0.01},{\"skuCode\":\"AGNES_IMG_20_FALLBACK\",\"skuName\":\"Agnes图2.0通用单张\",\"enabled\":true,\"priority\":999,\"match\":{},\"remark\":\"兜底单张价1积分\",\"price\":0.01}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',4,'{\"maxConcurrency\": 1}',2,1,0,1,1,1,1,0,1,0,0,0,'1024x1024',NULL,NULL,'{\r\n        \"sceneRules\": {\r\n            \"textToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": false\r\n            },\r\n            \"imageToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": false,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"1024x1024\",\r\n        \"sizeOptions\": [\r\n            \"1024x768\",\r\n            \"1024x1024\",\r\n            \"768x1024\"\r\n        ],\r\n        \"allowCustomWH\": false,\r\n        \"maxReferenceImages\": 4,\r\n        \"minReferenceImages\": 0,\r\n        \"supportsBase64Image\": true,\r\n        \"base64ImageEnabled\": false\r\n    }',NULL,1,NULL,NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (67,17,'agnes-image-2.1-flash','agnes-image-2.1-flash','Agnes 图片 2.1 Flash','image','image_to_image','',0.010000,1.0000,'/v1/images/generations','agnes-image',92,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system',NULL,'SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"generateMode\": \"TEXT_TO_IMAGE\"}, \"price\": 0.01, \"remark\": \"厂商未给费用标准，低价策略：单张1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_TEXT_TO_IMAGE\", \"skuName\": \"Agnes图2.1文生图单张\", \"priority\": 100}, {\"match\": {\"generateMode\": \"IMAGE_EDIT\"}, \"price\": 0.01, \"remark\": \"厂商未给费用标准，低价策略：单张1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_IMAGE_EDIT\", \"skuName\": \"Agnes图2.1图生图单张\", \"priority\": 110}, {\"match\": {}, \"price\": 0.010000000000000000, \"remark\": \"兜底单张价1积分\", \"enabled\": true, \"skuCode\": \"AGNES_IMG_21_FALLBACK\", \"skuName\": \"Agnes图2.1通用单张\", \"priority\": 999}], \"params\": [], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,'{\"maxConcurrency\": 1}',2,1,0,1,1,1,1,1,1,0,0,0,'1K','1:1',NULL,'{\r\n        \"sceneRules\": {\r\n            \"textToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true\r\n            },\r\n            \"imageToImage\": {\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"1K\",\r\n        \"sizeOptions\": [\r\n            \"1K\",\r\n            \"2K\",\r\n            \"3K\",\r\n            \"4K\"\r\n        ],\r\n        \"aspectRatioOptions\": [\r\n            \"1:1\",\r\n            \"3:4\",\r\n            \"4:3\",\r\n            \"16:9\",\r\n            \"9:16\",\r\n            \"2:3\",\r\n            \"3:2\",\r\n            \"21:9\"\r\n        ],\r\n        \"defaultAspectRatio\": \"1:1\",\r\n        \"allowCustomWH\": false,\r\n        \"maxReferenceImages\": 4,\r\n        \"minReferenceImages\": 0,\r\n        \"supportsBase64Image\": true,\r\n        \"base64ImageEnabled\": false\r\n    }',NULL,1,NULL,NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (68,17,'agnes-video-v2.0','agnes-video-v2.0','Agnes 视频 v2.0','video','image_to_video','',0.010000,1.0000,'/v1/videos','agnes-video',90,'0','0','2026-06-05 19:37:49','system','2026-07-29 18:30:19','system','','SKU','{\"mode\":\"SKU\",\"meterType\":\"SKU_PACKAGE\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_VIDEO_V20_PER_TASK\",\"skuName\":\"Agnes视频v2.0单次\",\"enabled\":true,\"priority\":1,\"match\":{},\"remark\":\"厂商未给费用标准，低价策略：单次1积分（不分时长/分辨率）\",\"price\":0.01}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',4,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 1, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 60, \"baseIntervalSeconds\": 20, \"firstPollDelaySeconds\": 30, \"progressTimeoutSeconds\": 600}',NULL,1,0,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{\r\n        \"sceneRules\": {\r\n            \"textToVideo\": {\r\n                \"supportsDuration\": true,\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true\r\n            },\r\n            \"imageToVideo\": {\r\n                \"supportsDuration\": true,\r\n                \"supportsSizePreset\": true,\r\n                \"supportsAspectRatio\": true,\r\n                \"aspectRatioFollowInput\": false\r\n            }\r\n        },\r\n        \"defaultSize\": \"720P\",\r\n        \"sizeOptions\": [\r\n            \"480P\",\r\n            \"720P\",\r\n            \"1080P\"\r\n        ],\r\n        \"supportsAudio\": false,\r\n        \"durationOptions\": [\r\n            4,\r\n            5,\r\n            8,\r\n            10,\r\n            15,\r\n            18\r\n        ],\r\n        \"aspectRatioOptions\": [\r\n            \"16:9\",\r\n            \"9:16\",\r\n            \"1:1\",\r\n            \"4:3\",\r\n            \"3:4\"\r\n        ],\r\n        \"defaultAspectRatio\": \"16:9\",\r\n        \"maxReferenceImages\": 2,\r\n        \"minReferenceImages\": 0,\r\n        \"defaultDurationSeconds\": 5,\r\n        \"supportsReferenceAudio\": false\r\n    }',NULL,1,NULL,NULL,0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (69,6,'gpt-image-2','gpt-image-2','GPT Image 2','image','image_to_image','',0.220000,1.0000,'/v1/images/{operation}','openai-image',50,'0','0','2026-06-10 01:05:26','system','2026-08-14 16:30:00','system','GPT Image 2；按生成张数计费，2K及以下0.10元/张，4K 0.22元/张，未识别尺寸按0.22元/张兜底；参考图经images/edits多图输入；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_IMAGE\",\"chargeType\":\"IMAGE\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[{\"code\":\"resolution\",\"name\":\"分辨率\",\"type\":\"ENUM\",\"options\":[\"SD\",\"1K\",\"2K\",\"4K\"],\"required\":false},{\"code\":\"expectedImageCount\",\"name\":\"生成张数\",\"type\":\"INT\",\"required\":false}],\"skus\":[{\"skuCode\":\"GPT_IMAGE_2_UP_TO_2K\",\"skuName\":\"GPT Image 2 2K及以下\",\"enabled\":true,\"priority\":10,\"match\":{\"resolution\":[\"SD\",\"1K\",\"2K\"]},\"remark\":\"2K及以下0.10元/张\",\"price\":0.1},{\"skuCode\":\"GPT_IMAGE_2_4K\",\"skuName\":\"GPT Image 2 4K\",\"enabled\":true,\"priority\":20,\"match\":{\"resolution\":\"4K\"},\"remark\":\"4K 0.22元/张\",\"price\":0.22},{\"skuCode\":\"GPT_IMAGE_2_FALLBACK\",\"skuName\":\"GPT Image 2 兜底\",\"enabled\":true,\"priority\":999,\"match\":{},\"remark\":\"未识别尺寸按0.22元/张兜底\",\"price\":0.22}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',2,1,1,1,1,1,1,1,1,0,0,0,'1024x1024','1:1',NULL,'{\"sceneRules\": {\"textToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToImage\": {\"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"1024x1024\", \"sizeOptions\": [\"auto\", \"1024x1024\", \"1536x1024\", \"1024x1536\", \"1536x864\", \"864x1536\", \"2048x2048\", \"2048x1152\", \"3840x2160\", \"2160x3840\"], \"allowCustomWH\": false, \"aspectRatioOptions\": [\"1:1\", \"3:2\", \"2:3\", \"16:9\", \"9:16\"], \"base64ImageEnabled\": true, \"defaultAspectRatio\": \"1:1\", \"maxReferenceImages\": 16, \"minReferenceImages\": 0, \"supportsBase64Image\": true}',NULL,1,NULL,'https://developers.openai.com/api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (70,1,'happyhorse-1.0-r2v','happyhorse-1.0-r2v','HappyHorse 参考生视频','video','image_to_video',NULL,0.000000,1.0000,'/api/v1/services/aigc/video-generation/video-synthesis','dashscope-video',50,'0','0','2026-06-10 14:45:19','system','2026-07-27 00:15:08','system','HappyHorse参考生视频；中国内地官方原价720P=90、1080P=160积分/秒（限时折扣不采用）；限流RPS10并发5；参考图1~9张按[Image N]指代且prompt必选；时长3~15默认5；官方水印默认开启已在Provider固定关闭；官方默认分辨率1080P、平台默认720P显式下发；无思考模式参数','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720P\"}, \"price\": 4.5, \"remark\": \"官方原价0.9元/秒=90积分/秒\", \"enabled\": true, \"skuCode\": \"HAPPYHORSE_720P\", \"skuName\": \"参考生视频720P\", \"priority\": 1, \"pricePerSecond\": 0.9}, {\"match\": {\"resolution\": \"1080P\"}, \"price\": 8, \"remark\": \"官方原价1.6元/秒=160积分/秒\", \"enabled\": true, \"skuCode\": \"HAPPYHORSE_1080P\", \"skuName\": \"参考生视频1080P\", \"priority\": 2, \"pricePerSecond\": 1.600000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720P\", \"1080P\"], \"required\": true}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": true}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',1,'{\"maxConcurrency\": 5}',1,1,0,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720P\", \"durationMax\": 15, \"durationMin\": 3, \"sizeOptions\": [\"720P\", \"1080P\"], \"supportsAudio\": false, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"3:4\", \"4:3\", \"4:5\", \"5:4\", \"1:1\", \"9:21\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 9, \"minReferenceImages\": 1, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://help.aliyun.com/zh/model-studio/model-pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (72,18,'vidu-q3-pro-img2video','viduq3-pro','Vidu Q3-Pro图生视频','video','image_to_video',NULL,0.625000,1.0000,'/ent/v2/img2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-29 00:22:48','system','Vidu Q3-Pro图生视频（图生视频保留款）；官方原价540p=9/720p=20/1080p=24 Vidu积分每秒（1Vidu积分=0.03125元）；时长1~16秒；仅1张首帧图、比例跟随输入图；音画同出默认开且不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 4.5, \"remark\": \"官方9Vidu积分/秒=28.125系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_540P\", \"skuName\": \"Q3-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.28125}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 10, \"remark\": \"官方20Vidu积分/秒=62.5系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_720P\", \"skuName\": \"Q3-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.625}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_1080P\", \"skuName\": \"Q3-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 10, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_FALLBACK\", \"skuName\": \"Q3-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.625000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}, {\"code\": \"audio\", \"name\": \"音画同出\", \"type\": \"BOOL\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,0,1,1,0,1,1,1,0,'720p','16:9',5,'{\"sceneRules\": {\"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 1, \"minReferenceImages\": 1, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (73,18,'vidu-q3-pro-startend2video','viduq3-pro','Vidu Q3-Pro首尾帧','video','start_end_to_video',NULL,0.625000,1.0000,'/ent/v2/start-end2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-29 00:22:48','system','Vidu Q3-Pro首尾帧（首尾帧保留款）；官方原价与图生视频同价540p=9/720p=20/1080p=24 Vidu积分每秒；恰好2张图（首帧+尾帧，两图分辨率比0.8~1.25）；时长1~16秒；音画同出默认开且不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 4.5, \"remark\": \"官方9Vidu积分/秒=28.125系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_540P\", \"skuName\": \"Q3-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.28125}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 10, \"remark\": \"官方20Vidu积分/秒=62.5系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_720P\", \"skuName\": \"Q3-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.625}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 1}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_1080P\", \"skuName\": \"Q3-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 10, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_Q3PRO_FALLBACK\", \"skuName\": \"Q3-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.625000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}, {\"code\": \"audio\", \"name\": \"音画同出\", \"type\": \"BOOL\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,1,1,1,0,1,1,1,1,'720p','16:9',5,'{\"sceneRules\": {\"startEndToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 2, \"minReferenceImages\": 2, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (74,18,'vidu-q3-reference2video','viduq3','Vidu多维视频','video','reference_to_video',NULL,0.000000,1.0000,'/ent/v2/reference2video','vidu-video',10,'0','0','2026-06-26 11:14:34','','2026-07-27 00:15:08','system','Vidu多维视频（主体调用参考生，底层viduq3）；官方原价540p=7/720p=12/1080p=15 Vidu积分每秒；主体调用subjects（主体≤7个、每主体图≤3张）+@主体名引用，官方主体绑定语义、一致性最好；时长3~16秒；比例仅16:9/9:16/1:1；音画同出默认开不加价；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 3.5, \"remark\": \"官方7Vidu积分/秒=21.875Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_540P\", \"skuName\": \"主体参考生Q3 540p\", \"priority\": 10, \"pricePerSecond\": 0.21875}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 6, \"remark\": \"官方12Vidu积分/秒=37.5Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_720P\", \"skuName\": \"主体参考生Q3 720p\", \"priority\": 20, \"pricePerSecond\": 0.375}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 7.5, \"remark\": \"官方15Vidu积分/秒=46.875Credits/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_1080P\", \"skuName\": \"主体参考生Q3 1080p\", \"priority\": 30, \"pricePerSecond\": 0.46875}, {\"match\": {}, \"price\": 6, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_Q3_FALLBACK\", \"skuName\": \"主体参考生Q3 兜底\", \"priority\": 999, \"pricePerSecond\": 0.375000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,0,1,1,1,1,1,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720p\", \"maxSubjects\": 7, \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"subjectReference\": true, \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 7, \"minReferenceImages\": 1, \"maxImagesPerSubject\": 3, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (76,18,'viduq2','viduq2','Vidu参考生图Q2','image','image_edit',NULL,0.002500,1.0000,'/ent/v2/reference2image','vidu-image',10,'0','0','2026-06-26 11:14:34','','2026-07-26 12:14:46','admin','Vidu参考生图Q2（参考生图保留款）；官方按输入图数×分辨率计价：0图6/8/10、1~3图8/12/20、4~7图10/16/30 Vidu积分（1080p/2K/4K），换算18.75~93.75系统积分/张；单次1张；参考图0~7张；比例支持16:9/9:16/1:1/4:3/3:4/21:9/2:3/3:2/auto；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.1875, \"remark\": \"官方6Vidu积分=18.75系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_1080P\", \"skuName\": \"文生图1080p\", \"priority\": 10}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.25, \"remark\": \"官方8Vidu积分=25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_2K\", \"skuName\": \"文生图2K\", \"priority\": 11}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 0, \"referenceImageCountMin\": 0}, \"price\": 0.3125, \"remark\": \"官方10Vidu积分=31.25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_T2I_4K\", \"skuName\": \"文生图4K\", \"priority\": 12}, {\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.25, \"remark\": \"官方8Vidu积分=25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_1080P\", \"skuName\": \"参考生1-3图1080p\", \"priority\": 20}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.375, \"remark\": \"官方12Vidu积分=37.5系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_2K\", \"skuName\": \"参考生1-3图2K\", \"priority\": 21}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 3, \"referenceImageCountMin\": 1}, \"price\": 0.625, \"remark\": \"官方20Vidu积分=62.5系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF13_4K\", \"skuName\": \"参考生1-3图4K\", \"priority\": 22}, {\"match\": {\"resolution\": \"1080p\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.3125, \"remark\": \"官方10Vidu积分=31.25系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_1080P\", \"skuName\": \"参考生4-7图1080p\", \"priority\": 30}, {\"match\": {\"resolution\": \"2K\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.5, \"remark\": \"官方16Vidu积分=50系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_2K\", \"skuName\": \"参考生4-7图2K\", \"priority\": 31}, {\"match\": {\"resolution\": \"4K\", \"referenceImageCountMax\": 7, \"referenceImageCountMin\": 4}, \"price\": 0.9375, \"remark\": \"官方30Vidu积分=93.75系统积分\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_REF47_4K\", \"skuName\": \"参考生4-7图4K\", \"priority\": 32}, {\"match\": {}, \"price\": 0.312500000000000000, \"remark\": \"分辨率未识别时按官方默认1080p参考生4~7张档兜底\", \"enabled\": true, \"skuCode\": \"VIDU_Q2IMG_FALLBACK\", \"skuName\": \"参考生图兜底\", \"priority\": 999}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"1080p\", \"2K\", \"4K\"], \"required\": false}, {\"code\": \"referenceImageCount\", \"name\": \"参考图张数\", \"type\": \"INT\", \"required\": false}, {\"code\": \"expectedImageCount\", \"type\": \"INT\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_IMAGE\", \"chargeType\": \"IMAGE\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,4,1,1,1,1,1,1,1,1,0,0,0,'1080p','16:9',NULL,'{\"sizeOptions\":[\"1080p\",\"2K\",\"4K\"],\"defaultSize\":\"1080p\",\"aspectRatioOptions\":[\"16:9\",\"9:16\",\"1:1\",\"4:3\",\"3:4\",\"21:9\",\"2:3\",\"3:2\",\"auto\"],\"defaultAspectRatio\":\"16:9\",\"maxReferenceImages\":7,\"minReferenceImages\":0,\"sceneRules\":{\"textToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true},\"imageToImage\":{\"supportsAspectRatio\":true,\"supportsSizePreset\":true}}}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (85,18,'vidu-q3-lipsync','viduq3','Vidu对口型','video','video_to_video',NULL,0.125000,1.0000,'/ent/v2/lip-sync','vidu-video',9,'0','0','2026-06-26 12:27:36','','2026-07-27 00:15:08','system','Vidu对口型（保留款）；官方每生成5秒扣20Vidu积分=12.5系统积分/秒（5秒粒度，计费时长已向上取整到5秒倍数）；输入视频1~600秒（建议10~120秒）、H.264编码；音频驱动/文本驱动二选一；支持ref_photo_url指定目标人脸；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"durationMax\": 600, \"durationMin\": 1}, \"price\": 75, \"remark\": \"官方每5秒20Vidu积分=12.5系统积分/秒,业务层已按5秒粒度向上取整\", \"enabled\": true, \"skuCode\": \"VIDU_LIPSYNC_PER_SEC\", \"skuName\": \"对口型按秒\", \"priority\": 10, \"pricePerSecond\": 0.125000000000000000}], \"params\": [{\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',4,NULL,1,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"lipSync\": true, \"driveModes\": [\"audio\", \"text\"], \"sceneRules\": {\"videoToVideo\": {}}, \"supportsBgm\": false, \"supportsAudio\": false, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (91,18,'vidu-q3-mix-reference2video','viduq3-mix','Vidu原生视频','video','reference_to_video',NULL,0.750000,1.0000,'/ent/v2/reference2video','vidu-video',16,'0','0','2026-07-10 12:56:51','system','2026-07-27 00:15:08','system','Vidu原生视频（非主体图列表参考，底层viduq3-mix，官方mix不支持主体调用）；官方原价720p=24/1080p=29 Vidu积分每秒；无540p；时长3~16秒；参考图平铺1~7张；比例仅16:9/9:16/1:1（4:3、3:4仅q2系）；音画同出默认开且不加价；不支持错峰；主体调用请用vidu-q3-reference2video（多维视频）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"720p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 12, \"remark\": \"官方24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_720P\", \"skuName\": \"参考生Mix 720p\", \"priority\": 20, \"pricePerSecond\": 0.75}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 16, \"durationMin\": 3}, \"price\": 14.5, \"remark\": \"官方29Vidu积分/秒=90.625系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_1080P\", \"skuName\": \"参考生Mix 1080p\", \"priority\": 30, \"pricePerSecond\": 0.90625}, {\"match\": {}, \"price\": 12, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_R2V_MIX_FALLBACK\", \"skuName\": \"参考生Mix 兜底\", \"priority\": 999, \"pricePerSecond\": 0.750000000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,1,1,1,1,1,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"referenceToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": true, \"durationOptions\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"supportsVoiceId\": false, \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 7, \"minReferenceImages\": 1, \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (92,18,'vidu-q2-pro-multiframe','viduq2-pro','Vidu Q2-Pro多帧','video','multi_frame',NULL,0.437500,1.0000,'/ent/v2/multiframe','vidu-video',17,'0','0','2026-07-10 12:56:51','system','2026-07-29 00:22:48','system','Vidu Q2-Pro多帧（多帧保留款）；官方单段阶梯价540p=15起+5每秒/720p=30起+10每秒/1080p=60起+15每秒（Vidu积分），系统按5秒段均价拍平为21.875/43.75/75系统积分每秒；关键帧2~9个、每段2~7秒、总时长=段数×每段；无音画字段；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"resolution\": \"540p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 1.09375, \"remark\": \"官方单段15起每秒+5,按5秒段均价7Vidu积分/秒=21.875系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_540P\", \"skuName\": \"多帧Q2-Pro 540p\", \"priority\": 10, \"pricePerSecond\": 0.21875}, {\"match\": {\"resolution\": \"720p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 2.1875, \"remark\": \"官方单段30起每秒+10,按5秒段均价14Vidu积分/秒=43.75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_720P\", \"skuName\": \"多帧Q2-Pro 720p\", \"priority\": 20, \"pricePerSecond\": 0.4375}, {\"match\": {\"resolution\": \"1080p\", \"durationMax\": 63, \"durationMin\": 2}, \"price\": 3.75, \"remark\": \"官方单段60起每秒+15,按5秒段均价24Vidu积分/秒=75系统积分/秒\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_1080P\", \"skuName\": \"多帧Q2-Pro 1080p\", \"priority\": 30, \"pricePerSecond\": 0.75}, {\"match\": {}, \"price\": 2.1875, \"remark\": \"兜底按官方默认720p价\", \"enabled\": true, \"skuCode\": \"VIDU_MF_Q2P_FALLBACK\", \"skuName\": \"多帧Q2-Pro 兜底\", \"priority\": 999, \"pricePerSecond\": 0.437500000000000000}], \"params\": [{\"code\": \"resolution\", \"name\": \"分辨率\", \"type\": \"ENUM\", \"options\": [\"540p\", \"720p\", \"1080p\"], \"required\": false}, {\"code\": \"duration\", \"name\": \"时长\", \"type\": \"NUMBER\", \"unit\": \"秒\", \"required\": false}], \"preHold\": true, \"meterType\": \"PER_SECOND\", \"chargeType\": \"VIDEO\", \"settleRule\": {\"settleMode\": \"DIRECT_SETTLE\", \"allowRefund\": true, \"usageSource\": \"REQUEST_PARAM\", \"allowExtraCharge\": false}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,1,1,1,1,1,1,1,0,1,1,0,0,'720p','16:9',5,'{\"sceneRules\": {\"multiFrame\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"aspectRatioFollowInput\": true}}, \"defaultSize\": \"720p\", \"sizeOptions\": [\"540p\", \"720p\", \"1080p\"], \"supportsBgm\": false, \"supportsAudio\": false, \"durationOptions\": [2, 3, 4, 5, 6, 7], \"supportsVoiceId\": false, \"defaultAspectRatio\": \"16:9\", \"maxReferenceImages\": 9, \"minReferenceImages\": 2, \"inputAspectRatioFit\": \"CONTAIN\", \"videoAspectRatioMode\": \"FOLLOW_INPUT\", \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": false}',NULL,1,NULL,'https://platform.vidu.cn/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (93,4,'gemini-3.5-flash','gemini-3.5-flash','Gemini 3.5 Flash','text','text',NULL,0.000000,1.0000,'/v1beta/models/{model}:generateContent','gemini-text',100,'0','0','2026-07-15 01:40:43','system','2026-07-29 00:28:33','system','Gemini 3.5 Flash（Flash线新一代，官方GA稳定版，速度线最强）；官方Standard原价输入$1.5/输出$9每百万Token=1050/6300 Credits；固定非流式；支持结构化输出JSON Mode（消息含JSON关键词自动注入）；思考压至minimal贴近非思考（官方档位minimal~high默认medium，输出价含思考token）；保持停用','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方Standard原价输入$1.5/输出$9每百万Token=1050/6300 Credits\", \"enabled\": true, \"skuCode\": \"GEMINI_35_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 10.5, \"outputPricePerMillion\": 63.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',2,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking_level\": \"minimal\"}','https://ai.google.dev/gemini-api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (94,6,'gpt-5.6','gpt-5.6-sol','GPT-5.6 Sol','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',100,'0','0','2026-07-15 01:40:43','system','2026-07-17 09:28:41','admin','GPT-5.6 Sol；平台稳定编码保留gpt-5.6，真实上游使用gpt-5.6-sol；官方当前价按≤272K与>272K两档配置；固定reasoning_effort=none非思考+非流式；支持结构化输出JSON Mode；保持停用','SKU','{\"mode\":\"SKU\",\"skus\":[{\"match\":{\"inputTokensMin\":0,\"inputTokensMax\":272000},\"remark\":\"官方当前价：输入 $4、缓存读取 $0.40、缓存写入 $5、输出 $20 每百万 Token；按互斥分桶结算\",\"enabled\":true,\"skuCode\":\"OPENAI_GPT56_STD\",\"skuName\":\"GPT-5.6 Sol 标准(≤272K)\",\"priority\":1,\"inputPricePerMillion\":28,\"cachedInputPricePerMillion\":2.8,\"cacheWritePricePerMillion\":35,\"outputPricePerMillion\":140,\"reasoningPricePerMillion\":140},{\"match\":{\"inputTokensMin\":272001,\"inputTokensMax\":100000000},\"remark\":\"官方长上下文价：输入 $8、缓存读取 $0.80、缓存写入 $10、输出 $30 每百万 Token；按互斥分桶结算\",\"enabled\":true,\"skuCode\":\"OPENAI_GPT56_LONG\",\"skuName\":\"GPT-5.6 Sol 长上下文(>272K)\",\"priority\":2,\"inputPricePerMillion\":56,\"cachedInputPricePerMillion\":5.6,\"cacheWritePricePerMillion\":70,\"outputPricePerMillion\":210,\"reasoningPricePerMillion\":210}],\"params\":[],\"preHold\":true,\"meterType\":\"TOKEN\",\"chargeType\":\"TEXT\",\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"allowRefund\":true,\"usageSource\":\"PROVIDER_USAGE\",\"allowExtraCharge\":false,\"charToTokenRatio\":2,\"usagePricingMode\":\"BUCKETED\"},\"matchStrategy\":\"FIRST_HIT\"}',2,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"reasoning_effort\": \"none\"}','https://developers.openai.com/api/docs/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (95,20,'deepseek-v4-flash','deepseek-v4-flash','DeepSeek V4 Flash','text','text',NULL,0.000000,1.0000,'/chat/completions','openai-compatible-text',100,'0','0','2026-07-16 11:14:05','system','2026-07-17 02:14:35','system','DeepSeek-V4-Flash（官方现役；deepseek-chat 2026-07-24弃用后即本模型非思考态）；上下文1M/最大输出384K；官方原价输入1元(缓存未命中)/输出2元每百万Token=100/200 Credits；并发上限2500；钳制非思考({\"thinking\":{\"type\":\"disabled\"}})+非流；支持JSON Output；密钥填写后开启','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方原价：输入(缓存未命中)1元、输出2元每百万Token；缓存命中0.02元为上游折扣不入价\", \"enabled\": true, \"skuCode\": \"DEEPSEEK_V4_FLASH_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 1, \"outputPricePerMillion\": 2.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"concurrencyLimit\":2500,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking\": {\"type\": \"disabled\"}}','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (96,20,'deepseek-v4-pro','deepseek-v4-pro','DeepSeek V4 Pro','text','text',NULL,0.000000,1.0000,'/chat/completions','openai-compatible-text',100,'0','0','2026-07-16 11:14:05','system','2026-07-17 02:14:35','system','DeepSeek-V4-Pro（官方现役旗舰）；上下文1M/最大输出384K；官方原价输入3元(缓存未命中)/输出6元每百万Token=300/600 Credits；并发上限500；钳制非思考({\"thinking\":{\"type\":\"disabled\"}})+非流；支持JSON Output；密钥填写后开启','SKU','{\"mode\": \"SKU\", \"skus\": [{\"match\": {\"inputTokensMax\": 1000000, \"inputTokensMin\": 0}, \"remark\": \"官方原价：输入(缓存未命中)3元、输出6元每百万Token；缓存命中0.025元为上游折扣不入价\", \"enabled\": true, \"skuCode\": \"DEEPSEEK_V4_PRO_0_1M\", \"skuName\": \"输入Token 0-1M\", \"priority\": 1, \"inputPricePerMillion\": 3, \"outputPricePerMillion\": 6.000000000000000000}], \"params\": [], \"preHold\": true, \"meterType\": \"TOKEN\", \"chargeType\": \"TEXT\", \"settleRule\": {\"settleMode\": \"REFUND_ONLY\", \"allowRefund\": true, \"usageSource\": \"PROVIDER_USAGE\", \"allowExtraCharge\": false, \"charToTokenRatio\": 2}, \"matchStrategy\": \"FIRST_HIT\"}',3,NULL,NULL,1,1,0,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"supportsJsonObject\":true,\"concurrencyLimit\":500,\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"thinking\": {\"type\": \"disabled\"}}','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (97,17,'agnes-2.5-flash','agnes-2.5-flash','Agnes 2.5 Flash','text','text',NULL,0.000000,1.0000,'/v1/chat/completions','openai-compatible-text',100,'0','0','2026-07-19 15:14:22','system','2026-07-21 23:40:51','admin','Agnes 2.5 Flash（替换已下线的 agnes-1.5-flash；官方文档快照暂未收录 2.5 参数，上下文/价格沿用 2.0-flash 口径待文档更新核对）；低价策略输入/输出各0.1元每百万Token；钳制非思考+非流','SKU','{\"mode\":\"SKU\",\"meterType\":\"TOKEN\",\"chargeType\":\"TEXT\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"AGNES_25_FLASH_0_512K\",\"skuName\":\"输入Token 0-512K\",\"enabled\":true,\"priority\":1,\"match\":{\"inputTokensMin\":0,\"inputTokensMax\":512000},\"remark\":\"官方标准价：输入$0.03/1M=0.21元、输出$0.15/1M=1.05元(1USD=7CNY)；灰度现价$0不采用，按标准原价维护\",\"inputPricePerMillion\":0.21,\"outputPricePerMillion\":1.05}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',1,NULL,NULL,1,1,1,0,1,1,0,0,0,0,0,NULL,NULL,NULL,'{\"sceneRules\":{\"textOnly\":{\"supportsAspectRatio\":false,\"supportsSizePreset\":false,\"supportsDuration\":false}}}',NULL,1,'{\"stream\": false, \"chat_template_kwargs\": {\"enable_thinking\": false}}','https://wiki.agnes-ai.com',0,0,NULL);
+INSERT INTO `aid_ai_model` VALUES (98,2,'doubao-seedance-2.0-fast','doubao-seedance-2-0-fast-260128','豆包Seedance 2.0 Fast','video','image_to_video','',0.000000,1.0000,'/api/v3/contents/generations/tasks','seedance-video',100,'0','0','2026-07-22 18:41:06','admin','2026-07-29 00:22:48','system','豆包Seedance 2.0 Fast；官方原价token精确换算积分/秒；含/不含输入视频双档；仅480P/720P；参考图最多9、输入视频最多3段总时长≤15秒；音画同生；保持停用','SKU','{\"mode\":\"SKU\",\"meterType\":\"PER_SECOND\",\"chargeType\":\"VIDEO\",\"preHold\":true,\"matchStrategy\":\"FIRST_HIT\",\"params\":[],\"skus\":[{\"skuCode\":\"SEEDANCE20_FAST_480P_INVIDEO\",\"skuName\":\"Seedance2.0 Fast 480P含输入视频\",\"enabled\":true,\"priority\":1,\"match\":{\"resolution\":\"480P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频22元/百万token精确换算0.220968元/秒,输入输出同价双计\",\"price\":1.1,\"pricePerSecond\":0.220968,\"inputPricing\":{\"video\":{\"unitPrice\":0.220968,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_FAST_720P_INVIDEO\",\"skuName\":\"Seedance2.0 Fast 720P含输入视频\",\"enabled\":true,\"priority\":2,\"match\":{\"resolution\":\"720P\",\"inputVideoCountMin\":1},\"remark\":\"官方原价含输入视频22元/百万token精确换算0.4752元/秒,输入输出同价双计\",\"price\":2.38,\"pricePerSecond\":0.4752,\"inputPricing\":{\"video\":{\"unitPrice\":0.4752,\"maxSeconds\":15,\"maxCount\":3}}},{\"skuCode\":\"SEEDANCE20_FAST_480P\",\"skuName\":\"Seedance2.0 Fast 480P\",\"enabled\":true,\"priority\":11,\"match\":{\"resolution\":\"480P\"},\"remark\":\"官方原价37元/百万token精确换算0.371628元/秒=37.1628积分/秒\",\"price\":1.86,\"pricePerSecond\":0.371628},{\"skuCode\":\"SEEDANCE20_FAST_720P\",\"skuName\":\"Seedance2.0 Fast 720P\",\"enabled\":true,\"priority\":12,\"match\":{\"resolution\":\"720P\"},\"remark\":\"官方原价37元/百万token精确换算0.7992元/秒=79.92积分/秒\",\"price\":4,\"pricePerSecond\":0.7992}],\"settleRule\":{\"settleMode\":\"REFUND_ONLY\",\"usageSource\":\"PROVIDER_USAGE\",\"charToTokenRatio\":2,\"allowRefund\":true,\"allowExtraCharge\":false}}',5,'{\"maxConcurrency\": 1}',NULL,1,1,1,1,1,1,1,1,1,0,0,'720P','16:9',5,'{\"sceneRules\": {\"textToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true}, \"imageToVideo\": {\"supportsDuration\": true, \"supportsSizePreset\": true, \"supportsAspectRatio\": true, \"aspectRatioFollowInput\": false}}, \"defaultSize\": \"720P\", \"sizeOptions\": [\"480P\", \"720P\"], \"supportsAudio\": true, \"durationOptions\": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], \"aspectRatioOptions\": [\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\"], \"defaultAspectRatio\": \"16:9\", \"maxReferenceAudios\": 3, \"maxReferenceImages\": 9, \"minReferenceImages\": 0, \"referenceAudioFormats\": [\"wav\", \"mp3\"], \"defaultDurationSeconds\": 5, \"supportsReferenceAudio\": true, \"referenceAudioMaxDurationSeconds\": 15, \"referenceAudioMinDurationSeconds\": 2, \"referenceAudioMaxTotalDurationSeconds\": 15}',NULL,1,NULL,NULL,0,0,NULL);
 -- 以上无列名位置 INSERT 完成后再扩展模型表，避免新字段改变历史位置值数量。
 ALTER TABLE `aid_ai_model`
   ADD COLUMN `logo_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL
@@ -261,7 +263,7 @@ INSERT INTO `aid_ai_model` (`id`,`provider_id`,`model_code`,`real_model_code`,`m
 (105,21,'kling-3.0-omni-first-last','kling-3.0-omni','可灵 3.0 Omni 首尾帧','video','image_to_video',0,1,'/omni-video/kling-3.0-omni','kling-video',100,'1','0',NOW(),'system','Omni 首帧+尾帧；最多3个主体；官方人民币原价已预置、计费倍率1、默认停用','SKU',@kling_omni_no_reference_video_billing_rule,1,1,1,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{"requiresConfiguredBilling":true,"klingScenario":"omni_first_last","sizeOptions":["720P","1080P","4K"],"aspectRatioOptions":["16:9","9:16","1:1"],"durationOptions":[3,4,5,6,7,8,9,10,11,12,13,14,15],"audioModeOptions":["off","native"],"defaultSize":"720P","defaultAspectRatio":"16:9","defaultDurationSeconds":5,"minReferenceImages":2,"maxReferenceImages":2,"defaultAudio":false,"supportsAudio":true,"supportsElements":true,"maxElements":3,"supportsVoiceControl":false,"sceneRules":{"imageToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":true,"aspectRatioFollowInput":true}}}',1),
 (106,21,'kling-3.0-omni-reference','kling-3.0-omni','可灵 3.0 Omni 多参考','video','image_to_video',0,1,'/omni-video/kling-3.0-omni','kling-video',100,'1','0',NOW(),'system','Omni 参考图/主体；按官方组合上限；官方人民币原价已预置、计费倍率1、默认停用','SKU',@kling_omni_no_reference_video_billing_rule,1,1,1,1,1,1,1,1,1,1,1,1,'720P','16:9',5,'{"requiresConfiguredBilling":true,"klingScenario":"omni_reference","sizeOptions":["720P","1080P","4K"],"aspectRatioOptions":["16:9","9:16","1:1"],"durationOptions":[3,4,5,6,7,8,9,10,11,12,13,14,15],"audioModeOptions":["off","native"],"defaultSize":"720P","defaultAspectRatio":"16:9","defaultDurationSeconds":5,"minReferenceImages":0,"maxReferenceImages":7,"defaultAudio":false,"supportsAudio":true,"supportsElements":true,"maxElements":7,"elementTypeRequired":true,"supportsVoiceControl":false,"sceneRules":{"imageToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":true,"aspectRatioFollowInput":false}}}',1),
 (107,21,'kling-3.0-omni-feature-video','kling-3.0-omni','可灵 3.0 Omni 视频特征参考','video','video_to_video',0,1,'/omni-video/kling-3.0-omni','kling-video',100,'1','0',NOW(),'system','Omni feature_video；支持参考图/多图主体组合或单视频角色主体；multi_shot=true/audio=off；官方人民币原价已预置、计费倍率1、默认停用','SKU',@kling_omni_reference_video_billing_rule,1,1,1,1,1,1,1,0,1,1,0,0,'720P',NULL,5,'{"requiresConfiguredBilling":true,"klingScenario":"omni_feature_video","sizeOptions":["720P","1080P","4K"],"durationOptions":[3,4,5,6,7,8,9,10,11,12,13,14,15],"audioModeOptions":["off"],"defaultSize":"720P","defaultDurationSeconds":5,"minReferenceImages":0,"maxReferenceImages":4,"defaultAudio":false,"supportsAudio":false,"supportsVideoInput":true,"maxReferenceVideos":1,"supportsElements":true,"maxElements":4,"elementTypeRequired":true,"referenceVideoRules":{"maxVideoCharacterElements":1,"maxReferenceImagesAndMultiImageElements":4,"forbidVideoCharacterWithReferenceImages":true,"forbidMixedElementTypes":true},"supportsVoiceControl":false,"sceneRules":{"videoToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":false}}}',1),
-(108,21,'kling-3.0-omni-edit','kling-3.0-omni','可灵 3.0 Omni 视频编辑','video','video_to_video',0,1,'/omni-video/kling-3.0-omni','kling-video',100,'1','0',NOW(),'system','Omni base_video；multi_shot=false；audio仅off/original；官方人民币原价已预置、计费倍率1、默认停用','SKU',@kling_omni_reference_video_billing_rule,1,1,1,1,1,1,1,0,1,1,0,0,'720P',NULL,5,'{"requiresConfiguredBilling":true,"klingScenario":"omni_edit","sizeOptions":["720P","1080P","4K"],"durationOptions":[3,4,5,6,7,8,9,10,11,12,13,14,15],"audioModeOptions":["off","original"],"defaultSize":"720P","defaultDurationSeconds":5,"minReferenceImages":0,"maxReferenceImages":4,"defaultAudio":false,"supportsAudio":false,"supportsVideoInput":true,"maxReferenceVideos":1,"supportsElements":true,"maxElements":4,"elementTypeRequired":true,"referenceVideoRules":{"maxVideoCharacterElements":1,"maxReferenceImagesAndMultiImageElements":4,"forbidVideoCharacterWithReferenceImages":true,"forbidMixedElementTypes":true},"supportsVoiceControl":false,"sceneRules":{"videoToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":false}}}',1);
+(108,21,'kling-3.0-omni-edit','kling-3.0-omni','可灵 3.0 Omni 视频编辑','video','video_to_video',0,1,'/omni-video/kling-3.0-omni','kling-video',100,'1','0',NOW(),'system','Omni base_video; video-edit official price pending; disabled','SKU',NULL,1,1,1,1,1,1,1,0,1,1,0,0,'720P',NULL,5,'{"requiresConfiguredBilling":true,"klingScenario":"omni_edit","sizeOptions":["720P","1080P","4K"],"durationOptions":[3,4,5,6,7,8,9,10,11,12,13,14,15],"audioModeOptions":["off","original"],"defaultSize":"720P","defaultDurationSeconds":5,"minReferenceImages":0,"maxReferenceImages":4,"defaultAudio":false,"supportsAudio":false,"supportsVideoInput":true,"maxReferenceVideos":1,"supportsElements":true,"maxElements":4,"elementTypeRequired":true,"referenceVideoRules":{"maxVideoCharacterElements":1,"maxReferenceImagesAndMultiImageElements":4,"forbidVideoCharacterWithReferenceImages":true,"forbidMixedElementTypes":true},"supportsVoiceControl":false,"sceneRules":{"videoToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":false}}}',1);
 INSERT INTO `aid_ai_model` (`id`,`provider_id`,`model_code`,`real_model_code`,`model_name`,`model_type`,`generate_mode`,`cost_credits`,`billing_multiplier`,`api_suffix`,`protocol`,`priority`,`status`,`del_flag`,`create_time`,`create_by`,`remark`,`billing_mode`,`billing_rule_json`,`billing_version`,`schedule_strategy_json`,`supports_text_input`,`supports_system_prompt`,`supports_image_input`,`supports_multi_image_input`,`max_output_count`,`default_output_count`,`supports_aspect_ratio`,`supports_size_preset`,`supports_duration`,`supports_first_frame`,`supports_last_frame`,`default_size_code`,`default_aspect_ratio`,`default_duration_seconds`,`capability_json`,`capability_inited`) VALUES
 (109,11,'minimax-h3-t2v','MiniMax-H3','MiniMax H3 文生视频','video','text_to_video',0,1,'/v2/video_generation','minimax-h3-video',120,'1','0',NOW(),'system','H3 文生视频；官方人民币原价；默认停用','SKU',@minimax_h3_billing_rule,1,@minimax_h3_schedule,1,1,0,0,1,1,1,1,1,0,0,'768P','16:9',5,'{"requiresConfiguredBilling":true,"videoScenario":"text_to_video","maxPromptCharacters":7000,"sizeOptions":["768P","2K"],"aspectRatioOptions":["21:9","16:9","4:3","1:1","3:4","9:16"],"durationOptions":[4,5,6,7,8,9,10,11,12,13,14,15],"defaultSize":"768P","defaultAspectRatio":"16:9","defaultDurationSeconds":5,"minReferenceImages":0,"maxReferenceImages":0,"rateLimitConcurrencyPaid":15,"rateLimitConcurrencyFree":2,"sceneRules":{"textToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":true}}}',1),
 (110,11,'minimax-h3-i2v-first','MiniMax-H3','MiniMax H3 首帧图生视频','video','image_to_video',0,1,'/v2/video_generation','minimax-h3-video',119,'1','0',NOW(),'system','H3 首帧图生视频；比例自适应；默认停用','SKU',@minimax_h3_billing_rule,1,@minimax_h3_schedule,1,1,1,0,1,1,0,1,1,1,0,'768P','adaptive',5,'{"requiresConfiguredBilling":true,"videoScenario":"first_frame","maxPromptCharacters":7000,"sizeOptions":["768P","2K"],"aspectRatioOptions":["adaptive"],"durationOptions":[4,5,6,7,8,9,10,11,12,13,14,15],"defaultSize":"768P","defaultAspectRatio":"adaptive","defaultDurationSeconds":5,"minReferenceImages":1,"maxReferenceImages":1,"referenceImageFormats":["jpg","jpeg","png","webp","heic","heif"],"referenceImageMaxFileSizeMb":30,"referenceImageMinDimensionPixels":256,"referenceImageMaxDimensionPixels":5760,"referenceImageMinAspectRatio":0.4,"referenceImageMaxAspectRatio":2.5,"rateLimitConcurrencyPaid":15,"rateLimitConcurrencyFree":2,"sceneRules":{"imageToVideo":{"supportsDuration":true,"supportsSizePreset":true,"supportsAspectRatio":false,"aspectRatioFollowInput":true}}}',1),
@@ -357,6 +359,14 @@ CREATE TABLE `aid_ai_provider`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `supports_callback` tinyint(1) NULL DEFAULT 0 COMMENT '是否支持回调通知',
   `schedule_strategy_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '默认调度策略JSON',
+  `provider_category` varchar(16) NULL DEFAULT NULL COMMENT '展示分类：AGGREGATOR三方聚合，OFFICIAL官方厂商',
+  `display_order` int NOT NULL DEFAULT 100 COMMENT '同类展示顺序，不参与调度',
+  `integration_type` varchar(16) NOT NULL DEFAULT 'NATIVE' COMMENT '接入方式',
+  `new_api_system_token_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '启用普通用户访问令牌',
+  `new_api_access_token` varchar(4096) NULL COMMENT '上游普通用户访问令牌',
+  `new_api_user_id` bigint NULL COMMENT '上游普通用户编号',
+  `new_api_group` varchar(128) NULL COMMENT '上游分组',
+  `new_api_token_id` bigint NULL COMMENT '上游调用令牌编号',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_provider_code`(`provider_code`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'AI服务商' ROW_FORMAT = Dynamic;
@@ -364,17 +374,17 @@ CREATE TABLE `aid_ai_provider`  (
 -- ----------------------------
 -- Records of aid_ai_provider
 -- ----------------------------
-INSERT INTO `aid_ai_provider` VALUES (1,'阿里百炼','dashscope','/aid/2026/07/06/a1c2f4b38230472cb5074382afa97dcc.jpg','https://dashscope.aliyuncs.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://bailian.console.aliyun.com/cn-beijing?tab=model#/api-key','https://help.aliyun.com/zh/model-studio/what-is-model-studio?spm=a2c4g.11174283.0.i0',NULL,'/api/v1/tasks/%s','0','0','2026-04-18 22:48:55','admin','2026-07-28 00:44:15','system','阿里百炼服务商',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"modelConcurrency\": 10, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"providerConcurrency\": 20, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (2,'火山方舟','volcengine','/aid/2026/07/06/b0538b7a72444c1ea45cc178d6dd3da1.jpg','https://ark.cn-beijing.volces.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://console.volcengine.com/ark','https://www.volcengine.com/docs/82379',NULL,'/api/v3/contents/generations/tasks/%s','0','0','2026-04-18 22:48:55','admin','2026-07-28 01:05:52','system','火山方舟服务商',0,'{\"dispatchMode\":\"POLL_ONLY\",\"supportsCallback\":false,\"firstPollDelaySeconds\":5,\"baseIntervalSeconds\":5,\"maxIntervalSeconds\":30,\"backoffFactor\":1.5,\"maxRetryCount\":120,\"maxLifeSeconds\":3600,\"providerConcurrency\":20,\"modelConcurrency\":10,\"maxConcurrency\":1,\"progressTimeoutSeconds\":600}');
-INSERT INTO `aid_ai_provider` VALUES (3,'即梦（火山视觉）','jimeng','/aid/2026/07/06/20147fcb2e7348c795fe6c14cf079280.jpg','https://visual.volcengineapi.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1','0','2026-04-18 22:48:55','admin','2026-07-28 00:44:15','system','即梦图片统一 Provider，独立 SigV4 鉴权，不复用方舟 Bearer',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (4,'Google Gemini','gemini','/aid/2026/06/28/780b866cf29b41269d455f6bba017ab1.png','https://generativelanguage.googleapis.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://aistudio.google.com/apikey','https://ai.google.dev/gemini-api/docs','https://ai.google.dev/gemini-api/docs/pricing',NULL,'0','0','2026-05-01 00:00:00','system','2026-07-29 00:28:33','system','Google Gemini 服务商；REST :streamGenerateContent?alt=sse；x-goog-api-key 鉴权\nhttps://generativelanguage.googleapis.com',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (6,'OpenAI','openai','/aid/2026/06/28/ae4d1a37233c454da5abe3bc6f66840b.png','https://api.openai.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.openai.com/api-keys','https://developers.openai.com/api/docs','https://developers.openai.com/api/docs/pricing',NULL,'1','0','2026-05-05 22:04:04','system','2026-07-29 00:28:33','system','OpenAI / ChatGPT 文本大模型服务商；base_url 可改为代理地址',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (9,'豆包语音合成','volcengine_tts','/aid/2026/06/28/be834b781cbd4931b6e4b358c5cc618d.jpg','https://openspeech.bytedance.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://console.volcengine.com/speech/new/setting/apikeys','https://www.volcengine.com/docs/6561/1257543','https://www.volcengine.com/docs/6561/1359370',NULL,'0','0','2026-05-10 23:04:07','system','2026-07-28 00:44:15','system','豆包语音合成 / 声音复刻统一网关；鉴权头：X-Api-App-Id / X-Api-Access-Key / X-Api-Resource-Id；异步提交 /api/v3/tts/submit + 轮询 /api/v3/tts/query',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (11,'MiniMax','minimax','/aid/2026/06/28/c00ff4fa7c5a4540bd3e0ce7757a0dc7.png','https://api.minimaxi.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.minimaxi.com/user-center/basic-information/interface-key','https://platform.minimaxi.com/docs','https://platform.minimaxi.com/docs/guides/pricing-paygo','/v2/query/video_generation/%s','1','0','2026-05-12 14:38:50','system','2026-08-10 00:00:00','system','MiniMax 全模态：TTS 保持 minimax-tts；H3 视频 V2 使用独立 minimax-h3-video 协议和官方主域',1,'{\"dispatchMode\":\"CALLBACK_FIRST\",\"supportsCallback\":true,\"callbackBaseUrl\":\"\",\"firstPollDelaySeconds\":10,\"baseIntervalSeconds\":10,\"maxIntervalSeconds\":60,\"backoffFactor\":1.5,\"maxRetryCount\":180,\"maxLifeSeconds\":7200,\"progressTimeoutSeconds\":900,\"maxConcurrency\":15}');
-INSERT INTO `aid_ai_provider` VALUES (17,'Agnes AI','agnes','/aid/2026/07/06/5960f856dcfa475ca2139e50837898f4.png','https://apihub.agnes-ai.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://apihub.agnes-ai.com','https://wiki.agnes-ai.com','https://wiki.agnes-ai.com/en/docs/pricing.md','/agnesapi?video_id=%s','0','0','2026-06-05 19:37:49','system','2026-09-09 00:00:00','system','Agnes AI OpenAI 兼容网关：文本(/v1/chat/completions) + 图片(/v1/images/generations) + 视频(/v1/videos)；视频异步轮询 /v1/videos/{task_id}',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (18,'Vidu','vidu','/aid/2026/06/28/29a1c29484e04e5393e25cc46a2dff49.jpg','https://api.vidu.cn','',NULL,'Authorization','Token ',NULL,NULL,NULL,'https://platform.vidu.cn/','https://platform.vidu.cn/docs/introduction',NULL,'/ent/v2/tasks/%s/creations','0','0','2026-06-26 11:14:34','','2026-07-28 00:44:15','system','Vidu 多模态（图片/视频）；回调优先+轮询兜底',1,'{\"dispatchMode\": \"CALLBACK_FIRST\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 1, \"maxLifeSeconds\": 3600, \"callbackBaseUrl\": \"\", \"modelConcurrency\": 10, \"supportsCallback\": true, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"providerConcurrency\": 20, \"firstPollDelaySeconds\": 10, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (20,'DeepSeek','deepseek','/aid/2026/07/17/33919808cdb2492da44d8889ff305675.jpg','https://api.deepseek.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.deepseek.com/api_keys','https://api-docs.deepseek.com/zh-cn/','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',NULL,'0','0','2026-07-16 11:14:05','system','2026-07-28 00:44:15','system','DeepSeek 开放平台（OpenAI 兼容 /chat/completions，base_url 无 /v1）；api_key 待运营填写；并发上限账号粒度 flash=2500/pro=500，超限上游 429',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 5, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
-INSERT INTO `aid_ai_provider` VALUES (21,'可灵 AI','kling',NULL,'https://api-beijing.klingai.com','','','Authorization','Bearer ',NULL,NULL,NULL,'https://klingai.com/dev','https://klingai.com/document-api','https://klingai.com/document-api/pricing/base/video','/tasks?task_ids=%s','1','0',NOW(),'system',NOW(),'system','可灵 3.0 官方新版 API；默认纯轮询；API Key 使用 Bearer；启用回调前在 api_secret 填写 whsec_ Webhook Secret',0,'{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":10,"baseIntervalSeconds":10,"maxIntervalSeconds":60,"backoffFactor":1.5,"maxRetryCount":180,"maxLifeSeconds":7200,"progressTimeoutSeconds":900,"maxConcurrency":1}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (1,'阿里百炼','dashscope','/brand-icons/dashscope.jpg','https://dashscope.aliyuncs.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://bailian.console.aliyun.com/cn-beijing?tab=model#/api-key','https://help.aliyun.com/zh/model-studio/what-is-model-studio?spm=a2c4g.11174283.0.i0',NULL,'/api/v1/tasks/%s','0','0','2026-04-18 22:48:55','admin','2026-07-28 00:44:15','system','阿里百炼服务商',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"modelConcurrency\": 10, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"providerConcurrency\": 20, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (2,'火山方舟','volcengine','/brand-icons/volcengine.jpg','https://ark.cn-beijing.volces.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://console.volcengine.com/ark','https://www.volcengine.com/docs/82379',NULL,'/api/v3/contents/generations/tasks/%s','0','0','2026-04-18 22:48:55','admin','2026-07-28 01:05:52','system','火山方舟服务商',0,'{\"dispatchMode\":\"POLL_ONLY\",\"supportsCallback\":false,\"firstPollDelaySeconds\":5,\"baseIntervalSeconds\":5,\"maxIntervalSeconds\":30,\"backoffFactor\":1.5,\"maxRetryCount\":120,\"maxLifeSeconds\":3600,\"providerConcurrency\":20,\"modelConcurrency\":10,\"maxConcurrency\":1,\"progressTimeoutSeconds\":600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (3,'即梦（火山视觉）','jimeng','/brand-icons/jimeng.jpg','https://visual.volcengineapi.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'1','0','2026-04-18 22:48:55','admin','2026-07-28 00:44:15','system','即梦图片统一 Provider，独立 SigV4 鉴权，不复用方舟 Bearer',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (4,'Google Gemini','gemini','/brand-icons/gemini.png','https://generativelanguage.googleapis.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://aistudio.google.com/apikey','https://ai.google.dev/gemini-api/docs','https://ai.google.dev/gemini-api/docs/pricing',NULL,'0','0','2026-05-01 00:00:00','system','2026-07-29 00:28:33','system','Google Gemini 服务商；REST :streamGenerateContent?alt=sse；x-goog-api-key 鉴权\nhttps://generativelanguage.googleapis.com',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (6,'OpenAI','openai','/brand-icons/openai.png','https://api.openai.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.openai.com/api-keys','https://developers.openai.com/api/docs','https://developers.openai.com/api/docs/pricing',NULL,'1','0','2026-05-05 22:04:04','system','2026-07-29 00:28:33','system','OpenAI / ChatGPT 文本大模型服务商；base_url 可改为代理地址',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (9,'豆包语音合成','volcengine_tts','/brand-icons/volcengine_tts.jpg','https://openspeech.bytedance.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://console.volcengine.com/speech/new/setting/apikeys','https://www.volcengine.com/docs/6561/1257543','https://www.volcengine.com/docs/6561/1359370',NULL,'0','0','2026-05-10 23:04:07','system','2026-07-28 00:44:15','system','豆包语音合成 / 声音复刻统一网关；鉴权头：X-Api-App-Id / X-Api-Access-Key / X-Api-Resource-Id；异步提交 /api/v3/tts/submit + 轮询 /api/v3/tts/query',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (11,'MiniMax','minimax','/brand-icons/minimax.png','https://api.minimaxi.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.minimaxi.com/user-center/basic-information/interface-key','https://platform.minimaxi.com/docs','https://platform.minimaxi.com/docs/guides/pricing-paygo','/v2/query/video_generation/%s','1','0','2026-05-12 14:38:50','system','2026-08-10 00:00:00','system','MiniMax 全模态：TTS 保持 minimax-tts；H3 视频 V2 使用独立 minimax-h3-video 协议和官方主域',1,'{\"dispatchMode\":\"CALLBACK_FIRST\",\"supportsCallback\":true,\"callbackBaseUrl\":\"\",\"firstPollDelaySeconds\":10,\"baseIntervalSeconds\":10,\"maxIntervalSeconds\":60,\"backoffFactor\":1.5,\"maxRetryCount\":180,\"maxLifeSeconds\":7200,\"progressTimeoutSeconds\":900,\"maxConcurrency\":15}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (17,'Agnes AI','agnes','/brand-icons/agnes.png','https://apihub.agnes-ai.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://apihub.agnes-ai.com','https://wiki.agnes-ai.com','https://wiki.agnes-ai.com/en/docs/pricing.md','/agnesapi?video_id=%s','0','0','2026-06-05 19:37:49','system','2026-09-09 00:00:00','system','Agnes AI OpenAI 兼容网关：文本(/v1/chat/completions) + 图片(/v1/images/generations) + 视频(/v1/videos)；视频异步轮询 /v1/videos/{task_id}',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 20, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (18,'Vidu','vidu','/brand-icons/vidu.jpg','https://api.vidu.cn','',NULL,'Authorization','Token ',NULL,NULL,NULL,'https://platform.vidu.cn/','https://platform.vidu.cn/docs/introduction',NULL,'/ent/v2/tasks/%s/creations','0','0','2026-06-26 11:14:34','','2026-07-28 00:44:15','system','Vidu 多模态（图片/视频）；回调优先+轮询兜底',1,'{\"dispatchMode\": \"CALLBACK_FIRST\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 1, \"maxLifeSeconds\": 3600, \"callbackBaseUrl\": \"\", \"modelConcurrency\": 10, \"supportsCallback\": true, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"providerConcurrency\": 20, \"firstPollDelaySeconds\": 10, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (20,'DeepSeek','deepseek','/brand-icons/deepseek.jpg','https://api.deepseek.com','',NULL,'Authorization','Bearer ',NULL,NULL,NULL,'https://platform.deepseek.com/api_keys','https://api-docs.deepseek.com/zh-cn/','https://api-docs.deepseek.com/zh-cn/quick_start/pricing',NULL,'0','0','2026-07-16 11:14:05','system','2026-07-28 00:44:15','system','DeepSeek 开放平台（OpenAI 兼容 /chat/completions，base_url 无 /v1）；api_key 待运营填写；并发上限账号粒度 flash=2500/pro=500，超限上游 429',0,'{\"dispatchMode\": \"POLL_ONLY\", \"backoffFactor\": 1.5, \"maxRetryCount\": 120, \"maxConcurrency\": 5, \"maxLifeSeconds\": 3600, \"supportsCallback\": false, \"maxIntervalSeconds\": 30, \"baseIntervalSeconds\": 5, \"firstPollDelaySeconds\": 5, \"progressTimeoutSeconds\": 600}');
+INSERT INTO `aid_ai_provider` (`id`, `provider_name`, `provider_code`, `logo_url`, `base_url`, `api_key`, `api_secret`, `auth_header`, `auth_prefix`, `extra_headers`, `extra_body`, `extra_query`, `api_key_apply_url`, `official_doc_url`, `official_price_url`, `task_query_suffix`, `status`, `del_flag`, `create_time`, `create_by`, `update_time`, `update_by`, `remark`, `supports_callback`, `schedule_strategy_json`) VALUES (21,'可灵 AI','kling',NULL,'https://api-beijing.klingai.com','','','Authorization','Bearer ',NULL,NULL,NULL,'https://klingai.com/dev','https://klingai.com/document-api','https://klingai.com/document-api/pricing/base/video','/tasks?task_ids=%s','1','0',NOW(),'system',NOW(),'system','可灵 3.0 官方新版 API；默认纯轮询；API Key 使用 Bearer；启用回调前在 api_secret 填写 whsec_ Webhook Secret',0,'{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":10,"baseIntervalSeconds":10,"maxIntervalSeconds":60,"backoffFactor":1.5,"maxRetryCount":180,"maxLifeSeconds":7200,"progressTimeoutSeconds":900,"maxConcurrency":1}');
 -- ----------------------------
 -- Table structure for aid_ai_voice_library
 -- ----------------------------
@@ -1318,7 +1328,7 @@ INSERT INTO `aid_config` VALUES (177, 'mail', 'daily_limit', '10', '同邮箱/�
 INSERT INTO `aid_config` VALUES (182, 'captcha', 'enabled', 'false', '行为验证码总开关(true/false)', '0', 1, '2026-05-29 16:26:13', '', '', '2026-07-09 23:11:28', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (183, 'captcha', 'type', 'RANDOM', '类型:SLIDER/ROTATE/WORD_IMAGE_CLICK/CONCAT/RANDOM', '0', 2, '2026-05-29 16:26:13', '', '', '2026-05-30 03:48:23', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (184, 'captcha', 'protected_scenes', 'login,sendCode', '受保护场景,逗号分隔', '0', 3, '2026-05-29 16:26:13', '', '', NULL, NULL, NULL, NULL, 0);
-INSERT INTO `aid_config` VALUES (185, 'captcha', 'background_urls', '/aid/2026/06/28/a9c3e9bf02ec4689a2ae776d15c1db16.png,/aid/2026/06/28/5320f5ec7c7847c3acd1445935060ccd.png,/aid/2026/06/28/75b8ef692fac4c2bb92968c60cf44541.png,/aid/2026/06/28/4834114240464a4495cb843955b72f78.png', '背景图CDN地址,逗号分隔;为空则不开启', '0', 4, '2026-05-29 16:26:13', '', '', '2026-06-28 21:02:47', NULL, NULL, NULL, 0);
+INSERT INTO `aid_config` VALUES (185, 'captcha', 'background_urls', '/captcha-backgrounds/1.png,/captcha-backgrounds/2.png,/captcha-backgrounds/3.png,/captcha-backgrounds/4.png', '验证码背景地址，留空时使用内置图片', '0', 4, '2026-05-29 16:26:13', '', '', '2026-06-28 21:02:47', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (186, 'captcha', 'token_expire_seconds', '300', '二次验证token有效期(秒)', '0', 5, '2026-05-29 16:26:13', '', '', NULL, NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (187, 'captcha', 'captcha_expire_seconds', '120', '验证码数据有效期(秒)', '0', 6, '2026-05-29 16:26:14', '', '', NULL, NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (188, 'api_crypto', 'enabled', 'false', '接口加密总开关(true/false)；前端按 /auth/public-config 的 crypto.enabled 决定是否加密', '0', 1, '2026-05-31 19:14:24', 'admin', '', '2026-07-09 23:11:31', NULL, 1, NULL, 0);
@@ -1355,14 +1365,14 @@ INSERT INTO `aid_config` VALUES (255, 'basic', 'third_party_sdk_and_information_
 INSERT INTO `aid_config` VALUES (256, 'basic', 'terms_of_service', 'https://gzxxaitdb.feishu.cn/docx/NKcNdne9xor8EtxobFycMU9KnIc', '用户协议', '0', 4, '2026-06-26 21:44:23', '', '', '2026-06-26 21:44:23', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (257, 'basic', 'privacy_policy', 'https://gzxxaitdb.feishu.cn/docx/Omo6dPlelonDe4xFfcWcprglnUd?from=from_copylink', '隐私政策', '0', 5, '2026-06-26 21:44:23', '', '', '2026-06-26 21:44:23', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (259, 'basic', 'record_filing_number', '', '备案号', '0', 7, '2026-06-26 21:44:23', '', '', '2026-06-26 21:44:23', NULL, NULL, NULL, 0);
-INSERT INTO `aid_config` VALUES (260, 'basic', 'exchange_image_url', '/aid/2026/07/21/adc6942b6f0c4ffcb663961cb63e9adf.jpg', '交流二维码图片地址', '0', 8, '2026-06-26 21:44:23', '', 'admin', '2026-07-21 23:35:22', NULL, NULL, NULL, 0);
+INSERT INTO `aid_config` VALUES (260, 'basic', 'exchange_image_url', '/profile/aid/2026/07/21/adc6942b6f0c4ffcb663961cb63e9adf.jpg', '交流二维码图片地址', '0', 8, '2026-06-26 21:44:23', '', 'admin', '2026-07-21 23:35:22', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (261, 'image_moderation', 'bizType', '', '控制台策略编号 可空', '0', 6, '2026-06-27 19:48:00', '', '', NULL, NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (262, 'login_policy', 'allow_multi_online', 'true', '是否允许多端在线(true/false)', '0', 1, '2026-06-28 15:09:34', '', '', NULL, '需求10：关闭后同账号仅允许1个会话，新登录挤掉旧登录', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (263, 'login_policy', 'max_online_count', '3', '多端在线时最大会话数', '0', 2, '2026-06-28 15:09:34', '', '', NULL, '需求10：allow_multi_online=true 时生效，超出按登录时间挤掉最旧会话', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (264, 'admin_entry', 'enabled', 'false', '是否启用后台安全登录入口(true/false)', '0', 1, '2026-06-28 18:23:24', '', '', '2026-06-28 19:09:17', '开启后仅 站点/<access_code> 可进入后台登录页', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (265, 'admin_entry', 'access_code', '', '后台登录访问码(安装时生成12位随机值)', '0', 2, '2026-06-28 18:23:24', '', '', '2026-06-28 19:09:17', '首次部署由安装器生成随机访问码；登录后可在「全局业务配置→登录与认证→后台登录入口」重新生成', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (266, 'admin_entry', 'rate_limit_per_min', '10', '单IP每分钟尝试次数(<=0不限流)', '0', 3, '2026-06-28 18:59:20', '', '', '2026-06-28 19:09:18', '后台登录与访问码校验的单IP每分钟限流阈值，可动态调整', NULL, NULL, 0);
-INSERT INTO `aid_config` VALUES (267, 'default_avatar', 'urls', '/aid/2026/06/28/8d5e6414399e4fd3a66b44342ee6d421.png,/aid/2026/06/28/42de0f9179f54330bd5e2ce005c061cd.png,/aid/2026/06/28/db7f8914abbc43a68166a85ba42944f6.png,/aid/2026/06/28/16dea209bde84cd6a61ee23b8155b02a.png,/aid/2026/07/21/194827b2b6a64490b9af8604cd15a582.png', '默认头像图片地址(逗号分隔,最多5张)', '0', 1, '2026-06-28 20:14:43', '', 'admin', '2026-07-21 16:38:15', '注册时从这些头像中随机选取；为空则用户头像可为空', NULL, NULL, 0);
+INSERT INTO `aid_config` VALUES (267, 'default_avatar', 'urls', '/default-avatars/1.png,/default-avatars/2.png,/default-avatars/3.png,/default-avatars/4.png,/default-avatars/5.png', '默认头像图片地址(逗号分隔,最多5张)', '0', 1, '2026-06-28 20:14:43', '', 'admin', '2026-07-21 16:38:15', '注册时随机选择；留空时使用内置头像', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (268, 'mps', 'enabled', 'false', '媒体处理总开关', '0', 1, '2026-06-29 23:14:38', 'system', 'system', '2026-08-20 00:00:00', '关闭后不再接收新的整片合成任务', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (269, 'mps', 'processMode', 'tencent-mps', '媒体处理方式', '0', 2, '2026-06-29 23:14:38', 'system', 'system', '2026-08-20 00:00:00', '可选 tencent-mps、aliyun-ims、local-ffmpeg', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (270, 'mps', 'tencentSecretId', '', '腾讯云SecretId', '0', 3, '2026-06-29 23:14:38', 'system', 'system', '2026-08-20 00:00:00', '腾讯云MPS访问密钥ID', NULL, NULL, 0);
@@ -1402,7 +1412,7 @@ INSERT INTO `aid_config` VALUES (336, 'basic', 'company_address', '', '公司地
 INSERT INTO `aid_config` VALUES (337, 'basic', 'service_email', '', '服务邮箱', '0', 14, '2026-07-16 14:56:46', 'admin', 'admin', '2026-07-21 22:53:40', NULL, 1, NULL, 0);
 INSERT INTO `aid_config` VALUES (338, 'basic', 'contact_phone', '', '联系电话', '0', 15, '2026-07-16 14:56:47', 'admin', 'admin', '2026-07-21 23:03:10', NULL, 1, NULL, 0);
 INSERT INTO `aid_config` VALUES (339, 'basic', 'work_publish_enabled', 'true', '作品发布', '0', 16, '2026-07-16 14:56:47', 'admin', 'admin', '2026-07-21 22:54:35', NULL, 1, NULL, 0);
-INSERT INTO `aid_config` VALUES (343, 'system_upgrade', 'manifest_url', '', '版本更新清单地址', '0', 1, '2026-07-20 08:43:42', 'admin', 'admin', '2026-07-23 01:17:23', NULL, NULL, NULL, 0);
+INSERT INTO `aid_config` VALUES (343, 'system_upgrade', 'manifest_url', '/aid/release/latest.json', '版本更新清单地址', '0', 1, '2026-07-20 08:43:42', 'admin', 'admin', '2026-07-23 01:17:23', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (344, 'system_upgrade', 'updater_download_url', '', '升级器下载地址', '0', 2, '2026-07-20 08:43:42', 'admin', 'admin', '2026-07-20 16:43:12', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (345, 'system_upgrade', 'updater_health_file', '', '升级器健康文件路径', '0', 3, '2026-07-20 08:43:42', 'admin', 'admin', '2026-07-20 16:43:12', NULL, NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (346, 'official_gateway', 'enabled', 'false', '官方统一网关总开关（true=全局厂商走官方网关）', '0', 1, '2026-07-20 08:43:42', 'admin', 'admin', '2026-07-22 16:33:46', NULL, NULL, NULL, 0);
@@ -1477,6 +1487,18 @@ INSERT INTO `aid_config` VALUES (436, 'media_eta', 'queue_p50_seconds', '15', '�
 INSERT INTO `aid_config` VALUES (437, 'media_eta', 'queue_p90_seconds', '60', '排队默认P90秒数', '0', 13, '2026-08-29 00:00:00', 'system', 'system', '2026-08-29 00:00:00', '排队样本不足时的保守等待时间', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (438, 'account_security', 'cancel_re_registration_enabled', 'true', '注销后再次注册限制开关', '0', 1, '2026-08-30 00:00:00', 'system', 'system', '2026-08-30 00:00:00', '关闭后注销账号可立即再次注册', NULL, NULL, 0);
 INSERT INTO `aid_config` VALUES (439, 'account_security', 'cancel_re_registration_days', '15', '注销后再次注册限制天数', '0', 2, '2026-08-30 00:00:00', 'system', 'system', '2026-08-30 00:00:00', '开启限制时生效，允许设置1至3650天', NULL, NULL, 0);
+INSERT INTO `aid_config` (`category`, `config_name`, `config_value`, `config_dict`, `del_flag`, `order_num`, `create_time`, `create_by`, `remark`) VALUES
+('image_object_detection', 'enabled', 'false', '启用图像主体检测', '0', 1, NOW(), 'system', '默认关闭；平台承担供应商费用'),
+('image_object_detection', 'provider', 'tencent_ci', '检测供应商', '0', 2, NOW(), 'system', '腾讯云数据万象'),
+('image_object_detection', 'credentialSource', 'COS_STORAGE', '凭证来源', '0', 3, NOW(), 'system', 'COS_STORAGE 或 DEDICATED'),
+('image_object_detection', 'region', '', '独立凭证地域', '0', 4, NOW(), 'system', '仅 DEDICATED 使用'),
+('image_object_detection', 'bucketName', '', '独立调用桶', '0', 5, NOW(), 'system', '仅 DEDICATED 使用'),
+('image_object_detection', 'secretId', '', '独立 SecretId', '0', 6, NOW(), 'system', '仅 DEDICATED 使用'),
+('image_object_detection', 'secretKey', '', '独立 SecretKey', '0', 7, NOW(), 'system', '仅 DEDICATED 使用'),
+('image_object_detection', 'cosImageAccessMode', 'COS_OBJECT', 'COS 原图取图方式', '0', 8, NOW(), 'system', 'COS_OBJECT 或 PUBLIC_URL'),
+('image_object_detection', 'connectTimeoutMs', '3000', '连接超时毫秒', '0', 9, NOW(), 'system', NULL),
+('image_object_detection', 'readTimeoutMs', '15000', '读取超时毫秒', '0', 10, NOW(), 'system', NULL),
+('image_object_detection', 'maxCallsPerUserMinute', '10', '单用户每分钟调用上限', '0', 11, NOW(), 'system', NULL);
 
 -- ----------------------------
 -- Table structure for aid_episode_editor
@@ -2015,11 +2037,13 @@ DROP TABLE IF EXISTS `aid_media_result`;
 CREATE TABLE `aid_media_result`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `task_id` bigint(20) NOT NULL COMMENT '关联任务ID',
+  `result_index` int(11) NOT NULL DEFAULT 0 COMMENT '同一任务内的结果序号',
   `media_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '媒体类型：IMAGE/VIDEO',
   `origin_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '上游原始URL',
   `oss_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '持久化URL',
   `mime_type` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型',
   `file_size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小（Byte）',
+  `metadata_json` json NULL COMMENT '有序图片结果的尺寸与图层位置元数据',
   `duration_seconds` int(11) NULL DEFAULT NULL COMMENT '视频时长（秒）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
@@ -2027,7 +2051,8 @@ CREATE TABLE `aid_media_result`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_task_id`(`task_id`) USING BTREE
+  INDEX `idx_task_id`(`task_id`) USING BTREE,
+  UNIQUE KEY `uk_media_result_task_index` (`task_id`,`result_index`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '媒体结果表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2108,6 +2133,40 @@ CREATE TABLE `aid_media_task`  (
 -- ----------------------------
 -- Records of aid_media_task
 -- ----------------------------
+
+-- Tencent and other media processors record input references and owned temporary files here.
+DROP TABLE IF EXISTS `aid_media_task_file`;
+CREATE TABLE `aid_media_task_file` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `media_task_id` bigint(20) NULL DEFAULT NULL,
+  `provider_token` varchar(64) NOT NULL,
+  `file_role` varchar(32) NOT NULL,
+  `storage_provider` varchar(20) NOT NULL,
+  `region` varchar(64) NOT NULL,
+  `bucket_name` varchar(128) NOT NULL,
+  `object_key` varchar(1024) NOT NULL,
+  `stored_url` varchar(1000) NULL DEFAULT NULL,
+  `content_type` varchar(100) NULL DEFAULT NULL,
+  `file_size` bigint(20) NULL DEFAULT NULL,
+  `temporary` tinyint(1) NOT NULL DEFAULT 0,
+  `cleanup_state` varchar(20) NOT NULL DEFAULT 'ACTIVE',
+  `create_time` datetime NOT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_media_file_token_role` (`provider_token`, `file_role`),
+  KEY `idx_media_file_task` (`media_task_id`, `cleanup_state`),
+  KEY `idx_media_file_object` (`storage_provider`, `bucket_name`, `region`, `object_key`(191), `cleanup_state`),
+  KEY `idx_media_file_cleanup` (`temporary`, `cleanup_state`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='媒体任务输入引用与临时文件归属';
+
+INSERT INTO `aid_config` (`category`, `config_name`, `config_value`, `config_dict`, `del_flag`, `order_num`, `create_time`, `create_by`, `tenant_id`)
+VALUES ('tencent_media_cos', 'stagingPrefix', 'aid-ci/staging/', '腾讯云媒体处理临时对象目录', '0', 1, NOW(), 'system', 0);
+
+INSERT INTO `aid_config` (`category`, `config_name`, `config_value`, `config_dict`, `del_flag`, `order_num`, `create_time`, `create_by`, `tenant_id`)
+VALUES
+  ('tencent_media_portrait', 'enabled', 'true', '腾讯云数据万象视频人像分割', '0', 1, NOW(), 'system', 0),
+  ('tencent_media_voice', 'enabled', 'true', '腾讯云数据万象人声与背景音分离', '0', 1, NOW(), 'system', 0),
+  ('tencent_media_subtitle', 'enabled', 'true', '腾讯云 MPS 去字幕', '0', 1, NOW(), 'system', 0);
 
 -- ----------------------------
 -- Table structure for aid_media_eta_stat
@@ -6663,6 +6722,7 @@ WHERE id=85 AND model_code='vidu-q3-lipsync' AND protocol='vidu-video'
   AND real_model_code='viduq3' AND JSON_EXTRACT(capability_json, '$.lipSync')=TRUE;
 
 -- BEGIN MODEL_CAPABILITY_INSTALLATION_DATA
+-- The matching unreleased upgrade backfills these public capability, protocol and alias records on older installations.
 UPDATE aid_ai_model SET config_version=1 WHERE id=1 AND model_code='qwen3.7-max';
 UPDATE aid_ai_model SET config_version=1 WHERE id=2 AND model_code='qwen3.7-plus';
 UPDATE aid_ai_model SET config_version=1 WHERE id=3 AND model_code='doubao-seed-2.0-pro-260215';
@@ -7226,6 +7286,27 @@ INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code,
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'main_storyboard_image', 67, 'image_to_image', 1, NULL, 5, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='main_storyboard_image' AND model_id=67 AND capability_code='image_to_image');
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'image_edit', 67, 'image_to_image', 1, NULL, 6, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='image_edit' AND model_id=67 AND capability_code='image_to_image');
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'image_multi_grid', 67, 'image_to_image', 1, NULL, 7, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='image_multi_grid' AND model_id=67 AND capability_code='image_to_image');
+
+-- Form images without a reference require text_to_image; keep the existing image_to_image default.
+INSERT INTO aid_ai_business_model_binding
+  (func_code, model_id, capability_code, default_capability, defaults_json, sort_order,
+   create_time, create_by)
+SELECT b.func_code, b.model_id, 'text_to_image', 0, NULL, b.sort_order + 1,
+       NOW(), 'installation'
+FROM aid_ai_business_model_binding b
+JOIN aid_ai_model m ON m.id = b.model_id
+JOIN aid_ai_model_capability c ON c.model_id = b.model_id
+  AND c.capability_code = 'text_to_image'
+WHERE m.model_code IN ('agnes-image-2.0-flash', 'agnes-image-2.1-flash')
+  AND m.del_flag = '0'
+  AND b.func_code IN ('main_character_image', 'main_scene_image', 'main_prop_image')
+  AND b.capability_code = 'image_to_image'
+  AND JSON_UNQUOTE(JSON_EXTRACT(c.definition_json, '$.enabled')) = 'true'
+  AND NOT EXISTS (
+    SELECT 1 FROM aid_ai_business_model_binding x
+    WHERE x.func_code = b.func_code AND x.model_id = b.model_id
+      AND x.capability_code = 'text_to_image'
+  );
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'main_storyboard_video_image', 68, 'image_to_video', 1, NULL, 0, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='main_storyboard_video_image' AND model_id=68 AND capability_code='image_to_video');
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'main_storyboard_video_edge', 68, 'start_end_to_video', 1, NULL, 1, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='main_storyboard_video_edge' AND model_id=68 AND capability_code='start_end_to_video');
 INSERT INTO aid_ai_business_model_binding (func_code, model_id, capability_code, default_capability, defaults_json, sort_order, create_time, create_by) SELECT 'main_storyboard_video_grid', 68, 'image_to_video', 1, NULL, 2, NOW(), 'installation' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding WHERE func_code='main_storyboard_video_grid' AND model_id=68 AND capability_code='image_to_video');
@@ -8346,3 +8427,2156 @@ ALTER TABLE `aid_ai_model`
   ADD UNIQUE INDEX `uk_aid_ai_model_active_code` (`active_model_code`),
   ADD INDEX `idx_aid_ai_model_model_code` (`model_code`),
   DROP INDEX `uk_aid_ai_model_model_code`;
+
+-- 未发布：Topaz Labs 图片处理供应商与模型目录；MySQL 5.7，可重复执行。
+SET NAMES utf8mb4;
+-- 供应商与模型默认停用；密钥和人民币售价须由站长在后台设置，启用前进行真实上游验证。
+INSERT INTO aid_ai_provider
+ (provider_name, provider_code, logo_url, base_url, api_key, auth_header, auth_prefix,
+  api_key_apply_url, official_doc_url, official_price_url, task_query_suffix,
+  status, del_flag, create_time, create_by, remark, supports_callback, schedule_strategy_json)
+SELECT 'Topaz Labs', 'topaz', '/brand-icons/topaz.ico', 'https://api.topazlabs.com', '', 'X-API-Key', '',
+ 'https://www.topazlabs.com/api', 'https://developer.topazlabs.com/',
+ 'https://developer.topazlabs.com/getting-started/model-pricing.md',
+ '/image/v1/status/%s', '1', '0', NOW(), 'system',
+ '官方 Image API；按输出像素档位配置人民币 SKU 后启用，不在 SQL 中保存密钥', 0,
+ '{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":5,"baseIntervalSeconds":5,"maxIntervalSeconds":30,"maxLifeSeconds":3600,"providerConcurrency":10,"modelConcurrency":5}'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_provider WHERE provider_code = 'topaz');
+
+-- 所有模型每次输入一张图、输出一张图，按明确输出宽高计算像素并匹配既有 SKU 账本。
+SET @topaz_precision_params = JSON_OBJECT(
+ 'faceEnhancement', JSON_OBJECT('type','boolean','upstream','face_enhancement'),
+ 'faceEnhancementStrength', JSON_OBJECT('type','number','min',0,'max',1,'upstream','face_enhancement_strength'),
+ 'faceEnhancementCreativity', JSON_OBJECT('type','number','min',0,'max',1,'upstream','face_enhancement_creativity'),
+ 'subjectDetection', JSON_OBJECT('type','string','enum',JSON_ARRAY('foreground','background','all'),'upstream','subject_detection'),
+ 'sharpen', JSON_OBJECT('type','number','min',0,'max',1),
+ 'denoise', JSON_OBJECT('type','number','min',0,'max',1),
+ 'fixCompression', JSON_OBJECT('type','number','min',0,'max',1,'upstream','fix_compression'),
+ 'strength', JSON_OBJECT('type','number','min',0.01,'max',1),
+ 'outputFormat', JSON_OBJECT('type','string','enum',JSON_ARRAY('jpeg','jpg','png','tiff','tif'),'upstream','output_format'),
+ 'cropToFill', JSON_OBJECT('type','boolean','upstream','crop_to_fill'));
+SET @topaz_precision_capability = JSON_OBJECT(
+ 'minReferenceImages',1,'maxReferenceImages',1,'referenceImageMaxPixels',512000000,
+ 'referenceImageFormats',JSON_ARRAY('jpeg','jpg','png','tiff','tif'),
+ 'maxOutputPixels',1024000000,'allowCustomWH',true,'requiresConfiguredBilling',true,
+ 'sceneRules',JSON_OBJECT('imageUpscale',JSON_OBJECT('inputRequirement','image_required')),
+ 'providerParameters',CAST(@topaz_precision_params AS JSON));
+
+INSERT INTO aid_ai_model
+ (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+  api_suffix, protocol, cost_credits, billing_mode, billing_rule_json, status, del_flag,
+  create_time, create_by, remark, image_refine, supports_text_input, supports_image_input,
+  supports_multi_image_input, max_output_count, default_output_count, supports_size_preset, supports_aspect_ratio,
+  capability_json, capability_inited, official_price_url)
+SELECT p.id, catalog.code, catalog.upstream, catalog.label, 'image', 'image_upscale',
+ catalog.endpoint, 'topaz-image', 0, 'SKU', NULL, '1', '0', NOW(), 'system',
+ 'Topaz 官方图片处理模型；未配置密钥、人民币 SKU 和实测前保持停用', 3, catalog.text_input,
+ 1, 0, 1, 1, 0, 0, catalog.capability, 1,
+ 'https://developer.topazlabs.com/getting-started/model-pricing.md'
+FROM aid_ai_provider p JOIN (
+ SELECT 'topaz-standard-2' code, 'Standard V2' upstream, 'Topaz Standard 2' label,
+  '/image/v1/enhance/async' endpoint, 0 text_input, @topaz_precision_capability capability
+ UNION ALL SELECT 'topaz-low-resolution-2', 'Low Resolution V2', 'Topaz Low Resolution 2',
+  '/image/v1/enhance/async', 0, @topaz_precision_capability
+ UNION ALL SELECT 'topaz-art-cgi', 'CGI', 'Topaz Art & CGI',
+  '/image/v1/enhance/async', 0,
+  JSON_SET(@topaz_precision_capability,'$.providerParameters.deblurStrength',
+   JSON_OBJECT('type','number','min',0,'max',1))
+ UNION ALL SELECT 'topaz-high-fidelity-3', 'Upscale High Fidelity V3', 'Topaz High Fidelity 3',
+  '/image/v1/enhance/async', 0,
+  JSON_SET(@topaz_precision_capability,
+   '$.providerParameters.recoveryStrength',JSON_OBJECT('type','number','min',0,'max',1),
+   '$.providerParameters.opacity',JSON_OBJECT('type','number','min',0,'max',1))
+ UNION ALL SELECT 'topaz-text-shapes', 'Text Refine', 'Topaz Text & Shapes',
+  '/image/v1/enhance/async', 0,
+  JSON_SET(@topaz_precision_capability,
+   '$.providerParameters.denoiseStrength',JSON_OBJECT('type','number','min',0,'max',1),
+   '$.providerParameters.deblurStrength',JSON_OBJECT('type','number','min',0,'max',1),
+   '$.providerParameters.decompressionStrength',JSON_OBJECT('type','number','min',0,'max',1),
+   '$.providerParameters.opacity',JSON_OBJECT('type','number','min',0,'max',1))
+ UNION ALL SELECT 'topaz-wonder-3-5', 'Wonder 3.5', 'Topaz Wonder 3.5',
+  '/image/v1/enhance-gen/async', 0,
+  JSON_SET(@topaz_precision_capability,'$.maxOutputPixels',256000000,
+   '$.providerParameters',JSON_OBJECT(
+    'enhancementStrength',JSON_OBJECT('type','string','enum',JSON_ARRAY('low','medium','high')),
+    'grain',JSON_OBJECT('type','boolean'),
+    'grainDensity',JSON_OBJECT('type','number','min',0,'max',1),
+    'grainModel',JSON_OBJECT('type','string','enum',JSON_ARRAY('silver','gaussian','grey')),
+    'grainSize',JSON_OBJECT('type','number','min',1,'max',5),
+    'grainStrength',JSON_OBJECT('type','number','min',0,'max',1),
+    'outputFormat',JSON_OBJECT('type','string','enum',JSON_ARRAY('jpeg','jpg','png','tiff','tif'),'upstream','output_format'),
+    'cropToFill',JSON_OBJECT('type','boolean','upstream','crop_to_fill')))
+ UNION ALL SELECT 'topaz-bloom-2', 'Bloom 2', 'Topaz Bloom 2',
+  '/image/v1/enhance-gen/async', 1,
+  JSON_SET(@topaz_precision_capability,'$.maxOutputPixels',256000000,
+   '$.promptOptional',true,
+   '$.providerParameters',JSON_OBJECT(
+    'colorPreservation',JSON_OBJECT('type','boolean'),
+    'creativity',JSON_OBJECT('type','integer','min',1,'max',9),
+    'grain',JSON_OBJECT('type','boolean'),
+    'grainDensity',JSON_OBJECT('type','number','min',0,'max',1),
+    'grainModel',JSON_OBJECT('type','string','enum',JSON_ARRAY('silver','gaussian','grey')),
+    'grainSize',JSON_OBJECT('type','number','min',1,'max',5),
+    'grainStrength',JSON_OBJECT('type','number','min',0,'max',1),
+    'seed',JSON_OBJECT('type','integer','min',0,'max',2147483647),
+    'outputFormat',JSON_OBJECT('type','string','enum',JSON_ARRAY('jpeg','jpg','png','tiff','tif'),'upstream','output_format'),
+    'cropToFill',JSON_OBJECT('type','boolean','upstream','crop_to_fill')))
+) catalog ON p.provider_code = 'topaz'
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_model m WHERE m.model_code = catalog.code AND m.del_flag = '0');
+
+-- Topaz 图片按输出像素向上取整计费。参考 Developer 每 Topaz credit $0.10、
+-- 估算汇率 ¥6.70/$，初始成本 ¥0.67/credit；实际售价仍乘系统统一倍率，
+-- 后台可调整该单价。官方型号页对应 24/8/2 MP 每 credit。
+-- 只补齐未定价且仍停用的模型，不覆盖运营自行配置的价格或启停。
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id = m.provider_id
+SET m.billing_rule_json = JSON_OBJECT(
+ 'mode','SKU','meterType','PER_IMAGE','chargeType','IMAGE','preHold',true,
+ 'matchStrategy','FIRST_HIT','skus',JSON_ARRAY(JSON_OBJECT(
+  'skuCode',CONCAT(UPPER(REPLACE(m.model_code,'-','_')),'_OUTPUT_MP'),
+  'skuName',CONCAT(m.model_name,' 输出像素计费'),
+  'enabled',true,'priority',1,'match',JSON_OBJECT(),
+  'price',0.67,
+  'outputPixelsPerUnit',CASE
+    WHEN m.model_code = 'topaz-wonder-3-5' THEN 8000000
+    WHEN m.model_code = 'topaz-bloom-2' THEN 2000000
+    ELSE 24000000 END,
+  'remark','初始估算：Developer $0.10/credit × ¥6.70/$；按输出像素向上取整，后台可改价'
+  )))
+WHERE p.provider_code = 'topaz'
+  AND m.model_code IN ('topaz-standard-2','topaz-low-resolution-2',
+   'topaz-art-cgi','topaz-high-fidelity-3','topaz-text-shapes',
+   'topaz-wonder-3-5','topaz-bloom-2')
+  AND m.status = '1' AND m.del_flag = '0'
+  AND (m.billing_rule_json IS NULL OR TRIM(m.billing_rule_json) = '');
+
+-- Ensure providers seeded without a logo also receive the packaged brand asset.
+UPDATE aid_ai_provider SET logo_url='/brand-icons/dashscope.jpg' WHERE provider_code='dashscope' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/07/06/a1c2f4b38230472cb5074382afa97dcc.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/a1c2f4b38230472cb5074382afa97dcc.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/volcengine.jpg' WHERE provider_code='volcengine' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/07/06/b0538b7a72444c1ea45cc178d6dd3da1.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/b0538b7a72444c1ea45cc178d6dd3da1.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/jimeng.jpg' WHERE provider_code='jimeng' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/07/06/20147fcb2e7348c795fe6c14cf079280.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/20147fcb2e7348c795fe6c14cf079280.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/gemini.png' WHERE provider_code='gemini' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/06/28/780b866cf29b41269d455f6bba017ab1.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/780b866cf29b41269d455f6bba017ab1.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/openai.png' WHERE provider_code='openai' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/06/28/ae4d1a37233c454da5abe3bc6f66840b.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/ae4d1a37233c454da5abe3bc6f66840b.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/volcengine_tts.jpg' WHERE provider_code='volcengine_tts' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/06/28/be834b781cbd4931b6e4b358c5cc618d.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/be834b781cbd4931b6e4b358c5cc618d.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/minimax.png' WHERE provider_code='minimax' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/06/28/c00ff4fa7c5a4540bd3e0ce7757a0dc7.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/c00ff4fa7c5a4540bd3e0ce7757a0dc7.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/agnes.png' WHERE provider_code='agnes' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/07/06/5960f856dcfa475ca2139e50837898f4.png' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/5960f856dcfa475ca2139e50837898f4.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/vidu.jpg' WHERE provider_code='vidu' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/06/28/29a1c29484e04e5393e25cc46a2dff49.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/29a1c29484e04e5393e25cc46a2dff49.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/deepseek.jpg' WHERE provider_code='deepseek' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/07/17/33919808cdb2492da44d8889ff305675.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/17/33919808cdb2492da44d8889ff305675.jpg'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/kling.png' WHERE provider_code='kling' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/08/10/f78e0d4c85a644a995c7fca0cc5717fc.png' OR logo_url LIKE CONCAT('%', '/aid/2026/08/10/f78e0d4c85a644a995c7fca0cc5717fc.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/tokendance.png' WHERE provider_code='tokendance' AND (logo_url IS NULL OR logo_url='' OR logo_url='/aid/2026/09/09/25fd45b0a0f34d14bca576391230467f.png' OR logo_url LIKE CONCAT('%', '/aid/2026/09/09/25fd45b0a0f34d14bca576391230467f.png'));
+UPDATE aid_ai_provider SET logo_url='/brand-icons/topaz.ico' WHERE provider_code='topaz' AND (logo_url IS NULL OR logo_url='' OR logo_url='https://account.topazlabs.com/favicon.ico');
+
+-- Model-specific icons that reused a shipped supplier image follow the same local asset.
+UPDATE aid_ai_model SET logo_url='/brand-icons/dashscope.jpg' WHERE logo_url='/aid/2026/07/06/a1c2f4b38230472cb5074382afa97dcc.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/a1c2f4b38230472cb5074382afa97dcc.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/volcengine.jpg' WHERE logo_url='/aid/2026/07/06/b0538b7a72444c1ea45cc178d6dd3da1.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/b0538b7a72444c1ea45cc178d6dd3da1.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/jimeng.jpg' WHERE logo_url='/aid/2026/07/06/20147fcb2e7348c795fe6c14cf079280.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/20147fcb2e7348c795fe6c14cf079280.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/gemini.png' WHERE logo_url='/aid/2026/06/28/780b866cf29b41269d455f6bba017ab1.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/780b866cf29b41269d455f6bba017ab1.png');
+UPDATE aid_ai_model SET logo_url='/brand-icons/openai.png' WHERE logo_url='/aid/2026/06/28/ae4d1a37233c454da5abe3bc6f66840b.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/ae4d1a37233c454da5abe3bc6f66840b.png');
+UPDATE aid_ai_model SET logo_url='/brand-icons/volcengine_tts.jpg' WHERE logo_url='/aid/2026/06/28/be834b781cbd4931b6e4b358c5cc618d.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/be834b781cbd4931b6e4b358c5cc618d.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/minimax.png' WHERE logo_url='/aid/2026/06/28/c00ff4fa7c5a4540bd3e0ce7757a0dc7.png' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/c00ff4fa7c5a4540bd3e0ce7757a0dc7.png');
+UPDATE aid_ai_model SET logo_url='/brand-icons/agnes.png' WHERE logo_url='/aid/2026/07/06/5960f856dcfa475ca2139e50837898f4.png' OR logo_url LIKE CONCAT('%', '/aid/2026/07/06/5960f856dcfa475ca2139e50837898f4.png');
+UPDATE aid_ai_model SET logo_url='/brand-icons/vidu.jpg' WHERE logo_url='/aid/2026/06/28/29a1c29484e04e5393e25cc46a2dff49.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/06/28/29a1c29484e04e5393e25cc46a2dff49.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/deepseek.jpg' WHERE logo_url='/aid/2026/07/17/33919808cdb2492da44d8889ff305675.jpg' OR logo_url LIKE CONCAT('%', '/aid/2026/07/17/33919808cdb2492da44d8889ff305675.jpg');
+UPDATE aid_ai_model SET logo_url='/brand-icons/kling.png' WHERE logo_url='/aid/2026/08/10/f78e0d4c85a644a995c7fca0cc5717fc.png' OR logo_url LIKE CONCAT('%', '/aid/2026/08/10/f78e0d4c85a644a995c7fca0cc5717fc.png');
+UPDATE aid_ai_model SET logo_url='/brand-icons/tokendance.png' WHERE logo_url='/aid/2026/09/09/25fd45b0a0f34d14bca576391230467f.png' OR logo_url LIKE CONCAT('%', '/aid/2026/09/09/25fd45b0a0f34d14bca576391230467f.png');
+
+-- 供应商展示分类独立于协议和调度，仅维护三方聚合与官方厂商。
+SET @category_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='provider_category'), 'SELECT 1', 'ALTER TABLE aid_ai_provider ADD COLUMN provider_category VARCHAR(16) NULL DEFAULT NULL COMMENT ''展示分类：AGGREGATOR三方聚合，OFFICIAL官方厂商''');
+PREPARE category_stmt FROM @category_ddl;
+EXECUTE category_stmt;
+DEALLOCATE PREPARE category_stmt;
+SET @order_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='display_order'), 'SELECT 1', 'ALTER TABLE aid_ai_provider ADD COLUMN display_order INT NOT NULL DEFAULT 100 COMMENT ''同类展示顺序，不参与调度''');
+PREPARE order_stmt FROM @order_ddl;
+EXECUTE order_stmt;
+DEALLOCATE PREPARE order_stmt;
+-- 只初始化尚未分类的记录，重复执行保留管理员已保存的分类和排序。
+UPDATE aid_ai_provider
+SET provider_category=CASE WHEN provider_code IN ('dashscope','volcengine','jimeng','gemini','openai','volcengine_tts','minimax','vidu','deepseek','kling','topaz','anthropic','claude','xai','moonshot','zhipu','mistral') THEN 'OFFICIAL' ELSE 'AGGREGATOR' END,
+    display_order=CASE provider_code WHEN 'tokendance' THEN 10 WHEN 'newapi' THEN 30 ELSE 100 END
+WHERE provider_category IS NULL;
+
+-- New API 站点账户授权与调用凭证相互独立。
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='integration_type'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `integration_type` VARCHAR(16) NOT NULL DEFAULT ''NATIVE'' COMMENT ''接入方式''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='new_api_system_token_enabled'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `new_api_system_token_enabled` TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''启用普通用户访问令牌''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='new_api_access_token'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `new_api_access_token` VARCHAR(4096) NULL COMMENT ''上游普通用户访问令牌''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='new_api_user_id'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `new_api_user_id` BIGINT NULL COMMENT ''上游普通用户编号''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='new_api_group'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `new_api_group` VARCHAR(128) NULL COMMENT ''上游分组''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+SET @newapi_ddl = IF(EXISTS(SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='aid_ai_provider' AND COLUMN_NAME='new_api_token_id'), 'SELECT 1', 'ALTER TABLE `aid_ai_provider` ADD COLUMN `new_api_token_id` BIGINT NULL COMMENT ''上游调用令牌编号''');
+PREPARE newapi_stmt FROM @newapi_ddl;
+EXECUTE newapi_stmt;
+DEALLOCATE PREPARE newapi_stmt;
+
+-- Restore the verified MiniMax H3 scenes on previously imported TokenDance catalog models.
+-- Keep administrator-defined sceneRules untouched; repeat execution is a no-op.
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='tokendance'
+SET m.capability_json=JSON_SET(m.capability_json, '$.sceneRules', JSON_OBJECT(
+      'textToVideo', JSON_OBJECT('requiredInputs',JSON_ARRAY('text'),'allowedInputs',JSON_ARRAY('text')),
+      'imageToVideo', JSON_OBJECT('requiredInputs',JSON_ARRAY('firstFrame'),
+          'allowedInputs',JSON_ARRAY('text','firstFrame'),'aspectRatioFollowInput',TRUE),
+      'startEndToVideo', JSON_OBJECT('requiredInputs',JSON_ARRAY('firstFrame','lastFrame'),
+          'allowedInputs',JSON_ARRAY('text','firstFrame','lastFrame'),'aspectRatioFollowInput',TRUE),
+      'referenceToVideo', JSON_OBJECT('requiredInputs',JSON_ARRAY('text'),
+          'requiredAnyOf',JSON_ARRAY('image','video'),
+          'allowedInputs',JSON_ARRAY('text','image','video','audio')))),
+    m.supports_first_frame=1, m.supports_last_frame=1, m.supports_multi_image_input=1,
+    m.config_version=COALESCE(m.config_version,0)+1,
+    m.update_time=NOW(), m.update_by='capability-repair'
+WHERE m.real_model_code='minimax-h3'
+  AND m.protocol='tokendance:minimax:video_generation_v2'
+  AND m.del_flag='0' AND JSON_VALID(m.capability_json)
+  AND JSON_CONTAINS_PATH(m.capability_json,'one','$.sceneRules')=0;
+
+
+-- 图片编辑工具业务目录：MySQL 5.7；可重复执行，不覆盖管理员配置。
+-- 本段仅补充业务目录数据。模型能力、协议、价格和业务绑定由模型管理维护。
+SET NAMES utf8mb4;
+
+INSERT INTO aid_ai_model_func_config
+  (func_name, func_code, model_type, generate_mode, model_ids, status, del_flag,
+   create_by, create_time, update_by, update_time, remark)
+SELECT seed.func_name, seed.func_code, 'image', 'image_edit', JSON_ARRAY(), '0', '0',
+       'system', NOW(), 'system', NOW(), '候选模型与能力在模型池配置；不改变模型本身能力或价格'
+FROM (
+  SELECT '图片重绘' AS func_name, 'canvas.image.redraw' AS func_code
+  UNION ALL SELECT '物体擦除', 'canvas.image.erase'
+  UNION ALL SELECT '图片扩图', 'canvas.image.expand'
+  UNION ALL SELECT '修改打光', 'canvas.image.relight'
+) seed
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_model_func_config existing WHERE existing.func_code = seed.func_code
+);
+
+-- 完整错误诊断：默认关闭；配置仅由错误处理页面维护。
+CREATE TABLE IF NOT EXISTS aid_diagnostic_event (
+ event_id varchar(36) NOT NULL, request_id varchar(36) NOT NULL, correlation_key varchar(64) NULL,
+ request_time varchar(40) NOT NULL, user_id bigint NULL,
+ source varchar(20) NOT NULL, diagnostic_json longtext NOT NULL,
+ report_id varchar(36) NULL, create_time datetime NOT NULL,
+ create_by varchar(64) NOT NULL DEFAULT 'system',
+ PRIMARY KEY(event_id), UNIQUE KEY uk_diagnostic_correlation(correlation_key), KEY idx_diagnostic_time(create_time),
+ KEY idx_diagnostic_request_user(request_id,user_id), KEY idx_diagnostic_report(report_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='完整错误诊断事件';
+CREATE TABLE IF NOT EXISTS aid_diagnostic_delivery (
+ report_id varchar(36) NOT NULL, event_id varchar(36) NOT NULL,
+ protected_options longtext NULL, envelope_json longtext NULL, protected_receipt text NULL, status varchar(20) NOT NULL,
+ result_message varchar(255) NULL, create_time datetime NOT NULL,
+ create_by varchar(64) NOT NULL DEFAULT 'system', update_time datetime NOT NULL,
+ update_by varchar(64) NOT NULL DEFAULT 'system',
+ PRIMARY KEY(report_id), UNIQUE KEY uk_diagnostic_event(event_id),
+ KEY idx_diagnostic_delivery(status,update_time), KEY idx_diagnostic_delivery_time(create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='诊断异步发送任务';
+CREATE TABLE IF NOT EXISTS aid_diagnostic_trace (
+ task_key varchar(64) NOT NULL, request_id varchar(36) NOT NULL,
+ request_json longtext NOT NULL, create_time datetime NOT NULL,
+ create_by varchar(64) NOT NULL DEFAULT 'system',
+ PRIMARY KEY(task_key), KEY idx_diagnostic_trace_time(create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='异步任务诊断提交快照';
+INSERT INTO aid_config(category,config_name,config_value,config_dict,del_flag,order_num,create_time,create_by)
+SELECT 'error_diagnostics','protected_settings','','由错误处理页面专用接口维护','0',0,NOW(),'system'
+WHERE NOT EXISTS(SELECT 1 FROM aid_config WHERE category='error_diagnostics' AND config_name='protected_settings');
+INSERT INTO aid_config(category,config_name,config_value,config_dict,del_flag,order_num,create_time,create_by)
+SELECT 'error_diagnostics','queue_lock','','诊断发送队列事务锁','0',1,NOW(),'system'
+WHERE NOT EXISTS(SELECT 1 FROM aid_config WHERE category='error_diagnostics' AND config_name='queue_lock');
+SET @diagnostic_parent=COALESCE((SELECT menu_id FROM sys_menu WHERE path='system' AND menu_type='M' ORDER BY menu_id LIMIT 1),0);
+INSERT INTO sys_menu(menu_name,parent_id,order_num,path,component,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time)
+SELECT '错误处理',@diagnostic_parent,20,'error-handling','aid/error-handling/index',1,1,'C','0','0','aid:diagnostics:view','bug','system',NOW()
+WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE perms='aid:diagnostics:view');
+SET @diagnostic_menu=(SELECT menu_id FROM sys_menu WHERE perms='aid:diagnostics:view' ORDER BY menu_id LIMIT 1);
+INSERT INTO sys_menu(menu_name,parent_id,order_num,path,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time)
+SELECT '管理错误采集',@diagnostic_menu,1,'#',1,1,'F','0','0','aid:diagnostics:manage','#','system',NOW()
+WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE perms='aid:diagnostics:manage');
+INSERT INTO sys_menu(menu_name,parent_id,order_num,path,is_frame,is_cache,menu_type,visible,status,perms,icon,create_by,create_time)
+SELECT '发送错误报告',@diagnostic_menu,2,'#',1,1,'F','0','0','aid:diagnostics:send','#','system',NOW()
+WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE perms='aid:diagnostics:send');
+
+-- Seedream 5.0 Pro 官方图层分离能力；保持模型现有启停状态与管理员价格配置。
+INSERT INTO aid_ai_model_capability
+  (model_id,capability_code,generate_mode,definition_json,sort_order,create_time,create_by)
+SELECT model.id,'image_layer_decomposition','image_edit',
+  JSON_SET(COALESCE(source.definition_json,
+    JSON_OBJECT('presentation',JSON_OBJECT(),'parameters',JSON_ARRAY(),'rules',JSON_ARRAY())),
+    '$.code','image_layer_decomposition','$.label','图层分离',
+    '$.generateMode','image_edit','$.defaultCapability',
+      IF(source.model_id IS NULL,JSON_EXTRACT('true','$'),JSON_EXTRACT('false','$')),
+    '$.enabled',JSON_EXTRACT('true','$'),'$.evidenceStatus','OFFICIAL',
+    '$.sourceUrls',JSON_ARRAY('https://docs.volcengine.com/docs/ark/seedream-5-0-pro'),
+    '$.rules',JSON_ARRAY(),
+    '$.parameters',JSON_ARRAY(
+      JSON_OBJECT('name','prompt','label','拆分要求','type','string'),
+      JSON_OBJECT('name','referenceImageUrl','label','原图','type','string','materialRole','reference_image','required',true),
+      JSON_OBJECT('name','size','label','输出规格','type','string','choices',JSON_ARRAY('auto','1K','1.5K','2K'),'defaultValue','1.5K'),
+      JSON_OBJECT('name','expectedImageCount','label','最大预估输出张数','type','integer','defaultValue',17,'minimum',17,'maximum',17)),
+    '$.presentation.supportsImageInput',JSON_EXTRACT('true','$'),
+    '$.presentation.supportsMultiImageInput',JSON_EXTRACT('false','$'),
+    '$.presentation.supportsAspectRatio',JSON_EXTRACT('false','$'),
+    '$.presentation.defaultSizeCode','1.5K',
+    '$.presentation.maxOutputCount',17,'$.presentation.defaultOutputCount',17),
+  50,NOW(),'system'
+FROM aid_ai_model model
+LEFT JOIN aid_ai_model_capability source ON source.model_id=model.id AND source.capability_code='image_to_image'
+WHERE model.model_code='doubao-seedream-5-0-pro-260628'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability existing
+                  WHERE existing.model_id=model.id AND existing.capability_code='image_layer_decomposition');
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id,capability_code,binding_code,protocol,definition_json,sort_order,create_time,create_by)
+SELECT model.id,'image_layer_decomposition',COALESCE(source.binding_code,'route_layer_split'),'seedream-image',
+  JSON_SET(COALESCE(source.definition_json,
+    JSON_OBJECT('billingRule',JSON_OBJECT('settleRule',JSON_OBJECT(),
+        'inputPricing',JSON_OBJECT('image',JSON_OBJECT())),
+      'capability',JSON_OBJECT(),'presentation',JSON_OBJECT())),
+    '$.code',COALESCE(source.binding_code,'route_layer_split'),
+    '$.protocol','seedream-image','$.upstreamModel',model.real_model_code,
+    '$.apiSuffix',model.api_suffix,'$.billingMode','SKU',
+    '$.defaultBinding',JSON_EXTRACT('true','$'),'$.enabled',JSON_EXTRACT('true','$'),
+    '$.billingRule.mode','SKU','$.billingRule.meterType','PER_IMAGE',
+    '$.billingRule.chargeType','IMAGE','$.billingRule.preHold',JSON_EXTRACT('true','$'),
+    '$.billingRule.matchStrategy','FIRST_HIT',
+    '$.billingRule.settleRule.settleMode','REFUND_ONLY',
+    '$.billingRule.settleRule.allowRefund',JSON_EXTRACT('true','$'),
+    '$.billingRule.settleRule.allowExtraCharge',JSON_EXTRACT('false','$'),
+    '$.billingRule.settleRule.usageSource','PROVIDER_USAGE',
+    '$.billingRule.skus',JSON_ARRAY(JSON_OBJECT('skuCode','SEEDREAM50_LAYER_MAX',
+      'skuName','图层分离最大单张价','enabled',true,'priority',1,'match',JSON_OBJECT(),
+      'price',0.30)),
+    '$.billingRule.params',JSON_ARRAY(),
+    '$.billingRule.inputPricing.image.freeCount',1,
+    '$.billingRule.inputPricing.image.maxCount',1,
+    '$.billingRule.settleRule.imageOutputPixelTiers',JSON_ARRAY(
+      JSON_OBJECT('maxPixels',2610000,'price',0.15),
+      JSON_OBJECT('maxPixels',NULL,'price',0.30)),
+    '$.capability.defaultSize','1.5K',
+    '$.capability.sizeOptions',JSON_ARRAY('auto','1K','1.5K','2K'),
+    '$.capability.maxReferenceImages',1,'$.capability.minReferenceImages',1,
+    '$.capability.supportsSizePreset',JSON_EXTRACT('true','$'),
+    '$.capability.supportsAspectRatio',JSON_EXTRACT('false','$'),
+    '$.capability.aspectRatioOptions',JSON_ARRAY(),
+    '$.capability.sceneRules.imageToImage',JSON_OBJECT('supportsSizePreset',true,'supportsAspectRatio',false),
+    '$.presentation.maxOutputCount',17,'$.presentation.defaultOutputCount',17,
+    '$.presentation.supportsMultiImageInput',JSON_EXTRACT('false','$'),
+    '$.presentation.supportsSizePreset',JSON_EXTRACT('true','$'),
+    '$.presentation.supportsAspectRatio',JSON_EXTRACT('false','$'),
+    '$.presentation.defaultSizeCode','1.5K'),
+  50,NOW(),'system'
+FROM aid_ai_model model
+LEFT JOIN aid_ai_model_protocol_binding source ON source.model_id=model.id
+  AND source.capability_code='image_to_image' AND source.protocol='seedream-image'
+WHERE model.model_code='doubao-seedream-5-0-pro-260628'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding existing
+                  WHERE existing.model_id=model.id
+                    AND existing.capability_code='image_layer_decomposition'
+                    AND existing.binding_code=COALESCE(source.binding_code,'route_layer_split'));
+
+-- WaveSpeed Depth Anything Video. Catalog only: never insert credentials or overwrite managed prices.
+INSERT INTO aid_ai_provider
+  (provider_name, provider_code, base_url, api_key, auth_header, auth_prefix,
+   api_key_apply_url, official_doc_url, official_price_url, task_query_suffix,
+   status, del_flag, create_time, create_by, remark, supports_callback,
+   schedule_strategy_json, provider_category)
+SELECT 'WaveSpeed AI', 'wavespeed', 'https://api.wavespeed.ai', '', 'Authorization', 'Bearer ',
+       'https://wavespeed.ai/dashboard/api-keys',
+       'https://wavespeed.ai/models/wavespeed-ai/depth-anything/video',
+       'https://wavespeed.ai/models/wavespeed-ai/depth-anything/video',
+       '/api/v3/predictions/%s/result', '1', '0', NOW(), 'system',
+       'Configure the credential and verify local pricing before enabling', 0,
+       '{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":2,"baseIntervalSeconds":5,"maxIntervalSeconds":60,"backoffFactor":1.5,"maxRetryCount":240,"maxLifeSeconds":14400,"progressTimeoutSeconds":1800,"maxConcurrency":10}',
+       'OFFICIAL'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_provider WHERE provider_code='wavespeed');
+
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, supports_text_input,
+   supports_system_prompt, supports_image_input, max_output_count, default_output_count,
+   supports_aspect_ratio, supports_size_preset, supports_duration,
+   supports_first_frame, supports_last_frame, capability_json, capability_inited,
+   official_price_url)
+SELECT provider.id, 'wavespeed-depth-anything-video',
+       'wavespeed-ai/depth-anything/video', 'WaveSpeed Depth Anything Video',
+       'video', 'video_to_video', '/api/v3/wavespeed-ai/depth-anything/video',
+       'wavespeed:depth-anything-video', 70, '1', '0', NOW(), 'system',
+       'Grayscale depth video; official USD 0.005 per billed second, 3s minimum; RMB selling price pending',
+       'SKU',
+       NULL,
+       1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+       '{"requiresConfiguredBilling":true,"supportsVideoInput":true,"minReferenceVideos":1,"maxReferenceVideos":1,"maxReferenceImages":0,"maxReferenceAudios":0,"allowedInputs":["video"],"requiredInputs":["video"],"strictSceneRules":true,"sceneRules":{"videoToVideo":{"requiredInputs":["video"],"allowedInputs":["video"]}}}',
+       1, 'https://wavespeed.ai/models/wavespeed-ai/depth-anything/video'
+FROM aid_ai_provider provider
+WHERE provider.provider_code='wavespeed'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model WHERE model_code='wavespeed-depth-anything-video');
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order, create_time, create_by)
+SELECT model.id, 'video_depth_map', 'video_to_video',
+       JSON_OBJECT('code','video_depth_map','label','视频深度图','generateMode','video_to_video',
+         'enabled',true,'defaultCapability',true,'evidenceStatus','OFFICIAL',
+         'sourceUrls',JSON_ARRAY('https://wavespeed.ai/models/wavespeed-ai/depth-anything/video'),
+         'presentation',JSON_OBJECT('supportsTextInput',false,'supportsImageInput',false,
+           'supportsVideoInput',true,'supportsAspectRatio',false,'supportsDuration',false),
+         'parameters',JSON_ARRAY(JSON_OBJECT('name','referenceVideoRecordIds','label','源视频',
+           'type','array','items',JSON_OBJECT('name','resourceId','label','视频资源 ID','type','integer'),
+           'required',true,'minimum',1,'maximum',1))), 0, NOW(), 'system'
+FROM aid_ai_model model WHERE model.model_code='wavespeed-depth-anything-video'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability existing
+                  WHERE existing.model_id=model.id AND existing.capability_code='video_depth_map');
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json,
+   sort_order, create_time, create_by)
+SELECT model.id, 'video_depth_map', 'wavespeed_depth', 'wavespeed:depth-anything-video',
+       JSON_OBJECT('code','wavespeed_depth','protocol','wavespeed:depth-anything-video',
+         'upstreamModel','wavespeed-ai/depth-anything/video',
+         'apiSuffix','/api/v3/wavespeed-ai/depth-anything/video',
+         'taskQuerySuffix','/api/v3/predictions/%s/result',
+         'billingMode','SKU','defaultBinding',true,'enabled',true,
+         'capability',CAST(model.capability_json AS JSON)), 0, NOW(), 'system'
+FROM aid_ai_model model WHERE model.model_code='wavespeed-depth-anything-video'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding existing
+                  WHERE existing.model_id=model.id AND existing.capability_code='video_depth_map'
+                    AND existing.binding_code='wavespeed_depth');
+
+-- Topaz video enhancement and optional Apollo interpolation. Price is CNY per provider credit;
+-- the API key, account state and administrator overrides stay outside migrations.
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag,
+   create_time, create_by, remark, billing_mode, billing_rule_json, billing_version,
+   supports_text_input, supports_system_prompt, supports_image_input,
+   max_output_count, default_output_count, supports_aspect_ratio,
+   supports_size_preset, supports_duration, supports_first_frame, supports_last_frame,
+   capability_json, capability_inited, official_price_url)
+SELECT p.id, 'topaz-proteus-video-express', 'prob-4', 'Topaz Proteus Video',
+       'video', 'video_to_video', '/video/express',
+       'topaz:video-express', 60, '1', '0', NOW(), 'system',
+       'Video enhancement, 1080p/2K/4K and optional Apollo quality interpolation; RMB selling price pending',
+       'SKU',
+       NULL,
+       1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0,
+       '{"requiresConfiguredBilling":true,"supportsVideoInput":true,"minReferenceVideos":1,"maxReferenceVideos":1,"maxReferenceImages":0,"maxReferenceAudios":0,"allowedInputs":["video"],"requiredInputs":["video"],"maxDurationSeconds":3600,"strictSceneRules":true,"sceneRules":{"videoToVideo":{"requiredInputs":["video"],"allowedInputs":["video"]}},"targetResolutionOptions":["1080p","2K","4K"],"interpolationModeOptions":["NONE","HIGH_QUALITY"],"targetFpsMinimum":15,"targetFpsMaximum":240,"slowMotionFactorMinimum":1,"slowMotionFactorMaximum":16,"enhancementOptions":["videoType","auto","fieldOrder","focusFixLevel","compression","details","prenoise","noise","halo","preblur","blur","grain","grainSigma","grainSize","grainType","recoverOriginalDetailValue"]}',
+       1, 'https://developer.topazlabs.com/getting-started/model-pricing'
+FROM aid_ai_provider p WHERE p.provider_code='topaz'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model m WHERE m.model_code='topaz-proteus-video-express');
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order,
+   create_time, create_by)
+SELECT m.id, 'video_enhance', 'video_to_video',
+       JSON_OBJECT('code','video_enhance','label','视频高清','generateMode','video_to_video',
+         'enabled',TRUE,'defaultCapability',TRUE,'evidenceStatus','OFFICIAL',
+         'sourceUrls',JSON_ARRAY('https://developer.topazlabs.com/reference/video/create-express-request/create-express-video-request'),
+         'presentation',JSON_OBJECT('supportsVideoInput',TRUE,'supportsDuration',TRUE),
+         'parameters',JSON_ARRAY(
+           JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+             'items',JSON_OBJECT('name','resourceId','label','视频资源 ID','type','integer'),
+             'required',TRUE,'minimum',1,'maximum',1),
+           JSON_OBJECT('name','targetResolution','label','目标分辨率','type','string','choices',JSON_ARRAY('1080p','2K','4K')),
+           JSON_OBJECT('name','interpolationMode','label','补帧模式','type','string','choices',JSON_ARRAY('NONE','HIGH_QUALITY')),
+           JSON_OBJECT('name','targetFps','label','目标帧率','type','integer','minimum',15,'maximum',240),
+           JSON_OBJECT('name','slowMotionFactor','label','慢放倍数','type','integer','minimum',1,'maximum',16),
+           JSON_OBJECT('name','enhancement','label','高清调节','type','object'))),
+       0, NOW(), 'system'
+FROM aid_ai_model m WHERE m.model_code='topaz-proteus-video-express'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability c
+                  WHERE c.model_id=m.id AND c.capability_code='video_enhance');
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json,
+   sort_order, create_time, create_by)
+SELECT m.id, 'video_enhance', 'topaz_video_express', 'topaz:video-express',
+       JSON_OBJECT('code','topaz_video_express','protocol','topaz:video-express',
+         'upstreamModel','prob-4','apiSuffix','/video/express',
+         'taskQuerySuffix','/video/%s/status','billingMode','SKU',
+         'defaultBinding',TRUE,'enabled',TRUE,
+         'capability',CAST(m.capability_json AS JSON)), 0, NOW(), 'system'
+FROM aid_ai_model m WHERE m.model_code='topaz-proteus-video-express'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding b
+                  WHERE b.model_id=m.id AND b.capability_code='video_enhance'
+                    AND b.binding_code='topaz_video_express');
+
+-- Business model pools use the same model catalog and capability bindings as other tools.
+INSERT INTO aid_ai_model_func_config
+  (func_name, func_code, model_type, generate_mode, model_ids, status, del_flag,
+   create_time, create_by, remark)
+SELECT pool.func_name, pool.func_code, 'video', 'video_to_video', JSON_ARRAY(m.id),
+       '0', '0', NOW(), 'system', 'Administrator may add further compatible models'
+FROM (
+  SELECT '视频深度图' func_name, 'video_depth_map' func_code,
+         'wavespeed-depth-anything-video' model_code
+  UNION ALL
+  SELECT '视频高清与补帧', 'video_enhance', 'topaz-proteus-video-express'
+) pool
+JOIN aid_ai_model m ON m.model_code=pool.model_code
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_model_func_config f
+                  WHERE f.func_code=pool.func_code);
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code, model_id, capability_code, default_capability, defaults_json,
+   sort_order, create_time, create_by)
+SELECT pool.func_code, m.id, pool.capability_code, 1, NULL, 0, NOW(), 'system'
+FROM (
+  SELECT 'video_depth_map' func_code, 'video_depth_map' capability_code,
+         'wavespeed-depth-anything-video' model_code
+  UNION ALL
+  SELECT 'video_enhance', 'video_enhance', 'topaz-proteus-video-express'
+) pool
+JOIN aid_ai_model m ON m.model_code=pool.model_code
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding b
+                  WHERE b.func_code=pool.func_code AND b.model_id=m.id
+                    AND b.capability_code=pool.capability_code);
+
+-- MiniMax H3 uses its own official provider. Do not copy credentials or overwrite managed JSON/SKUs.
+INSERT INTO aid_ai_provider
+  (provider_name, provider_code, logo_url, base_url, api_key, auth_header, auth_prefix,
+   api_key_apply_url, official_doc_url, official_price_url, task_query_suffix,
+   status, del_flag, create_time, create_by, remark, supports_callback, schedule_strategy_json,
+   provider_category)
+SELECT 'MiniMax H3', 'minimax_h3', '/brand-icons/minimax.png', 'https://api.minimax.cn', '',
+       'Authorization', 'Bearer ',
+       'https://platform.minimax.cn/user-center/basic-information/interface-key',
+       'https://platform.minimax.cn/docs/api-reference/video-generation-v2-create',
+       'https://platform.minimax.cn/docs/guides/pricing-paygo',
+       '/v2/query/video_generation/%s', '1', '0', NOW(), 'system',
+       'MiniMax H3/H3 Max official video API; configure credentials and billing before enabling',
+       0, '{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":10,"baseIntervalSeconds":10,"maxIntervalSeconds":60,"backoffFactor":1.5,"maxRetryCount":180,"maxLifeSeconds":7200,"progressTimeoutSeconds":900,"maxConcurrency":15}',
+       'OFFICIAL'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_provider WHERE provider_code='minimax_h3');
+
+-- Keep the historical disabled model ID for tasks while displaying every H3 model
+-- under the dedicated provider.  Credentials are never copied from MiniMax.
+UPDATE aid_ai_model legacy
+JOIN aid_ai_provider current_provider ON current_provider.id=legacy.provider_id
+JOIN aid_ai_provider h3_provider ON h3_provider.provider_code='minimax_h3'
+SET legacy.provider_id=h3_provider.id
+WHERE legacy.model_code='minimax-h3-t2v' AND legacy.status='1'
+  AND current_provider.provider_code='minimax';
+
+-- Existing installed model IDs, task history, administrator-edited billing and route JSON stay intact.
+-- New catalog entries are disabled until an administrator reviews their credentials and prices.
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, schedule_strategy_json,
+   supports_text_input, supports_system_prompt, supports_image_input,
+   supports_multi_image_input, max_output_count, default_output_count,
+   supports_aspect_ratio, supports_size_preset, supports_duration,
+   supports_first_frame, supports_last_frame, default_size_code,
+   default_aspect_ratio, default_duration_seconds, capability_json, capability_inited,
+   official_price_url)
+SELECT provider.id, 'minimax-h3-official', 'MiniMax-H3', 'MiniMax H3', 'video',
+       'text_to_video', '/v2/video_generation', 'minimax-h3-video', 120,
+       '1', '0', NOW(), 'system', 'Official H3; five generation capabilities; disabled by default',
+       'SKU', legacy.billing_rule_json, 1, legacy.schedule_strategy_json,
+       1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, '768P', '16:9', 5,
+       legacy.capability_json, 1,
+       'https://platform.minimax.cn/docs/guides/pricing-paygo'
+FROM aid_ai_model legacy
+JOIN aid_ai_provider provider ON provider.provider_code='minimax_h3'
+WHERE legacy.model_code='minimax-h3-t2v'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model WHERE model_code='minimax-h3-official');
+
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, schedule_strategy_json,
+   supports_text_input, supports_system_prompt, supports_image_input,
+   supports_multi_image_input, max_output_count, default_output_count,
+   supports_aspect_ratio, supports_size_preset, supports_duration,
+   supports_first_frame, supports_last_frame, default_size_code,
+   default_aspect_ratio, default_duration_seconds, capability_json, capability_inited)
+SELECT provider.id, 'minimax-h3-max-official', 'MiniMax-H3-Max', 'MiniMax H3 Max', 'video',
+       'text_to_video', '/v2/video_generation', 'minimax-h3-video', 119,
+       '1', '0', NOW(), 'system', 'Official H3 Max; price unverified, no SKU, unavailable until configured',
+       'SKU', NULL, 1, legacy.schedule_strategy_json,
+       1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, '768P', '16:9', 5,
+       JSON_SET(legacy.capability_json,
+           '$.sizeOptions', JSON_ARRAY('480P','768P'),
+           '$.durationOptions', JSON_ARRAY(5,6,7,8,9,10,11,12,13,14,15)), 1
+FROM aid_ai_model legacy
+JOIN aid_ai_provider provider ON provider.provider_code='minimax_h3'
+WHERE legacy.model_code='minimax-h3-t2v'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model WHERE model_code='minimax-h3-max-official');
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order, create_time, create_by)
+SELECT target.id, source.capability_code, source.generate_mode,
+       IF(target.model_code='minimax-h3-max-official',
+          JSON_SET(source.definition_json,
+            '$.parameters[1].choices', JSON_ARRAY(5,6,7,8,9,10,11,12,13,14,15),
+            '$.parameters[3].properties[0].choices', JSON_ARRAY('480P','768P')),
+          source.definition_json), source.sort_order, NOW(), 'system'
+FROM aid_ai_model legacy
+JOIN aid_ai_model_capability source ON source.model_id=legacy.id
+JOIN aid_ai_model target ON target.model_code IN ('minimax-h3-official','minimax-h3-max-official')
+WHERE legacy.model_code='minimax-h3-t2v'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability existing
+                  WHERE existing.model_id=target.id AND existing.capability_code=source.capability_code);
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json,
+   sort_order, create_time, create_by)
+SELECT target.id, source.capability_code, source.binding_code, source.protocol,
+       IF(target.model_code='minimax-h3-max-official',
+          JSON_REMOVE(JSON_SET(source.definition_json,
+            '$.upstreamModel', 'MiniMax-H3-Max',
+            '$.capability.sizeOptions', JSON_ARRAY('480P','768P'),
+            '$.capability.durationOptions', JSON_ARRAY(5,6,7,8,9,10,11,12,13,14,15),
+            '$.billingMode', 'SKU'), '$.billingRule'),
+          JSON_REMOVE(source.definition_json, '$.billingRule')), source.sort_order, NOW(), 'system'
+FROM aid_ai_model legacy
+JOIN aid_ai_model_protocol_binding source ON source.model_id=legacy.id
+JOIN aid_ai_model target ON target.model_code IN ('minimax-h3-official','minimax-h3-max-official')
+WHERE legacy.model_code='minimax-h3-t2v'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding existing
+                  WHERE existing.model_id=target.id
+                    AND existing.capability_code=source.capability_code
+                    AND existing.binding_code=source.binding_code);
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code, model_id, capability_code, default_capability, defaults_json,
+   sort_order, create_time, create_by)
+SELECT source.func_code, target.id, source.capability_code, source.default_capability,
+       source.defaults_json, source.sort_order, NOW(), 'system'
+FROM aid_ai_model legacy
+JOIN aid_ai_business_model_binding source ON source.model_id=legacy.id
+JOIN aid_ai_model target ON target.model_code IN ('minimax-h3-official','minimax-h3-max-official')
+WHERE legacy.model_code='minimax-h3-t2v'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding existing
+                  WHERE existing.func_code=source.func_code
+                    AND existing.model_id=target.id
+                    AND existing.capability_code=source.capability_code);
+
+-- New installations do not expose or retain the former MiniMax-H3 model directory.
+DELETE alias_row FROM aid_ai_model_alias alias_row
+JOIN aid_ai_model model ON model.id=alias_row.model_id
+WHERE model.model_code='minimax-h3-t2v' AND model.provider_id=11;
+DELETE relation FROM aid_ai_business_model_binding relation
+JOIN aid_ai_model model ON model.id=relation.model_id
+WHERE model.model_code IN ('minimax-h3-t2v','minimax-h3-i2v-first',
+  'minimax-h3-i2v-last','minimax-h3-i2v-first-last','minimax-h3-reference')
+  AND model.provider_id=11;
+DELETE capability FROM aid_ai_model_capability capability
+JOIN aid_ai_model model ON model.id=capability.model_id
+WHERE model.model_code IN ('minimax-h3-t2v','minimax-h3-i2v-first',
+  'minimax-h3-i2v-last','minimax-h3-i2v-first-last','minimax-h3-reference')
+  AND model.provider_id=11;
+DELETE binding FROM aid_ai_model_protocol_binding binding
+JOIN aid_ai_model model ON model.id=binding.model_id
+WHERE model.model_code IN ('minimax-h3-t2v','minimax-h3-i2v-first',
+  'minimax-h3-i2v-last','minimax-h3-i2v-first-last','minimax-h3-reference')
+  AND model.provider_id=11;
+DELETE FROM aid_ai_model
+WHERE model_code IN ('minimax-h3-t2v','minimax-h3-i2v-first',
+  'minimax-h3-i2v-last','minimax-h3-i2v-first-last','minimax-h3-reference')
+  AND provider_id=11;
+
+-- Restricted legacy Music endpoints remain configurable but unavailable by default.
+-- No speculative price, enabled SKU, credential, or free fallback is introduced.
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, supports_text_input,
+   supports_system_prompt, supports_image_input, max_output_count, default_output_count,
+   capability_json, capability_inited)
+SELECT provider.id, catalog.code, catalog.code, catalog.label, 'audio', 'audio',
+       '/v1/music_generation', 'minimax-music', catalog.priority, '1', '0',
+       NOW(), 'system', 'Legacy official Music API restricted for new users; verify account and price before enabling',
+       'SKU', NULL, 1, 1, 0, 0, 1, 1,
+       JSON_OBJECT('requiresConfiguredBilling', true, 'provider', 'minimax',
+         'ttsVoiceRequired', false, 'ttsTextRequired', true,
+         'audioFormatOptions', JSON_ARRAY('mp3','wav','pcm'),
+         'audioSampleRateOptions', JSON_ARRAY(16000,24000,32000,44100),
+         'defaultAudioFormat', 'mp3', 'defaultAudioSampleRate', 44100), 1
+FROM (SELECT 'music-3.0' AS code, 'MiniMax Music 3.0' AS label, 80 AS priority
+      UNION ALL SELECT 'music-2.6', 'MiniMax Music 2.6', 79
+      UNION ALL SELECT 'music-cover', 'MiniMax Music Cover', 78) catalog
+JOIN aid_ai_provider provider ON provider.provider_code='minimax'
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_model existing WHERE existing.model_code=catalog.code);
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order, create_time, create_by)
+SELECT model.id, 'audio', 'audio',
+       JSON_OBJECT('code','audio','defaultCapability',true,'enabled',true,
+         'generateMode','audio','label','音乐生成',
+         'parameters',JSON_ARRAY(JSON_OBJECT('name','ttsText','label','音乐描述或歌词',
+                                             'type','string','widget','textarea')),
+         'presentation',JSON_OBJECT('supportsTextInput',true,'supportsSystemPrompt',false)),
+       0, NOW(), 'system'
+FROM aid_ai_model model
+WHERE model.model_code IN ('music-3.0','music-2.6','music-cover')
+  AND model.protocol='minimax-music'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability existing
+                  WHERE existing.model_id=model.id AND existing.capability_code='audio');
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json,
+   sort_order, create_time, create_by)
+SELECT model.id, 'audio', 'minimax_music', 'minimax-music',
+       JSON_OBJECT('code','minimax_music','protocol','minimax-music',
+         'upstreamModel',model.real_model_code,'apiSuffix','/v1/music_generation',
+         'billingMode','SKU','defaultBinding',true,'enabled',true,
+         'capability',JSON_OBJECT('requiresConfiguredBilling',true,'provider','minimax',
+           'ttsVoiceRequired',false,'ttsTextRequired',true,
+           'audioFormatOptions',JSON_ARRAY('mp3','wav','pcm'),
+           'audioSampleRateOptions',JSON_ARRAY(16000,24000,32000,44100),
+           'defaultAudioFormat','mp3','defaultAudioSampleRate',44100)),
+       0, NOW(), 'system'
+FROM aid_ai_model model
+WHERE model.model_code IN ('music-3.0','music-2.6','music-cover')
+  AND model.protocol='minimax-music'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding existing
+                  WHERE existing.model_id=model.id AND existing.capability_code='audio'
+                    AND existing.binding_code='minimax_music');
+
+-- Seedance 2.x public model catalog and protocol capability matrix.
+-- Preserve administrator-managed credentials, enablement, billing, multipliers and scheduling.
+SET @seedance20_full_capability := '{"requiresConfiguredBilling":true,"maxPromptCharacters":10000,"inputModalities":["TEXT","IMAGE","VIDEO","AUDIO"],"outputModalities":["VIDEO"],"supportsTextInput":true,"supportsImageInput":true,"supportsMultiImageInput":true,"supportsFirstFrame":true,"supportsLastFrame":true,"supportsSizePreset":true,"supportsAspectRatio":true,"supportsDuration":true,"defaultSize":"720P","defaultAspectRatio":"16:9","defaultDurationSeconds":5,"sizeOptions":["480P","720P","1080P","4K"],"aspectRatioOptions":["adaptive","16:9","9:16","4:3","3:4","1:1","21:9"],"durationOptions":[-1,4,5,6,7,8,9,10,11,12,13,14,15],"maxReferenceImages":9,"maxReferenceVideos":3,"maxReferenceAudios":3,"maxReferenceMaterials":15,"maxInputMediaTotalFileSizeMb":64,"supportsBase64Image":true,"supportsVideoInput":true,"supportsReferenceAudio":true,"referenceAudioRequiresVisualInput":true,"referenceImageFormats":["jpg","jpeg","png","webp","bmp","tiff","gif","heic","heif"],"referenceImageMaxFileSizeMb":30,"referenceImageMinDimensionPixels":300,"referenceImageMaxDimensionPixels":6000,"referenceImageMinAspectRatio":0.4,"referenceImageMaxAspectRatio":2.5,"referenceVideoFormats":["mp4","mov"],"referenceVideoMaxFileSizeMb":200,"referenceVideoMinDurationSeconds":2,"referenceVideoMaxDurationSeconds":15,"referenceVideoMaxTotalDurationSeconds":15,"referenceVideoMinDimensionPixels":300,"referenceVideoMaxDimensionPixels":6000,"referenceVideoMinAspectRatio":0.4,"referenceVideoMaxAspectRatio":2.5,"referenceVideoMinFps":24,"referenceVideoMaxFps":60,"referenceAudioFormats":["wav","mp3"],"referenceAudioMaxFileSizeMb":15,"referenceAudioMinDurationSeconds":2,"referenceAudioMaxDurationSeconds":15,"referenceAudioMaxTotalDurationSeconds":15,"supportsAudio":true,"defaultAudio":true,"defaultOutputFormat":"mp4","outputFormatOptions":["mp4"],"supportsOutputFormatParameter":false,"supportsReturnLastFrame":true,"supportsWebSearch":true,"supportsCameraFixed":true,"supportsSeed":true,"supportsPriority":true,"supportsFrames":false,"supportsDraft":false,"supportsDraftUpgrade":false,"serviceTierOptions":["default"],"seedanceTaskTypeOptions":[],"timestampIntegerOnly":false,"allowedScenes":["textToVideo","imageToVideo","startEndToVideo","referenceToVideo","videoToVideo"],"strictSceneRules":true,"sceneRules":{"textToVideo":{"allowedInputs":["text"]},"imageToVideo":{"requiredInputs":["firstFrame"],"allowedInputs":["text","firstFrame"],"aspectRatioOptions":["adaptive"],"defaultAspectRatio":"adaptive"},"startEndToVideo":{"requiredInputs":["firstFrame","lastFrame"],"allowedInputs":["text","firstFrame","lastFrame"],"aspectRatioOptions":["adaptive"],"defaultAspectRatio":"adaptive"},"referenceToVideo":{"requiredAnyOf":["image","video"],"allowedInputs":["text","image","video","audio"]},"videoToVideo":{"requiredInputs":["video"],"allowedInputs":["text","image","video","audio"]}}}';
+SET @seedance20_small_capability := JSON_SET(
+  JSON_EXTRACT(@seedance20_full_capability, '$'),
+  '$.sizeOptions', JSON_ARRAY('480P','720P')
+);
+SET @seedance25_fire_capability := '{"requiresConfiguredBilling":true,"maxPromptCharacters":10000,"inputModalities":["TEXT","IMAGE","VIDEO","AUDIO"],"outputModalities":["VIDEO"],"supportsTextInput":true,"supportsImageInput":true,"supportsMultiImageInput":true,"supportsFirstFrame":true,"supportsLastFrame":true,"supportsSizePreset":true,"supportsAspectRatio":true,"supportsDuration":true,"defaultSize":"720P","defaultAspectRatio":"adaptive","defaultDurationSeconds":5,"sizeOptions":["480P","720P"],"aspectRatioOptions":["adaptive","16:9","9:16","4:3","3:4","1:1","21:9"],"durationOptions":[-1,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"maxReferenceImages":30,"maxReferenceVideos":10,"maxReferenceAudios":10,"maxReferenceMaterials":50,"supportsBase64Image":true,"supportsVideoInput":true,"supportsReferenceAudio":true,"referenceAudioRequiresVisualInput":false,"referenceImageFormats":["jpg","jpeg","png","webp","bmp","tiff","gif","heic","heif"],"referenceImageMaxFileSizeMb":30,"referenceImageMinDimensionPixels":300,"referenceImageMaxDimensionPixels":6000,"referenceImageMinAspectRatio":0.4,"referenceImageMaxAspectRatio":2.5,"referenceVideoFormats":["mp4","mov"],"referenceVideoMaxFileSizeMb":200,"referenceVideoMinDurationSeconds":2,"referenceVideoMaxDurationSeconds":30,"referenceVideoMaxTotalDurationSeconds":30,"referenceVideoMinDimensionPixels":300,"referenceVideoMaxDimensionPixels":6000,"referenceVideoMinAspectRatio":0.4,"referenceVideoMaxAspectRatio":2.5,"referenceVideoMinFps":24,"referenceVideoMaxFps":60,"referenceAudioFormats":["wav","mp3"],"referenceAudioMaxFileSizeMb":15,"referenceAudioMinDurationSeconds":2,"referenceAudioMaxDurationSeconds":30,"referenceAudioMaxTotalDurationSeconds":30,"supportsAudio":true,"defaultAudio":true,"defaultOutputFormat":"mp4","outputFormatOptions":["mp4","mov"],"supportsOutputFormatParameter":true,"supportsReturnLastFrame":true,"supportsWebSearch":true,"supportsCameraFixed":true,"supportsSeed":true,"supportsPriority":true,"supportsFrames":false,"supportsDraft":false,"supportsDraftUpgrade":false,"serviceTierOptions":["default"],"seedanceTaskTypeOptions":["auto","edit","extend"],"timestampIntegerOnly":true,"timestampGranularitySeconds":1,"allowedScenes":["textToVideo","imageToVideo","startEndToVideo","referenceToVideo","videoToVideo"],"strictSceneRules":true,"sceneRules":{"textToVideo":{"allowedInputs":["text"]},"imageToVideo":{"requiredInputs":["firstFrame"],"allowedInputs":["text","firstFrame"],"aspectRatioOptions":["adaptive"],"defaultAspectRatio":"adaptive"},"startEndToVideo":{"requiredInputs":["firstFrame","lastFrame"],"allowedInputs":["text","firstFrame","lastFrame"],"aspectRatioOptions":["adaptive"],"defaultAspectRatio":"adaptive"},"referenceToVideo":{"requiredAnyOf":["image","video","audio"],"allowedInputs":["text","image","video","audio"]},"videoToVideo":{"requiredInputs":["video"],"allowedInputs":["text","image","video","audio"]}}}';
+SET @seedance25_tokendance_capability := JSON_SET(
+  JSON_EXTRACT(@seedance25_fire_capability, '$'),
+  '$.sizeOptions', JSON_ARRAY('480P','720P','1080P'),
+  '$.seedanceTaskTypeOptions', JSON_ARRAY('reference','edit','extend','auto')
+);
+
+-- FireMountain 2.0 and Fast already exist in older installations. Replace only the public
+-- capability contract; billing and operational settings are deliberately left untouched.
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='volcengine'
+SET m.config_version=COALESCE(m.config_version,0)+1,
+    m.capability_json=IF(m.model_code='doubao-seedance-2.0',
+      @seedance20_full_capability,@seedance20_small_capability),
+    m.protocol='seedance-video',m.api_suffix='/api/v3/contents/generations/tasks',
+    m.supports_text_input=1,m.supports_system_prompt=0,m.supports_image_input=1,
+    m.supports_multi_image_input=1,m.supports_aspect_ratio=1,m.supports_size_preset=1,
+    m.supports_duration=1,m.supports_first_frame=1,m.supports_last_frame=1,
+    m.default_size_code='720P',m.default_aspect_ratio='16:9',m.default_duration_seconds=5,
+    m.capability_inited=1,m.update_time=NOW(),m.update_by='system'
+WHERE m.model_code IN ('doubao-seedance-2.0','doubao-seedance-2.0-fast')
+  AND m.del_flag='0'
+  AND (NOT (m.capability_json <=> IF(m.model_code='doubao-seedance-2.0',
+        @seedance20_full_capability,@seedance20_small_capability))
+    OR m.protocol<>'seedance-video' OR m.supports_first_frame<>1 OR m.supports_last_frame<>1);
+
+INSERT INTO aid_ai_model
+  (provider_id,model_code,real_model_code,model_name,model_type,generate_mode,
+   cost_credits,billing_multiplier,api_suffix,protocol,priority,status,del_flag,
+   create_time,create_by,remark,billing_mode,billing_rule_json,billing_version,
+   schedule_strategy_json,supports_text_input,supports_system_prompt,supports_image_input,
+   supports_multi_image_input,max_output_count,default_output_count,supports_aspect_ratio,
+   supports_size_preset,supports_duration,supports_first_frame,supports_last_frame,
+   default_size_code,default_aspect_ratio,default_duration_seconds,capability_json,
+   capability_inited,official_price_url,is_free)
+SELECT p.id,'doubao-seedance-2.0-mini','doubao-seedance-2-0-mini-260615',
+       '豆包 Seedance 2.0 Mini','video','image_to_video',0,1,
+       '/api/v3/contents/generations/tasks','seedance-video',98,'1','0',NOW(),'system',
+       'FireMountain official Seedance 2.0 Mini; configure verified billing before enabling',
+       'SKU',NULL,1,'{"maxConcurrency":1}',1,0,1,1,1,1,1,1,1,1,1,
+       '720P','16:9',5,@seedance20_small_capability,1,
+       'https://docs.volcengine.com/docs/82379/1544106',0
+FROM aid_ai_provider p
+WHERE p.provider_code='volcengine' AND p.del_flag='0'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model x
+                  WHERE x.model_code='doubao-seedance-2.0-mini');
+
+-- Seedance 2.5 has one catalog model. Scene choices live in capability and protocol rows.
+-- Existing split models are handled by the migration at the end of this batch.
+INSERT INTO aid_ai_model
+  (provider_id,model_code,real_model_code,model_name,model_type,generate_mode,
+   cost_credits,billing_multiplier,api_suffix,protocol,priority,status,del_flag,
+   create_time,create_by,update_time,update_by,remark,billing_mode,billing_rule_json,billing_version,
+   schedule_strategy_json,supports_text_input,supports_system_prompt,supports_image_input,
+   supports_multi_image_input,max_output_count,default_output_count,supports_aspect_ratio,
+   supports_size_preset,supports_duration,supports_first_frame,supports_last_frame,
+   default_size_code,default_aspect_ratio,default_duration_seconds,capability_json,
+   capability_inited,official_price_url,is_free)
+SELECT p.id,'doubao-seedance-2.5','doubao-seedance-2-5-260628','豆包 Seedance 2.5',
+       'video','text_to_video',0,1,'/api/v3/contents/generations/tasks',
+       'seedance-video',130,'1','0',NOW(),'system',NOW(),'system',
+       'FireMountain official Seedance 2.5; configure verified billing before enabling',
+       'SKU',NULL,1,'{"maxConcurrency":1}',1,0,1,1,1,1,1,1,1,1,1,
+       '720P','adaptive',5,@seedance25_fire_capability,1,
+       'https://docs.volcengine.com/docs/82379/1544106',0
+FROM aid_ai_provider p
+WHERE p.provider_code='volcengine' AND p.del_flag='0'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model x WHERE x.provider_id=p.id
+    AND x.model_code='doubao-seedance-2.5' AND x.del_flag='0')
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model x WHERE x.provider_id=p.id
+    AND x.model_code='doubao-seedance-2.5-text' AND x.del_flag='0');
+
+-- TokenDance uses the same stable codes as its catalog importer. All seeds remain disabled;
+-- online catalog pricing and administrator review remain authoritative for activation.
+INSERT INTO aid_ai_model
+  (provider_id,model_code,real_model_code,model_name,model_type,generate_mode,
+   cost_credits,billing_multiplier,api_suffix,protocol,priority,status,del_flag,
+   create_time,create_by,remark,billing_mode,billing_rule_json,billing_version,
+   supports_text_input,supports_system_prompt,supports_image_input,supports_multi_image_input,
+   max_output_count,default_output_count,supports_aspect_ratio,supports_size_preset,
+   supports_duration,supports_first_frame,supports_last_frame,default_size_code,
+   default_aspect_ratio,default_duration_seconds,capability_json,capability_inited,is_free)
+SELECT p.id,CONCAT('td_',p.id,'_',c.real_model_code),c.real_model_code,c.model_name,
+       'video','text_to_video',0,1,'/gateway/ark/v3/generations/tasks',
+       'tokendance:seedance:generations',0,'1','0',NOW(),'system',
+       'TokenDance public catalog Seedance model; import live pricing and review before enabling',
+       'SKU',NULL,1,1,0,1,1,1,1,1,1,1,1,1,'720P','16:9',5,
+       JSON_SET(JSON_EXTRACT(IF(c.real_model_code='seedance-2.5',
+           @seedance25_tokendance_capability,
+           IF(c.real_model_code='seedance-2.0',@seedance20_full_capability,
+              @seedance20_small_capability)),'$'),
+         '$.catalogModelId',c.real_model_code,
+         '$.catalogProtocol','seedance:generations',
+         '$.catalogSource',CONCAT('https://tokendance.space/portal/api/models/',c.real_model_code),
+         '$.verificationStatus','VERIFIED_OFFICIAL'),
+       1,0
+FROM aid_ai_provider p
+CROSS JOIN (
+  SELECT 'seedance-2.0' real_model_code,'ByteDance Seedance 2.0' model_name
+  UNION ALL SELECT 'seedance-2.0-fast','ByteDance Seedance 2.0 Fast'
+  UNION ALL SELECT 'seedance-2.0-mini','ByteDance Seedance 2.0 Mini'
+  UNION ALL SELECT 'seedance-2.5','ByteDance Seedance 2.5'
+) c
+WHERE p.provider_code='tokendance' AND p.del_flag='0'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model x
+                  WHERE x.provider_id=p.id AND x.real_model_code=c.real_model_code
+                    AND x.del_flag='0');
+
+-- Refresh TokenDance's provider-specific limits without changing catalog billing or enablement.
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='tokendance'
+SET m.config_version=COALESCE(m.config_version,0)+1,
+    m.capability_json=JSON_SET(
+      JSON_EXTRACT(IF(m.real_model_code='seedance-2.5',@seedance25_tokendance_capability,
+        IF(m.real_model_code='seedance-2.0',@seedance20_full_capability,
+           @seedance20_small_capability)),'$'),
+      '$.catalogModelId',m.real_model_code,
+      '$.catalogProtocol','seedance:generations',
+      '$.catalogSource',CONCAT('https://tokendance.space/portal/api/models/',m.real_model_code),
+      '$.verificationStatus','VERIFIED_OFFICIAL'),
+    m.protocol='tokendance:seedance:generations',
+    m.api_suffix='/gateway/ark/v3/generations/tasks',m.generate_mode='text_to_video',
+    m.supports_text_input=1,m.supports_system_prompt=0,m.supports_image_input=1,
+    m.supports_multi_image_input=1,m.supports_aspect_ratio=1,m.supports_size_preset=1,
+    m.supports_duration=1,m.supports_first_frame=1,m.supports_last_frame=1,
+    m.default_size_code='720P',m.default_aspect_ratio='16:9',m.default_duration_seconds=5,
+    m.capability_inited=1,m.update_time=NOW(),m.update_by='system'
+WHERE m.real_model_code IN ('seedance-2.0','seedance-2.0-fast','seedance-2.0-mini','seedance-2.5')
+  AND m.del_flag='0'
+  AND (m.protocol<>'tokendance:seedance:generations'
+    OR COALESCE(JSON_UNQUOTE(JSON_EXTRACT(m.capability_json,'$.verificationStatus')),'')<>'VERIFIED_OFFICIAL'
+    OR NOT (JSON_EXTRACT(m.capability_json,'$.sizeOptions') <=>
+      JSON_EXTRACT(IF(m.real_model_code='seedance-2.5',@seedance25_tokendance_capability,
+        IF(m.real_model_code='seedance-2.0',@seedance20_full_capability,
+           @seedance20_small_capability)),'$.sizeOptions')));
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance_scene_202609;
+CREATE TEMPORARY TABLE tmp_seedance_scene_202609 (
+  capability_code VARCHAR(96) NOT NULL,
+  generate_mode VARCHAR(32) NOT NULL,
+  video_scenario VARCHAR(32) NOT NULL,
+  scene_key VARCHAR(32) NOT NULL,
+  label VARCHAR(64) NOT NULL,
+  sort_order INT NOT NULL,
+  PRIMARY KEY (capability_code)
+);
+INSERT INTO tmp_seedance_scene_202609 VALUES
+  ('text_to_video','text_to_video','text','textToVideo','文生视频',0),
+  ('image_to_video','image_to_video','first_frame','imageToVideo','首帧图生视频',10),
+  ('start_end_to_video','start_end_to_video','first_last_frame','startEndToVideo','首尾帧视频',20),
+  ('reference_to_video','reference_to_video','reference','referenceToVideo','多模态参考视频',30),
+  ('video_edit','video_to_video','edit','videoToVideo','视频编辑',40),
+  ('video_extend','video_to_video','extend','videoToVideo','视频延长',50);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance_route_202609;
+CREATE TEMPORARY TABLE tmp_seedance_route_202609 (
+  model_id BIGINT NOT NULL,
+  provider_code VARCHAR(64) NOT NULL,
+  model_code VARCHAR(100) NOT NULL,
+  real_model_code VARCHAR(255) NOT NULL,
+  capability_code VARCHAR(96) NOT NULL,
+  generate_mode VARCHAR(32) NOT NULL,
+  video_scenario VARCHAR(32) NOT NULL,
+  label VARCHAR(64) NOT NULL,
+  sort_order INT NOT NULL,
+  protocol VARCHAR(96) NOT NULL,
+  api_suffix VARCHAR(500) NOT NULL,
+  task_query_suffix VARCHAR(500) NULL,
+  source_url VARCHAR(512) NOT NULL,
+  route_capability MEDIUMTEXT NOT NULL,
+  presentation_json TEXT NOT NULL,
+  PRIMARY KEY (model_id,capability_code)
+);
+
+INSERT INTO tmp_seedance_route_202609
+SELECT seeded.model_id,seeded.provider_code,seeded.model_code,seeded.real_model_code,
+       seeded.capability_code,seeded.generate_mode,seeded.video_scenario,seeded.label,
+       seeded.sort_order,seeded.protocol,seeded.api_suffix,seeded.task_query_suffix,
+       seeded.source_url,
+       JSON_SET(JSON_EXTRACT(seeded.base_capability,'$'),
+         '$.videoScenario',seeded.video_scenario,
+         '$.allowedScenes',JSON_ARRAY(seeded.scene_key),
+         '$.sceneRules',JSON_OBJECT(seeded.scene_key,
+           CASE seeded.video_scenario
+             WHEN 'text' THEN JSON_OBJECT('allowedInputs',JSON_ARRAY('text'))
+             WHEN 'first_frame' THEN JSON_OBJECT('requiredInputs',JSON_ARRAY('firstFrame'),
+               'allowedInputs',JSON_ARRAY('text','firstFrame'),
+               'aspectRatioOptions',JSON_ARRAY('adaptive'),'defaultAspectRatio','adaptive')
+             WHEN 'first_last_frame' THEN JSON_OBJECT(
+               'requiredInputs',JSON_ARRAY('firstFrame','lastFrame'),
+               'allowedInputs',JSON_ARRAY('text','firstFrame','lastFrame'),
+               'aspectRatioOptions',JSON_ARRAY('adaptive'),'defaultAspectRatio','adaptive')
+             WHEN 'reference' THEN JSON_OBJECT('requiredAnyOf',
+               IF(seeded.is_seedance25=1,JSON_ARRAY('image','video','audio'),JSON_ARRAY('image','video')),
+               'allowedInputs',JSON_ARRAY('text','image','video','audio'))
+             ELSE JSON_OBJECT('requiredInputs',JSON_ARRAY('video'),
+               'allowedInputs',JSON_ARRAY('text','image','video','audio'))
+           END),
+         '$.allowedInputs',CASE seeded.video_scenario
+           WHEN 'text' THEN JSON_ARRAY('text')
+           WHEN 'first_frame' THEN JSON_ARRAY('text','firstFrame')
+           WHEN 'first_last_frame' THEN JSON_ARRAY('text','firstFrame','lastFrame')
+           ELSE JSON_ARRAY('text','image','video','audio') END,
+         '$.requiredInputs',CASE seeded.video_scenario
+           WHEN 'first_frame' THEN JSON_ARRAY('firstFrame')
+           WHEN 'first_last_frame' THEN JSON_ARRAY('firstFrame','lastFrame')
+           WHEN 'edit' THEN JSON_ARRAY('video')
+           WHEN 'extend' THEN JSON_ARRAY('video')
+           ELSE JSON_ARRAY() END,
+         '$.requiredAnyOf',CASE WHEN seeded.video_scenario='reference'
+           THEN IF(seeded.is_seedance25=1,JSON_ARRAY('image','video','audio'),JSON_ARRAY('image','video'))
+           ELSE JSON_ARRAY() END,
+         '$.inputImageRole',CASE
+           WHEN seeded.video_scenario IN ('first_frame','first_last_frame') THEN 'first_frame'
+           WHEN seeded.video_scenario IN ('reference','edit','extend') THEN 'reference_image'
+           ELSE '' END,
+         '$.maxReferenceImages',CASE seeded.video_scenario
+           WHEN 'text' THEN 0 WHEN 'first_frame' THEN 1 WHEN 'first_last_frame' THEN 2
+           ELSE JSON_EXTRACT(seeded.base_capability,'$.maxReferenceImages') END,
+         '$.maxReferenceVideos',CASE
+           WHEN seeded.video_scenario IN ('text','first_frame','first_last_frame') THEN 0
+           ELSE JSON_EXTRACT(seeded.base_capability,'$.maxReferenceVideos') END,
+         '$.maxReferenceAudios',CASE
+           WHEN seeded.video_scenario IN ('text','first_frame','first_last_frame') THEN 0
+           ELSE JSON_EXTRACT(seeded.base_capability,'$.maxReferenceAudios') END,
+         '$.maxReferenceMaterials',CASE seeded.video_scenario
+           WHEN 'text' THEN 0 WHEN 'first_frame' THEN 1 WHEN 'first_last_frame' THEN 2
+           ELSE JSON_EXTRACT(seeded.base_capability,'$.maxReferenceMaterials') END,
+         '$.supportsVideoInput',IF(seeded.video_scenario IN ('reference','edit','extend'),TRUE,FALSE),
+         '$.supportsReferenceAudio',IF(seeded.video_scenario IN ('reference','edit','extend'),TRUE,FALSE),
+         '$.supportsFirstFrame',IF(seeded.video_scenario IN ('first_frame','first_last_frame'),TRUE,FALSE),
+         '$.supportsLastFrame',IF(seeded.video_scenario='first_last_frame',TRUE,FALSE),
+         '$.supportsImageInput',IF(seeded.video_scenario<>'text',TRUE,FALSE),
+         '$.supportsMultiImageInput',IF(seeded.video_scenario IN
+           ('first_last_frame','reference','edit','extend'),TRUE,FALSE),
+         '$.aspectRatioOptions',CASE
+           WHEN seeded.video_scenario IN ('first_frame','first_last_frame','edit','extend')
+             THEN JSON_ARRAY('adaptive')
+           ELSE JSON_EXTRACT(seeded.base_capability,'$.aspectRatioOptions') END,
+         '$.defaultAspectRatio',IF(seeded.video_scenario IN
+           ('first_frame','first_last_frame','edit','extend'),'adaptive',
+           JSON_UNQUOTE(JSON_EXTRACT(seeded.base_capability,'$.defaultAspectRatio'))),
+         '$.durationOptions',IF(seeded.video_scenario='edit',JSON_ARRAY(-1),
+           JSON_EXTRACT(seeded.base_capability,'$.durationOptions')),
+         '$.defaultDurationSeconds',IF(seeded.video_scenario='edit',-1,5),
+         '$.referenceVideoMinDurationSeconds',IF(seeded.video_scenario='edit',4,
+           JSON_EXTRACT(seeded.base_capability,'$.referenceVideoMinDurationSeconds'))
+       ),
+       JSON_OBJECT(
+         'supportsTextInput',TRUE,'supportsSystemPrompt',FALSE,
+         'supportsImageInput',IF(seeded.video_scenario<>'text',TRUE,FALSE),
+         'supportsMultiImageInput',IF(seeded.video_scenario IN
+           ('first_last_frame','reference','edit','extend'),TRUE,FALSE),
+         'supportsFirstFrame',IF(seeded.video_scenario IN
+           ('first_frame','first_last_frame'),TRUE,FALSE),
+         'supportsLastFrame',IF(seeded.video_scenario='first_last_frame',TRUE,FALSE),
+         'supportsAspectRatio',TRUE,'supportsSizePreset',TRUE,'supportsDuration',TRUE,
+         'maxOutputCount',1,'defaultOutputCount',1,'defaultSizeCode','720P',
+         'defaultAspectRatio',IF(seeded.video_scenario IN
+           ('first_frame','first_last_frame','edit','extend'),'adaptive','16:9'),
+         'defaultDurationSeconds',IF(seeded.video_scenario='edit',-1,5)
+       )
+FROM (
+  SELECT m.id model_id,p.provider_code,m.model_code,m.real_model_code,
+         s.capability_code,s.generate_mode,s.video_scenario,s.scene_key,s.label,s.sort_order,
+         IF(p.provider_code='tokendance','tokendance:seedance:generations','seedance-video') protocol,
+         IF(p.provider_code='tokendance','/gateway/ark/v3/generations/tasks',
+            '/api/v3/contents/generations/tasks') api_suffix,
+         IF(p.provider_code='tokendance','/gateway/ark/v3/generations/tasks/%s',NULL) task_query_suffix,
+         IF(p.provider_code='tokendance','https://tokendance.space/docs/protocol-seedance-generations.md',
+            IF(m.real_model_code='doubao-seedance-2-5-260628',
+              'https://docs.volcengine.com/docs/82379/2607688?lang=zh',
+              'https://docs.volcengine.com/docs/82379/2291680?lang=zh')) source_url,
+         IF(m.real_model_code IN ('seedance-2.5','doubao-seedance-2-5-260628'),1,0) is_seedance25,
+         CASE
+           WHEN p.provider_code='tokendance' AND m.real_model_code='seedance-2.5'
+             THEN @seedance25_tokendance_capability
+           WHEN p.provider_code='tokendance' AND m.real_model_code='seedance-2.0'
+             THEN @seedance20_full_capability
+           WHEN p.provider_code='tokendance' THEN @seedance20_small_capability
+           WHEN m.real_model_code='doubao-seedance-2-5-260628' THEN @seedance25_fire_capability
+           WHEN m.model_code='doubao-seedance-2.0' THEN @seedance20_full_capability
+           ELSE @seedance20_small_capability
+         END base_capability
+  FROM aid_ai_model m
+  JOIN aid_ai_provider p ON p.id=m.provider_id
+  JOIN tmp_seedance_scene_202609 s
+    ON p.provider_code='tokendance'
+    OR m.model_code IN ('doubao-seedance-2.0','doubao-seedance-2.0-fast','doubao-seedance-2.0-mini','doubao-seedance-2.5')
+    OR (m.model_code='doubao-seedance-2.5-text' AND s.video_scenario='text')
+    OR (m.model_code='doubao-seedance-2.5-first-frame' AND s.video_scenario='first_frame')
+    OR (m.model_code='doubao-seedance-2.5-first-last-frame' AND s.video_scenario='first_last_frame')
+    OR (m.model_code='doubao-seedance-2.5-reference' AND s.video_scenario='reference')
+    OR (m.model_code='doubao-seedance-2.5-edit' AND s.video_scenario='edit')
+    OR (m.model_code='doubao-seedance-2.5-extend' AND s.video_scenario='extend')
+  WHERE m.del_flag='0' AND p.del_flag='0'
+    AND (p.provider_code='volcengine' AND m.model_code IN
+      ('doubao-seedance-2.0','doubao-seedance-2.0-fast','doubao-seedance-2.0-mini',
+       'doubao-seedance-2.5','doubao-seedance-2.5-text','doubao-seedance-2.5-first-frame',
+       'doubao-seedance-2.5-first-last-frame','doubao-seedance-2.5-reference',
+       'doubao-seedance-2.5-edit','doubao-seedance-2.5-extend')
+      OR p.provider_code='tokendance' AND m.real_model_code IN
+       ('seedance-2.0','seedance-2.0-fast','seedance-2.0-mini','seedance-2.5'))
+) seeded;
+
+-- Legacy scene-specific FireMountain 2.5 rows must remain safe even before a capability is selected.
+UPDATE aid_ai_model m
+JOIN tmp_seedance_route_202609 r ON r.model_id=m.id
+SET m.config_version=COALESCE(m.config_version,0)+IF(m.capability_json <=> r.route_capability,0,1),
+    m.capability_json=r.route_capability,m.protocol=r.protocol,m.api_suffix=r.api_suffix,
+    m.capability_inited=1,m.update_time=NOW(),m.update_by='system'
+WHERE r.provider_code='volcengine' AND r.real_model_code='doubao-seedance-2-5-260628'
+  AND r.model_code<>'doubao-seedance-2.5';
+
+INSERT INTO aid_ai_model_capability
+  (model_id,capability_code,generate_mode,definition_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT r.model_id,r.capability_code,r.generate_mode,
+       JSON_OBJECT(
+         'code',r.capability_code,
+         'defaultCapability',IF(r.provider_code='volcengine' AND r.model_code IN
+           ('doubao-seedance-2.0','doubao-seedance-2.0-fast','doubao-seedance-2.0-mini'),
+           r.capability_code='image_to_video',
+           r.capability_code='text_to_video'),
+         'enabled',TRUE,'evidenceStatus','VERIFIED_OFFICIAL',
+         'generateMode',r.generate_mode,'label',r.label,
+         'sourceUrls',JSON_ARRAY(r.source_url),
+         'parameters',JSON_ARRAY(
+           JSON_OBJECT('name','prompt','label','提示词','type','string','widget','textarea'),
+           JSON_OBJECT('name','durationSeconds','label','视频时长','type','integer',
+             'choices',JSON_EXTRACT(r.route_capability,'$.durationOptions'),
+             'defaultValue',JSON_EXTRACT(r.route_capability,'$.defaultDurationSeconds'),'unit','秒'),
+           JSON_OBJECT('name','aspectRatio','label','画面比例','type','string',
+             'choices',JSON_EXTRACT(r.route_capability,'$.aspectRatioOptions'),
+             'defaultValue',JSON_UNQUOTE(JSON_EXTRACT(r.route_capability,'$.defaultAspectRatio'))),
+           JSON_OBJECT('name','options','label','生成参数','type','object','properties',JSON_ARRAY(
+             JSON_OBJECT('name','resolution','label','输出规格','type','string',
+               'choices',JSON_EXTRACT(r.route_capability,'$.sizeOptions')),
+             JSON_OBJECT('name','generate_audio','label','生成音频','type','boolean','defaultValue',TRUE),
+             JSON_OBJECT('name','output_format','label','输出格式','type','string',
+               'choices',JSON_EXTRACT(r.route_capability,'$.outputFormatOptions')),
+             JSON_OBJECT('name','return_last_frame','label','返回尾帧','type','boolean'),
+             JSON_OBJECT('name','camera_fixed','label','固定镜头','type','boolean'),
+             JSON_OBJECT('name','seed','label','随机种子','type','integer')
+           ))
+         ),
+         'presentation',JSON_EXTRACT(r.presentation_json,'$'),'rules',JSON_ARRAY()
+       ),
+       r.sort_order,NOW(),'system',NOW(),'system','Seedance official capability contract'
+FROM tmp_seedance_route_202609 r
+ON DUPLICATE KEY UPDATE
+  generate_mode=VALUES(generate_mode),definition_json=VALUES(definition_json),
+  sort_order=VALUES(sort_order),update_time=NOW(),update_by='system',remark=VALUES(remark);
+
+-- Keep a single default protocol per Seedance capability while retaining any alternate route.
+UPDATE aid_ai_model_protocol_binding b
+JOIN tmp_seedance_route_202609 r
+  ON r.model_id=b.model_id AND r.capability_code=b.capability_code
+SET b.definition_json=JSON_SET(
+      IF(JSON_VALID(b.definition_json),b.definition_json,JSON_OBJECT()),
+      '$.defaultBinding',IF(b.protocol=r.protocol,TRUE,FALSE)),
+    b.update_time=NOW(),b.update_by='system';
+
+UPDATE aid_ai_model_protocol_binding b
+JOIN tmp_seedance_route_202609 r
+  ON r.model_id=b.model_id AND r.capability_code=b.capability_code AND r.protocol=b.protocol
+SET b.definition_json=JSON_SET(
+      IF(JSON_VALID(b.definition_json),b.definition_json,JSON_OBJECT()),
+      '$.code',b.binding_code,'$.protocol',r.protocol,
+      '$.upstreamModel',r.real_model_code,'$.apiSuffix',r.api_suffix,
+      '$.taskQuerySuffix',r.task_query_suffix,'$.defaultBinding',TRUE,'$.enabled',TRUE,
+      '$.capability',JSON_EXTRACT(r.route_capability,'$'),
+      '$.presentation',JSON_EXTRACT(r.presentation_json,'$')),
+    b.sort_order=0,b.update_time=NOW(),b.update_by='system',
+    b.remark='Seedance official protocol binding';
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id,capability_code,binding_code,protocol,definition_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT r.model_id,r.capability_code,
+       IF(r.provider_code='tokendance','tokendance_seedance',CONCAT('seedance_official_',r.model_id)),
+       r.protocol,
+       JSON_OBJECT(
+         'code',IF(r.provider_code='tokendance','tokendance_seedance',
+                   CONCAT('seedance_official_',r.model_id)),
+         'protocol',r.protocol,'upstreamModel',r.real_model_code,
+         'apiSuffix',r.api_suffix,'taskQuerySuffix',r.task_query_suffix,
+         'defaultBinding',TRUE,'enabled',TRUE,'fixedParameters',JSON_OBJECT(),
+         'parameterMapping',JSON_OBJECT(),
+         'capability',JSON_EXTRACT(r.route_capability,'$'),
+         'presentation',JSON_EXTRACT(r.presentation_json,'$')),
+       0,NOW(),'system',NOW(),'system','Seedance official protocol binding'
+FROM tmp_seedance_route_202609 r
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_model_protocol_binding b
+  WHERE b.model_id=r.model_id AND b.capability_code=r.capability_code
+    AND b.protocol=r.protocol
+);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance_route_202609;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance_scene_202609;
+SET @seedance20_full_capability := NULL;
+SET @seedance20_small_capability := NULL;
+SET @seedance25_fire_capability := NULL;
+SET @seedance25_tokendance_capability := NULL;
+
+-- Tencent Cloud CI asynchronous portrait segmentation and voice separation.
+-- Credentials come from image_object_detection (COS_STORAGE or DEDICATED); no secret is seeded here.
+INSERT INTO aid_ai_provider
+  (provider_name, provider_code, base_url, api_key, auth_header, auth_prefix,
+   api_key_apply_url, official_doc_url, official_price_url, task_query_suffix,
+   status, del_flag, create_time, create_by, remark, supports_callback,
+   schedule_strategy_json, provider_category)
+SELECT '腾讯云数据万象', 'tencent_ci_media', 'https://ci.tencentcloudapi.com', '',
+       'Authorization', '', 'https://console.cloud.tencent.com/cos',
+       'https://cloud.tencent.com/document/product/460/83973',
+       'https://cloud.tencent.com/document/product/436/58964', '/jobs/%s',
+       '1', '0', NOW(), 'system',
+       'COS SDK derives the bucket-region CI endpoint; configure COS credentials, services and billing before enabling',
+       0,
+       '{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":5,"baseIntervalSeconds":10,"maxIntervalSeconds":120,"backoffFactor":1.5,"maxRetryCount":360,"maxLifeSeconds":21600,"progressTimeoutSeconds":1800,"maxConcurrency":5}',
+       'OFFICIAL'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_provider WHERE provider_code='tencent_ci_media');
+
+UPDATE aid_ai_provider
+SET official_price_url=COALESCE(NULLIF(official_price_url,''),
+      'https://cloud.tencent.com/document/product/436/58964')
+WHERE provider_code='tencent_ci_media';
+
+SET @tencent_ci_video_formats := JSON_ARRAY(
+  '3gp','asf','avi','dv','flv','f4v','m3u8','m4v','mkv','mov','mp4','mpg','mpeg',
+  'mts','ogg','rm','rmvb','swf','ts','vob','webm','wmv');
+SET @tencent_ci_audio_formats := JSON_ARRAY('mp3','aac','flac','amr','m4a','wav');
+SET @tencent_ci_image_formats := JSON_ARRAY('jpg','jpeg','png','webp','bmp');
+SET @tencent_ci_segment_billing_rule := JSON_OBJECT(
+  'mode','SKU','meterType','PER_SECOND','chargeType','VIDEO','preHold',TRUE,
+  'matchStrategy','FIRST_HIT',
+  'params',JSON_ARRAY(JSON_OBJECT('code','duration','name','可信输入时长代理',
+    'type','NUMBER','unit','秒','required',TRUE)),
+  'skus',JSON_ARRAY(JSON_OBJECT(
+    'skuCode','TENCENT_CI_SEGMENT_PER_SECOND','skuName','视频人像分割按秒',
+    'enabled',TRUE,'priority',1,'match',JSON_OBJECT(),'pricePerSecond',0.02,
+    'remark','官方 1.2 元/分钟，按输出视频时长计费；当前按可信输入时长预冻结')),
+  'settleRule',JSON_OBJECT('settleMode','REFUND_ONLY','usageSource','PROVIDER_USAGE',
+    'allowRefund',TRUE,'allowExtraCharge',FALSE));
+SET @tencent_ci_voice_billing_rule := JSON_OBJECT(
+  'mode','SKU','meterType','PER_SECOND','chargeType','VIDEO','preHold',TRUE,
+  'matchStrategy','FIRST_HIT',
+  'params',JSON_ARRAY(JSON_OBJECT('code','duration','name','可信输入时长代理',
+    'type','NUMBER','unit','秒','required',TRUE)),
+  'skus',JSON_ARRAY(JSON_OBJECT(
+    'skuCode','TENCENT_CI_VOICE_SEPARATION_PER_SECOND','skuName','人声分离按秒',
+    'enabled',TRUE,'priority',1,'match',JSON_OBJECT(),'pricePerSecond',0.001333333333333333,
+    'remark','官方 0.08 元/分钟，按输出文件时长计费；当前按可信输入时长预冻结')),
+  'settleRule',JSON_OBJECT('settleMode','REFUND_ONLY','usageSource','PROVIDER_USAGE',
+    'allowRefund',TRUE,'allowExtraCharge',FALSE));
+SET @tencent_ci_segment_base := JSON_OBJECT(
+  'requiresConfiguredBilling',TRUE,
+  'billingDurationBasis','OUTPUT_SECONDS',
+  'preHoldDurationBasis','TRUSTED_INPUT_SECONDS',
+  'authoritativeOutputDurationAvailable',FALSE,
+  'provider','tencent_ci_media',
+  'providerInputField','Input.Object',
+  'stagesInputToCos',TRUE,
+  'inputModalities',JSON_ARRAY('VIDEO'),
+  'outputModalities',JSON_ARRAY('VIDEO'),
+  'supportsTextInput',FALSE,
+  'supportsSystemPrompt',FALSE,
+  'supportsImageInput',FALSE,
+  'supportsMultiImageInput',FALSE,
+  'supportsVideoInput',TRUE,
+  'supportsReferenceAudio',FALSE,
+  'supportsAudio',FALSE,
+  'supportsAspectRatio',FALSE,
+  'supportsSizePreset',FALSE,
+  'supportsDuration',FALSE,
+  'supportsFirstFrame',FALSE,
+  'supportsLastFrame',FALSE,
+  'minReferenceVideos',1,
+  'maxReferenceVideos',1,
+  'maxReferenceImages',0,
+  'maxReferenceAudios',0,
+  'maxReferenceMaterials',1,
+  'referenceVideoFormats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),
+  'defaultOutputFormat','mp4',
+  'outputFormatOptions',JSON_ARRAY('mp4'),
+  'maxOutputCount',1,
+  'defaultOutputCount',1,
+  'allowedInputs',JSON_ARRAY('video'),
+  'requiredInputs',JSON_ARRAY('video'),
+  'allowedScenes',JSON_ARRAY('videoToVideo'),
+  'strictSceneRules',TRUE,
+  'sceneRules',JSON_OBJECT('videoToVideo',JSON_OBJECT(
+    'requiredInputs',JSON_ARRAY('video'),'allowedInputs',JSON_ARRAY('video'))));
+SET @tencent_ci_voice_base := JSON_OBJECT(
+  'requiresConfiguredBilling',TRUE,
+  'billingDurationBasis','OUTPUT_SECONDS',
+  'preHoldDurationBasis','TRUSTED_INPUT_SECONDS',
+  'authoritativeOutputDurationAvailable',FALSE,
+  'provider','tencent_ci_media',
+  'providerInputField','Input.Object',
+  'stagesInputToCos',TRUE,
+  'inputModalities',JSON_ARRAY('VIDEO','AUDIO'),
+  'outputModalities',JSON_ARRAY('AUDIO'),
+  'supportsTextInput',FALSE,
+  'supportsSystemPrompt',FALSE,
+  'supportsImageInput',FALSE,
+  'supportsMultiImageInput',FALSE,
+  'supportsVideoInput',TRUE,
+  'supportsReferenceAudio',TRUE,
+  'referenceAudioRequiresGeneratedAudio',FALSE,
+  'referenceAudioRequiresVisualInput',FALSE,
+  'supportsAudio',FALSE,
+  'supportsAspectRatio',FALSE,
+  'supportsSizePreset',FALSE,
+  'supportsDuration',FALSE,
+  'supportsFirstFrame',FALSE,
+  'supportsLastFrame',FALSE,
+  'minReferenceVideos',0,
+  'maxReferenceVideos',1,
+  'minReferenceAudios',0,
+  'maxReferenceAudios',1,
+  'maxReferenceImages',0,
+  'maxReferenceMaterials',1,
+  'referenceVideoFormats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),
+  'referenceVideoMaxDurationSeconds',2700,
+  'referenceVideoMaximumExclusiveSeconds',2700,
+  'referenceAudioFormats',JSON_EXTRACT(@tencent_ci_audio_formats,'$'),
+  'referenceAudioMaxDurationSeconds',2700,
+  'referenceAudioMaxTotalDurationSeconds',2700,
+  'referenceAudioMaximumExclusiveSeconds',2700,
+  'outputAudioCodecOptions',JSON_ARRAY('aac','mp3','flac','amr'),
+  'defaultOutputAudioCodec','aac',
+  'outputAudioSampleRateOptions',JSON_ARRAY(8000,11025,22050,32000,44100,48000,96000),
+  'defaultOutputAudioSampleRate',44100,
+  'maxOutputCount',2,
+  'defaultOutputCount',1,
+  'allowedInputs',JSON_ARRAY('video','audio'),
+  'requiredAnyOf',JSON_ARRAY('video','audio'),
+  'allowedScenes',JSON_ARRAY('videoToVideo'),
+  'strictSceneRules',TRUE,
+  'sceneRules',JSON_OBJECT('videoToVideo',JSON_OBJECT(
+    'requiredAnyOf',JSON_ARRAY('video','audio'),
+    'allowedInputs',JSON_ARRAY('video','audio'))));
+
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   api_suffix, protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, supports_text_input,
+   supports_system_prompt, supports_image_input, supports_multi_image_input,
+   max_output_count, default_output_count, supports_aspect_ratio,
+   supports_size_preset, supports_duration, supports_first_frame, supports_last_frame,
+   capability_json, capability_inited, official_price_url)
+SELECT provider.id, catalog.model_code, catalog.real_model_code, catalog.model_name,
+       'video', 'video_to_video', '/jobs', 'tencent-ci-async-media', catalog.priority,
+       '1', '0', NOW(), 'system', catalog.remark, 'SKU', catalog.billing_rule_json, 1,
+       0, 0, catalog.supports_image_input, 0, catalog.max_output_count, 1,
+       0, 0, 0, 0, 0, catalog.capability_json, 1, catalog.official_price_url
+FROM (
+  SELECT 'tencent-ci-video-portrait-segmentation' model_code,
+         'SegmentVideoBody' real_model_code,
+         '腾讯云视频人像分割' model_name, 58 priority, 1 supports_image_input,
+         1 max_output_count,
+         'Mask, Foreground and Combination; 1.2 CNY/min output duration; disabled by default' remark,
+         @tencent_ci_segment_base capability_json,
+         @tencent_ci_segment_billing_rule billing_rule_json,
+         'https://cloud.tencent.com/document/product/436/58964' official_price_url
+  UNION ALL
+  SELECT 'tencent-ci-voice-separation', 'VoiceSeparate', '腾讯云人声与背景声分离',
+         57, 0, 2,
+         'Vocal, background or both; 0.08 CNY/min output duration; source is below 45 minutes; disabled by default',
+         @tencent_ci_voice_base, @tencent_ci_voice_billing_rule,
+         'https://cloud.tencent.com/document/product/436/84601'
+) catalog
+JOIN aid_ai_provider provider ON provider.provider_code='tencent_ci_media'
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_model model WHERE model.model_code=catalog.model_code);
+
+UPDATE aid_ai_model model
+JOIN (
+  SELECT 'tencent-ci-video-portrait-segmentation' model_code,
+         @tencent_ci_segment_billing_rule billing_rule_json,
+         'https://cloud.tencent.com/document/product/436/58964' official_price_url
+  UNION ALL
+  SELECT 'tencent-ci-voice-separation', @tencent_ci_voice_billing_rule,
+         'https://cloud.tencent.com/document/product/436/84601'
+) catalog ON catalog.model_code=model.model_code
+SET model.billing_mode=IF(NULLIF(TRIM(model.billing_rule_json),'') IS NULL,'SKU',model.billing_mode),
+    model.billing_version=IF(NULLIF(TRIM(model.billing_rule_json),'') IS NULL,1,model.billing_version),
+    model.billing_rule_json=COALESCE(NULLIF(TRIM(model.billing_rule_json),''),catalog.billing_rule_json),
+    model.official_price_url=COALESCE(NULLIF(model.official_price_url,''),catalog.official_price_url);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_tencent_ci_route_202609;
+CREATE TEMPORARY TABLE tmp_tencent_ci_route_202609 (
+  model_code VARCHAR(100) NOT NULL,
+  capability_code VARCHAR(96) NOT NULL,
+  capability_label VARCHAR(100) NOT NULL,
+  upstream_mode VARCHAR(32) NOT NULL,
+  default_capability TINYINT NOT NULL,
+  sort_order INT NOT NULL,
+  source_url VARCHAR(512) NOT NULL,
+  capability_json LONGTEXT NOT NULL,
+  parameters_json LONGTEXT NULL,
+  rules_json LONGTEXT NULL,
+  presentation_json LONGTEXT NULL
+);
+
+INSERT INTO tmp_tencent_ci_route_202609 VALUES
+('tencent-ci-video-portrait-segmentation','portrait_mask','人像蒙版','Mask',1,0,
+ 'https://cloud.tencent.com/document/product/460/83973',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_segment_base,'$'),'$.segmentMode','Mask'),
+ JSON_ARRAY(
+   JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+     'required',TRUE,'minimum',1,'maximum',1,'materialRole','reference_video',
+     'formats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),
+     'items',JSON_OBJECT('name','videoId','type','integer')),
+   JSON_OBJECT('name','options','label','处理参数','type','object','properties',JSON_ARRAY(
+     JSON_OBJECT('name','segmentType','label','分割类型','type','string',
+       'choices',JSON_ARRAY('HumanSeg','GreenScreenSeg','SolidColorSeg'),'defaultValue','HumanSeg'),
+     JSON_OBJECT('name','binaryThreshold','label','二值化阈值','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','removeRed','label','去除颜色红通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeGreen','label','去除颜色绿通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeBlue','label','去除颜色蓝通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','jobLevel','label','任务优先级','type','integer',
+       'choices',JSON_ARRAY(0,1,2),'defaultValue',0),
+     JSON_OBJECT('name','userData','label','透传信息','type','string','maximum',1024)))),
+ JSON_ARRAY(JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+   JSON_OBJECT('field','options.segmentType','operator','neq','value','SolidColorSeg')),
+   'actions',JSON_ARRAY(
+     JSON_OBJECT('field','options.removeRed','operator','forbidden'),
+     JSON_OBJECT('field','options.removeGreen','operator','forbidden'),
+     JSON_OBJECT('field','options.removeBlue','operator','forbidden')))),
+ JSON_OBJECT('supportsTextInput',FALSE,'supportsImageInput',FALSE,'supportsVideoInput',TRUE,
+   'supportsAspectRatio',FALSE,'supportsDuration',FALSE,'maxOutputCount',1,'defaultOutputCount',1)),
+('tencent-ci-video-portrait-segmentation','portrait_foreground','人像前景','Foreground',0,1,
+ 'https://cloud.tencent.com/document/product/460/83973',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_segment_base,'$'),'$.segmentMode','Foreground'),
+ JSON_ARRAY(
+   JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+     'required',TRUE,'minimum',1,'maximum',1,'materialRole','reference_video',
+     'formats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),
+     'items',JSON_OBJECT('name','videoId','type','integer')),
+   JSON_OBJECT('name','options','label','处理参数','type','object','properties',JSON_ARRAY(
+     JSON_OBJECT('name','segmentType','label','分割类型','type','string',
+       'choices',JSON_ARRAY('HumanSeg','GreenScreenSeg','SolidColorSeg'),'defaultValue','HumanSeg'),
+     JSON_OBJECT('name','backgroundRed','label','背景红通道','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','backgroundGreen','label','背景绿通道','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','backgroundBlue','label','背景蓝通道','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','binaryThreshold','label','二值化阈值','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','removeRed','label','去除颜色红通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeGreen','label','去除颜色绿通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeBlue','label','去除颜色蓝通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','jobLevel','label','任务优先级','type','integer',
+       'choices',JSON_ARRAY(0,1,2),'defaultValue',0),
+     JSON_OBJECT('name','userData','label','透传信息','type','string','maximum',1024)))),
+ JSON_ARRAY(JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+   JSON_OBJECT('field','options.segmentType','operator','neq','value','SolidColorSeg')),
+   'actions',JSON_ARRAY(
+     JSON_OBJECT('field','options.removeRed','operator','forbidden'),
+     JSON_OBJECT('field','options.removeGreen','operator','forbidden'),
+     JSON_OBJECT('field','options.removeBlue','operator','forbidden')))),
+ JSON_OBJECT('supportsTextInput',FALSE,'supportsImageInput',FALSE,'supportsVideoInput',TRUE,
+   'supportsAspectRatio',FALSE,'supportsDuration',FALSE,'maxOutputCount',1,'defaultOutputCount',1)),
+('tencent-ci-video-portrait-segmentation','portrait_combination','人像背景合成','Combination',0,2,
+ 'https://cloud.tencent.com/document/product/460/83973',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_segment_base,'$'),
+   '$.segmentMode','Combination','$.inputModalities',JSON_ARRAY('VIDEO','IMAGE'),
+   '$.supportsImageInput',TRUE,'$.maxReferenceImages',1,'$.maxReferenceMaterials',2,
+   '$.referenceImageFormats',JSON_EXTRACT(@tencent_ci_image_formats,'$'),
+   '$.inputImageRole','reference_image','$.allowedInputs',JSON_ARRAY('video','image'),
+   '$.requiredInputs',JSON_ARRAY('video','image'),
+   '$.sceneRules.videoToVideo',JSON_OBJECT(
+     'requiredInputs',JSON_ARRAY('video','image'),'allowedInputs',JSON_ARRAY('video','image'))),
+ JSON_ARRAY(
+   JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+     'required',TRUE,'minimum',1,'maximum',1,'materialRole','reference_video',
+     'formats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),
+     'items',JSON_OBJECT('name','videoId','type','integer')),
+   JSON_OBJECT('name','imageUrl','label','背景图片','type','string','required',TRUE,
+     'materialRole','reference_image','formats',JSON_EXTRACT(@tencent_ci_image_formats,'$')),
+   JSON_OBJECT('name','options','label','处理参数','type','object','properties',JSON_ARRAY(
+     JSON_OBJECT('name','segmentType','label','分割类型','type','string',
+       'choices',JSON_ARRAY('HumanSeg','GreenScreenSeg','SolidColorSeg'),'defaultValue','HumanSeg'),
+     JSON_OBJECT('name','binaryThreshold','label','二值化阈值','type','integer','minimum',0,'maximum',255,'defaultValue',0),
+     JSON_OBJECT('name','removeRed','label','去除颜色红通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeGreen','label','去除颜色绿通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','removeBlue','label','去除颜色蓝通道','type','integer','minimum',0,'maximum',255),
+     JSON_OBJECT('name','jobLevel','label','任务优先级','type','integer',
+       'choices',JSON_ARRAY(0,1,2),'defaultValue',0),
+     JSON_OBJECT('name','userData','label','透传信息','type','string','maximum',1024)))),
+ JSON_ARRAY(JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+   JSON_OBJECT('field','options.segmentType','operator','neq','value','SolidColorSeg')),
+   'actions',JSON_ARRAY(
+     JSON_OBJECT('field','options.removeRed','operator','forbidden'),
+     JSON_OBJECT('field','options.removeGreen','operator','forbidden'),
+     JSON_OBJECT('field','options.removeBlue','operator','forbidden')))),
+ JSON_OBJECT('supportsTextInput',FALSE,'supportsImageInput',TRUE,'supportsVideoInput',TRUE,
+   'supportsAspectRatio',FALSE,'supportsDuration',FALSE,'maxOutputCount',1,'defaultOutputCount',1)),
+('tencent-ci-voice-separation','voice_only','仅人声','IsAudio',1,0,
+ 'https://cloud.tencent.com/document/product/460/84794',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_voice_base,'$'),
+   '$.audioMode','IsAudio','$.maxOutputCount',1,'$.defaultOutputCount',1),
+ NULL,NULL,NULL),
+('tencent-ci-voice-separation','background_only','仅背景声','IsBackground',0,1,
+ 'https://cloud.tencent.com/document/product/460/84794',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_voice_base,'$'),
+   '$.audioMode','IsBackground','$.maxOutputCount',1,'$.defaultOutputCount',1),
+ NULL,NULL,NULL),
+('tencent-ci-voice-separation','voice_background','人声与背景声','AudioAndBackground',0,2,
+ 'https://cloud.tencent.com/document/product/460/84794',
+ JSON_SET(JSON_EXTRACT(@tencent_ci_voice_base,'$'),
+   '$.audioMode','AudioAndBackground','$.maxOutputCount',2,'$.defaultOutputCount',2),
+ NULL,NULL,NULL);
+
+SET @tencent_ci_voice_parameters := JSON_ARRAY(
+  JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+    'minimum',0,'maximum',1,'materialRole','reference_video',
+    'formats',JSON_EXTRACT(@tencent_ci_video_formats,'$'),'maxDurationSeconds',2700,
+    'items',JSON_OBJECT('name','videoId','type','integer')),
+  JSON_OBJECT('name','referenceAudios','label','源音频','type','array',
+    'minimum',0,'maximum',1,'materialRole','reference_audio',
+    'formats',JSON_EXTRACT(@tencent_ci_audio_formats,'$'),'maxDurationSeconds',2700,
+    'maxTotalDurationSeconds',2700,'items',JSON_OBJECT('name','audio','type','object')),
+  JSON_OBJECT('name','options','label','输出参数','type','object','properties',JSON_ARRAY(
+    JSON_OBJECT('name','audioCodec','label','音频编码','type','string',
+      'choices',JSON_ARRAY('aac','mp3','flac','amr'),'defaultValue','aac'),
+    JSON_OBJECT('name','audioSampleRate','label','采样率','type','integer',
+      'choices',JSON_ARRAY(8000,11025,22050,32000,44100,48000,96000),'defaultValue',44100),
+    JSON_OBJECT('name','audioBitrateKbps','label','码率','type','integer','minimum',8,'maximum',1000),
+    JSON_OBJECT('name','audioChannels','label','声道数','type','integer',
+      'choices',JSON_ARRAY(1,2,4,5,6,8)),
+    JSON_OBJECT('name','jobLevel','label','任务优先级','type','integer',
+      'choices',JSON_ARRAY(0,1,2),'defaultValue',0),
+    JSON_OBJECT('name','userData','label','透传信息','type','string','maximum',1024))));
+SET @tencent_ci_voice_rules := JSON_ARRAY(
+  JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+    JSON_OBJECT('field','options.audioCodec','operator','in','value',JSON_ARRAY('aac','flac'))),
+    'actions',JSON_ARRAY(
+      JSON_OBJECT('field','options.audioSampleRate','operator','choices',
+        'value',JSON_ARRAY(11025,22050,32000,44100,48000,96000)),
+      JSON_OBJECT('field','options.audioChannels','operator','choices',
+        'value',JSON_ARRAY(1,2,4,5,6,8)))),
+  JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+    JSON_OBJECT('field','options.audioCodec','operator','eq','value','mp3')),
+    'actions',JSON_ARRAY(
+      JSON_OBJECT('field','options.audioSampleRate','operator','choices',
+        'value',JSON_ARRAY(11025,22050,32000,44100,48000)),
+      JSON_OBJECT('field','options.audioChannels','operator','choices','value',JSON_ARRAY(1,2)))),
+  JSON_OBJECT('match','all','conditions',JSON_ARRAY(
+    JSON_OBJECT('field','options.audioCodec','operator','eq','value','amr')),
+    'actions',JSON_ARRAY(
+      JSON_OBJECT('field','options.audioSampleRate','operator','fixed','value',8000),
+      JSON_OBJECT('field','options.audioChannels','operator','choices','value',JSON_ARRAY(1)))));
+SET @tencent_ci_voice_presentation := JSON_OBJECT(
+  'supportsTextInput',FALSE,'supportsImageInput',FALSE,'supportsVideoInput',TRUE,
+  'supportsReferenceAudio',TRUE,'supportsAspectRatio',FALSE,'supportsDuration',FALSE);
+
+UPDATE tmp_tencent_ci_route_202609
+SET parameters_json=@tencent_ci_voice_parameters,
+    rules_json=@tencent_ci_voice_rules,
+    presentation_json=JSON_SET(JSON_EXTRACT(@tencent_ci_voice_presentation,'$'),
+      '$.maxOutputCount',IF(capability_code='voice_background',2,1),
+      '$.defaultOutputCount',IF(capability_code='voice_background',2,1))
+WHERE model_code='tencent-ci-voice-separation';
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order,
+   create_time, create_by, update_time, update_by, remark)
+SELECT model.id, route.capability_code, 'video_to_video',
+       JSON_OBJECT(
+         'code',route.capability_code,
+         'label',route.capability_label,
+         'generateMode','video_to_video',
+         'enabled',TRUE,
+         'defaultCapability',route.default_capability=1,
+         'evidenceStatus','VERIFIED_OFFICIAL',
+         'sourceUrls',JSON_ARRAY(route.source_url),
+         'parameters',JSON_EXTRACT(route.parameters_json,'$'),
+         'rules',JSON_EXTRACT(route.rules_json,'$'),
+         'presentation',JSON_EXTRACT(route.presentation_json,'$')),
+       route.sort_order, NOW(), 'system', NOW(), 'system',
+       'Tencent Cloud CI official asynchronous media capability'
+FROM tmp_tencent_ci_route_202609 route
+JOIN aid_ai_model model ON model.model_code=route.model_code
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_model_capability capability
+  WHERE capability.model_id=model.id AND capability.capability_code=route.capability_code);
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json, sort_order,
+   create_time, create_by, update_time, update_by, remark)
+SELECT model.id, route.capability_code,
+       CONCAT('tencent_ci_',route.capability_code), 'tencent-ci-async-media',
+       JSON_OBJECT(
+         'code',CONCAT('tencent_ci_',route.capability_code),
+         'protocol','tencent-ci-async-media',
+         'upstreamModel',model.real_model_code,
+         'apiSuffix','/jobs',
+         'taskQuerySuffix','/jobs/%s',
+         'billingMode','SKU',
+         'defaultBinding',TRUE,
+         'enabled',TRUE,
+         'fixedParameters',JSON_OBJECT('Tag',model.real_model_code,'Mode',route.upstream_mode),
+         'parameterMapping',JSON_OBJECT(),
+         'capability',JSON_EXTRACT(route.capability_json,'$'),
+         'presentation',JSON_EXTRACT(route.presentation_json,'$')),
+       route.sort_order, NOW(), 'system', NOW(), 'system',
+       'Tencent Cloud CI SDK job binding'
+FROM tmp_tencent_ci_route_202609 route
+JOIN aid_ai_model model ON model.model_code=route.model_code
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_model_protocol_binding binding
+  WHERE binding.model_id=model.id AND binding.capability_code=route.capability_code
+    AND binding.binding_code=CONCAT('tencent_ci_',route.capability_code));
+
+-- C-side business pools expose every mode through one model entry and availableCapabilities[].
+INSERT INTO aid_ai_model_func_config
+  (func_name, func_code, model_type, generate_mode, model_ids, status, del_flag,
+   create_time, create_by, remark)
+SELECT pool.func_name, pool.func_code, 'video', 'video_to_video', JSON_ARRAY(model.id),
+       '0', '0', NOW(), 'system', 'Model, Tencent credentials and selling price are administrator-configurable'
+FROM (
+  SELECT '视频人像分割' func_name, 'video_portrait_segmentation' func_code,
+         'tencent-ci-video-portrait-segmentation' model_code
+  UNION ALL
+  SELECT '人声与背景声分离', 'audio_voice_separation', 'tencent-ci-voice-separation'
+) pool
+JOIN aid_ai_model model ON model.model_code=pool.model_code
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_model_func_config config WHERE config.func_code=pool.func_code);
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code, model_id, capability_code, default_capability, defaults_json,
+   sort_order, create_time, create_by)
+SELECT route.func_code, model.id, route.capability_code, route.default_capability,
+       NULL, route.sort_order, NOW(), 'system'
+FROM (
+  SELECT 'video_portrait_segmentation' func_code,
+         'tencent-ci-video-portrait-segmentation' model_code,
+         'portrait_mask' capability_code, 1 default_capability, 0 sort_order
+  UNION ALL
+  SELECT 'video_portrait_segmentation', 'tencent-ci-video-portrait-segmentation',
+         'portrait_foreground', 0, 1
+  UNION ALL
+  SELECT 'video_portrait_segmentation', 'tencent-ci-video-portrait-segmentation',
+         'portrait_combination', 0, 2
+  UNION ALL
+  SELECT 'audio_voice_separation', 'tencent-ci-voice-separation',
+         'voice_only', 1, 0
+  UNION ALL
+  SELECT 'audio_voice_separation', 'tencent-ci-voice-separation',
+         'background_only', 0, 1
+  UNION ALL
+  SELECT 'audio_voice_separation', 'tencent-ci-voice-separation',
+         'voice_background', 0, 2
+) route
+JOIN aid_ai_model model ON model.model_code=route.model_code
+WHERE NOT EXISTS (
+  SELECT 1 FROM aid_ai_business_model_binding binding
+  WHERE binding.func_code=route.func_code AND binding.model_id=model.id
+    AND binding.capability_code=route.capability_code);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_tencent_ci_route_202609;
+SET @tencent_ci_segment_billing_rule := NULL;
+SET @tencent_ci_voice_billing_rule := NULL;
+SET @tencent_ci_video_formats := NULL;
+SET @tencent_ci_audio_formats := NULL;
+SET @tencent_ci_image_formats := NULL;
+SET @tencent_ci_segment_base := NULL;
+SET @tencent_ci_voice_base := NULL;
+SET @tencent_ci_voice_parameters := NULL;
+SET @tencent_ci_voice_rules := NULL;
+SET @tencent_ci_voice_presentation := NULL;
+
+-- Tencent MPS SmartErase subtitle removal. The existing Tencent image-detection credential
+-- configuration supplies TC3 credentials; no secret or private bucket is seeded here.
+INSERT INTO aid_ai_provider
+  (provider_name, provider_code, base_url, api_key, auth_header, auth_prefix,
+   api_key_apply_url, official_doc_url, official_price_url, task_query_suffix,
+   status, del_flag, create_time, create_by, remark, supports_callback,
+   schedule_strategy_json, provider_category)
+SELECT '腾讯云媒体处理', 'tencent_mps', 'https://mps.tencentcloudapi.com', '',
+       'Authorization', '', 'https://console.cloud.tencent.com/mps',
+       'https://cloud.tencent.com/document/product/862/37578',
+       'https://cloud.tencent.com/document/product/862/36180', '',
+       '1', '0', NOW(), 'system',
+       'Uses configured Tencent credentials and COS output; verify service activation before enabling',
+       0,
+       '{"dispatchMode":"POLL_ONLY","supportsCallback":false,"firstPollDelaySeconds":5,"baseIntervalSeconds":10,"maxIntervalSeconds":120,"backoffFactor":1.5,"maxRetryCount":360,"maxLifeSeconds":21600,"progressTimeoutSeconds":1800,"maxConcurrency":5}',
+       'OFFICIAL'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM aid_ai_provider WHERE provider_code='tencent_mps');
+
+INSERT INTO aid_ai_model
+  (provider_id, model_code, real_model_code, model_name, model_type, generate_mode,
+   protocol, priority, status, del_flag, create_time, create_by, remark,
+   billing_mode, billing_rule_json, billing_version, supports_text_input,
+   supports_system_prompt, supports_image_input, max_output_count, default_output_count,
+   supports_aspect_ratio, supports_size_preset, supports_duration,
+   supports_first_frame, supports_last_frame, capability_json, capability_inited,
+   official_price_url)
+SELECT p.id, 'tencent-mps-subtitle-erase', 'SmartEraseSubtitle', '腾讯云智能去字幕',
+       'video', 'video_to_video', 'tencent-mps:subtitle-erase', 55, '1', '0',
+       NOW(), 'system', 'Automatic and selected-area subtitle removal; disabled until credentials and billing are verified',
+       'SKU',
+       '{"mode":"SKU","meterType":"PER_SECOND","chargeType":"VIDEO","preHold":true,"matchStrategy":"FIRST_HIT","skus":[{"skuCode":"MPS_SUBTITLE_720P","skuName":"高清","enabled":true,"priority":1,"match":{"resolution":"720p"},"pricePerSecond":0.025},{"skuCode":"MPS_SUBTITLE_1080P","skuName":"全高清","enabled":true,"priority":2,"match":{"resolution":"1080p"},"pricePerSecond":0.05},{"skuCode":"MPS_SUBTITLE_2K","skuName":"2K","enabled":true,"priority":3,"match":{"resolution":"2K"},"pricePerSecond":0.1},{"skuCode":"MPS_SUBTITLE_4K","skuName":"4K","enabled":true,"priority":4,"match":{"resolution":"4K"},"pricePerSecond":0.1}]}',
+       1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+       '{"requiresConfiguredBilling":true,"supportsVideoInput":true,"minReferenceVideos":1,"maxReferenceVideos":1,"maxReferenceImages":0,"maxReferenceAudios":0,"referenceVideoMaxDurationSeconds":300,"allowedInputs":["video"],"requiredInputs":["video"],"strictSceneRules":true,"sceneRules":{"videoToVideo":{"requiredInputs":["video"],"allowedInputs":["video"]}},"inputModalities":["VIDEO"],"outputModalities":["VIDEO"],"eraseModeOptions":["AUTO","CUSTOM"],"subtitleModelOptions":["standard","area"]}',
+       1, 'https://cloud.tencent.com/document/product/862/36180'
+FROM aid_ai_provider p WHERE p.provider_code='tencent_mps'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model m WHERE m.model_code='tencent-mps-subtitle-erase');
+
+INSERT INTO aid_ai_model_capability
+  (model_id, capability_code, generate_mode, definition_json, sort_order, create_time, create_by)
+SELECT m.id, 'video_subtitle_remove', 'video_to_video',
+       JSON_OBJECT('code','video_subtitle_remove','label','智能去字幕','generateMode','video_to_video',
+         'enabled',TRUE,'defaultCapability',TRUE,'evidenceStatus','OFFICIAL',
+         'sourceUrls',JSON_ARRAY('https://cloud.tencent.com/document/product/862/37578',
+                                 'https://cloud.tencent.com/document/product/862/37615'),
+         'presentation',JSON_OBJECT('supportsVideoInput',TRUE,'supportsTextInput',FALSE),
+         'parameters',JSON_ARRAY(
+           JSON_OBJECT('name','referenceVideoRecordIds','label','源视频','type','array',
+             'items',JSON_OBJECT('name','resourceId','label','视频资源 ID','type','integer'),
+             'required',TRUE,'minimum',1,'maximum',1),
+           JSON_OBJECT('name','eraseMode','label','擦除模式','type','string','choices',JSON_ARRAY('AUTO','CUSTOM')),
+           JSON_OBJECT('name','subtitleModel','label','字幕模型','type','string','choices',JSON_ARRAY('standard','area')),
+           JSON_OBJECT('name','areas','label','框选时间区域','type','array','requiredWhen','eraseMode=CUSTOM',
+             'items',JSON_OBJECT('name','area','label','时间区域','type','object','properties',JSON_ARRAY(
+               JSON_OBJECT('name','beginMs','label','开始毫秒','type','integer'),
+               JSON_OBJECT('name','endMs','label','结束毫秒','type','integer'),
+               JSON_OBJECT('name','boxes','label','画面区域','type','array',
+                 'items',JSON_OBJECT('name','box','label','矩形','type','object','properties',JSON_ARRAY(
+                   JSON_OBJECT('name','x1','label','左边界','type','number'),
+                   JSON_OBJECT('name','y1','label','上边界','type','number'),
+                   JSON_OBJECT('name','x2','label','右边界','type','number'),
+                   JSON_OBJECT('name','y2','label','下边界','type','number'))))))))),
+       0, NOW(), 'system'
+FROM aid_ai_model m WHERE m.model_code='tencent-mps-subtitle-erase'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability c
+                  WHERE c.model_id=m.id AND c.capability_code='video_subtitle_remove');
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id, capability_code, binding_code, protocol, definition_json,
+   sort_order, create_time, create_by)
+SELECT m.id, 'video_subtitle_remove', 'tencent_mps_subtitle', 'tencent-mps:subtitle-erase',
+       JSON_OBJECT('code','tencent_mps_subtitle','protocol','tencent-mps:subtitle-erase',
+         'upstreamModel','SmartEraseSubtitle','billingMode','SKU',
+         'defaultBinding',TRUE,'enabled',TRUE,
+         'capability',CAST(m.capability_json AS JSON)), 0, NOW(), 'system'
+FROM aid_ai_model m WHERE m.model_code='tencent-mps-subtitle-erase'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding b
+                  WHERE b.model_id=m.id AND b.capability_code='video_subtitle_remove'
+                    AND b.binding_code='tencent_mps_subtitle');
+
+INSERT INTO aid_ai_model_func_config
+  (func_name, func_code, model_type, generate_mode, model_ids, status, del_flag,
+   create_time, create_by, remark)
+SELECT '视频智能去字幕', 'video_subtitle_remove', 'video', 'video_to_video',
+       JSON_ARRAY(m.id), '0', '0', NOW(), 'system', 'Model and selling price are administrator-configurable'
+FROM aid_ai_model m WHERE m.model_code='tencent-mps-subtitle-erase'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_func_config f WHERE f.func_code='video_subtitle_remove');
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code, model_id, capability_code, default_capability, defaults_json,
+   sort_order, create_time, create_by)
+SELECT 'video_subtitle_remove', m.id, 'video_subtitle_remove', 1, NULL,
+       0, NOW(), 'system'
+FROM aid_ai_model m WHERE m.model_code='tencent-mps-subtitle-erase'
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding b
+                  WHERE b.func_code='video_subtitle_remove' AND b.model_id=m.id);
+-- Seedance 2.5 official 1080P tier: video input CNY 46/M tokens, no video CNY 77/M tokens.
+-- Existing administrator-managed prices remain untouched; fresh disabled public scenes get the official rule.
+SET @seedance25_verified_rule := '{"mode":"SKU","meterType":"TOKEN","chargeType":"VIDEO","preHold":true,"matchStrategy":"FIRST_HIT","videoTokenEstimate":{"strategy":"PIXEL_FPS","framesPerSecond":24,"tokenDivisor":1024,"autoDurationMaxSeconds":30,"inputVideoMaxSeconds":30,"fallbackResolution":"1080P","minimumInputSecondsNumerator":2,"minimumInputSecondsDenominator":3,"dimensions":{"480P":{"16:9":[854,480],"9:16":[854,480],"4:3":[752,560],"3:4":[752,560],"1:1":[640,640],"21:9":[992,432],"default":[992,432]},"720P":{"16:9":[1280,720],"9:16":[1280,720],"4:3":[1112,834],"3:4":[1112,834],"1:1":[960,960],"21:9":[1470,630],"default":[1112,834]},"1080P":{"16:9":[1920,1080],"9:16":[1080,1920],"4:3":[1664,1248],"3:4":[1248,1664],"1:1":[1440,1440],"21:9":[2206,946],"default":[2206,946]}}},"skus":[{"skuCode":"SEEDANCE25_480P_INVIDEO","enabled":true,"priority":1,"match":{"resolution":"480P","inputVideoCountMin":1},"price":3.63,"inputPricePerMillion":0,"outputPricePerMillion":42},{"skuCode":"SEEDANCE25_720P_INVIDEO","enabled":true,"priority":2,"match":{"resolution":"720P","inputVideoCountMin":1},"price":8.16,"inputPricePerMillion":0,"outputPricePerMillion":42},{"skuCode":"SEEDANCE25_1080P_INVIDEO","skuName":"Seedance2.5 1080P含输入视频","enabled":true,"priority":3,"match":{"resolution":"1080P","inputVideoCountMin":1},"price":18.63,"inputPricePerMillion":0,"outputPricePerMillion":46,"remark":"官方46元/百万token；价格按实际输出Token结算"},{"skuCode":"SEEDANCE25_480P","enabled":true,"priority":11,"match":{"resolution":"480P"},"price":3.36,"inputPricePerMillion":0,"outputPricePerMillion":70},{"skuCode":"SEEDANCE25_720P","enabled":true,"priority":12,"match":{"resolution":"720P"},"price":7.56,"inputPricePerMillion":0,"outputPricePerMillion":70},{"skuCode":"SEEDANCE25_1080P","skuName":"Seedance2.5 1080P","enabled":true,"priority":13,"match":{"resolution":"1080P"},"price":18.711,"inputPricePerMillion":0,"outputPricePerMillion":77,"remark":"官方77元/百万token；价格按实际输出Token结算"},{"skuCode":"SEEDANCE25_FALLBACK","enabled":true,"priority":999,"match":{},"price":18.711,"inputPricePerMillion":0,"outputPricePerMillion":77,"remark":"未识别参数按官方最高77元/百万token安全预冻结"}],"settleRule":{"settleMode":"REFUND_ONLY","usageSource":"PROVIDER_USAGE","allowRefund":true,"allowExtraCharge":false},"params":[{"code":"resolution","name":"分辨率","type":"ENUM","options":["480P","720P","1080P"],"required":true}]}';
+UPDATE aid_ai_model m JOIN aid_ai_provider p ON p.id=m.provider_id
+SET m.billing_rule_json=@seedance25_verified_rule
+WHERE p.provider_code='volcengine' AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.status='1' AND m.create_by='system' AND COALESCE(m.update_by,'system')='system'
+  AND m.billing_rule_json IS NULL;
+UPDATE aid_ai_model m JOIN aid_ai_provider p ON p.id=m.provider_id
+SET m.billing_rule_json=JSON_SET(m.billing_rule_json,
+  '$.videoTokenEstimate.dimensions."1080P"',CAST('{"16:9":[1920,1080],"9:16":[1080,1920],"4:3":[1664,1248],"3:4":[1248,1664],"1:1":[1440,1440],"21:9":[2206,946],"default":[2206,946]}' AS JSON),
+  '$.videoTokenEstimate.fallbackResolution','1080P',
+  '$.params[0].options',JSON_ARRAY('480P','720P','1080P'),
+  '$.skus',JSON_ARRAY_INSERT(JSON_ARRAY_INSERT(JSON_EXTRACT(m.billing_rule_json,'$.skus'),
+    '$[2]',CAST('{"skuCode":"SEEDANCE25_1080P_INVIDEO","skuName":"Seedance2.5 1080P含输入视频","enabled":true,"priority":3,"match":{"resolution":"1080P","inputVideoCountMin":1},"price":18.63,"inputPricePerMillion":0,"outputPricePerMillion":46,"remark":"官方46元/百万token；价格按实际输出Token结算"}' AS JSON)),'$[5]',CAST('{"skuCode":"SEEDANCE25_1080P","skuName":"Seedance2.5 1080P","enabled":true,"priority":13,"match":{"resolution":"1080P"},"price":18.711,"inputPricePerMillion":0,"outputPricePerMillion":77,"remark":"官方77元/百万token；价格按实际输出Token结算"}' AS JSON)),
+  '$.skus[6].price',18.711,'$.skus[6].outputPricePerMillion',77),
+  m.capability_json=JSON_SET(m.capability_json,'$.sizeOptions',JSON_ARRAY('480P','720P','1080P'))
+WHERE p.provider_code='volcengine' AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.status='1' AND m.create_by='system' AND COALESCE(m.update_by,'system')='system'
+  AND JSON_VALID(m.billing_rule_json)=1 AND JSON_VALID(m.capability_json)=1
+  AND JSON_UNQUOTE(JSON_EXTRACT(m.billing_rule_json,'$.skus[0].skuCode'))='SEEDANCE25_480P_INVIDEO'
+  AND JSON_CONTAINS_PATH(m.billing_rule_json,'one','$.videoTokenEstimate.dimensions."1080P"')=0;
+UPDATE aid_ai_model m JOIN aid_ai_provider p ON p.id=m.provider_id
+SET m.capability_json=JSON_SET(m.capability_json,'$.sizeOptions',JSON_ARRAY('480P','720P','1080P'))
+WHERE p.provider_code='volcengine' AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.status='1' AND m.create_by='system' AND COALESCE(m.update_by,'system')='system'
+  AND JSON_VALID(m.capability_json)=1
+  AND JSON_CONTAINS(JSON_EXTRACT(m.capability_json,'$.sizeOptions'),JSON_QUOTE('1080P'))=0;
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+JOIN aid_ai_provider p ON p.id=m.provider_id
+SET c.definition_json=JSON_SET(c.definition_json,'$.parameters[3].properties[0].choices',JSON_ARRAY('480P','720P','1080P'))
+WHERE p.provider_code='volcengine' AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.status='1' AND m.create_by='system' AND COALESCE(m.update_by,'system')='system'
+  AND JSON_VALID(c.definition_json)=1
+  AND JSON_CONTAINS_PATH(c.definition_json,'one','$.parameters[3].properties[0].choices')=1;
+UPDATE aid_ai_model_protocol_binding b JOIN aid_ai_model m ON m.id=b.model_id
+JOIN aid_ai_provider p ON p.id=m.provider_id
+SET b.definition_json=JSON_SET(b.definition_json,'$.capability.sizeOptions',JSON_ARRAY('480P','720P','1080P'))
+WHERE p.provider_code='volcengine' AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.status='1' AND m.create_by='system' AND COALESCE(m.update_by,'system')='system'
+  AND JSON_VALID(b.definition_json)=1;
+SET @seedance25_verified_rule := NULL;
+-- Reference FX: Bank of China USD middle CNY 674.89 per USD 100, published 2026-09-26.
+-- WaveSpeed official USD 0.005/billed second; Topaz API Developer tier USD 0.10/credit.
+-- Kling Omni edit CNY 0.70/0.90/2.50 per second by 720P/1080P/4K, supplied channel quotation.
+SET @wavespeed_depth_cny_rule := '{"mode":"SKU","meterType":"PER_SECOND","chargeType":"VIDEO","preHold":true,"matchStrategy":"FIRST_HIT","skus":[{"skuCode":"WAVESPEED_DEPTH_VIDEO","skuName":"深度视频每计费秒","enabled":true,"priority":1,"match":{},"pricePerSecond":0.0337445,"remark":"官方USD 0.005/秒；按2026-09-26中行美元中间价6.7489换算，最少计3秒"}]}';
+SET @topaz_video_cny_rule := '{"mode":"SKU","meterType":"PER_CREDIT","chargeType":"VIDEO","preHold":true,"matchStrategy":"FIRST_HIT","skus":[{"skuCode":"TOPAZ_VIDEO_CREDIT","skuName":"Topaz API视频积分","enabled":true,"priority":1,"match":{},"price":0.67489,"remark":"官方API Developer档USD 0.10/积分；按2026-09-26中行美元中间价6.7489换算；实际订阅档可由管理员调整"}]}';
+SET @kling_omni_edit_cny_rule := '{"mode":"SKU","meterType":"PER_SECOND","chargeType":"VIDEO","preHold":true,"matchStrategy":"FIRST_HIT","params":[{"code":"resolution","name":"分辨率","type":"ENUM","options":["720P","1080P","4K"],"required":true}],"skus":[{"skuCode":"KLING30_OMNI_EDIT_720P","skuName":"Omni编辑720P","enabled":true,"priority":1,"match":{"resolution":"720P"},"pricePerSecond":0.7,"price":3.5,"remark":"用户提供的渠道报价0.7元/秒"},{"skuCode":"KLING30_OMNI_EDIT_1080P","skuName":"Omni编辑1080P","enabled":true,"priority":2,"match":{"resolution":"1080P"},"pricePerSecond":0.9,"price":4.5,"remark":"用户提供的渠道报价0.9元/秒"},{"skuCode":"KLING30_OMNI_EDIT_4K","skuName":"Omni编辑4K","enabled":true,"priority":3,"match":{"resolution":"4K"},"pricePerSecond":2.5,"price":12.5,"remark":"用户提供的渠道报价2.5元/秒"}]}';
+UPDATE aid_ai_model SET billing_rule_json=@wavespeed_depth_cny_rule,
+  remark='Depth Anything Video; official USD 0.005/billed second; CNY conversion 2026-09-26 BOC middle rate'
+WHERE model_code='wavespeed-depth-anything-video' AND status='1' AND create_by='system'
+  AND COALESCE(NULLIF(update_by,''),'system')='system' AND billing_rule_json IS NULL;
+UPDATE aid_ai_model SET billing_rule_json=@topaz_video_cny_rule,
+  remark='Topaz API Developer tier USD 0.10/credit; CNY conversion 2026-09-26 BOC middle rate; verify account plan before enabling'
+WHERE model_code='topaz-proteus-video-express' AND status='1' AND create_by='system'
+  AND COALESCE(NULLIF(update_by,''),'system')='system' AND billing_rule_json IS NULL;
+UPDATE aid_ai_model SET billing_rule_json=@kling_omni_edit_cny_rule,
+  remark='Omni base_video; channel edit rate by 720P/1080P/4K; verify channel availability before enabling'
+WHERE model_code='kling-3.0-omni-edit' AND status='1' AND create_by='system'
+  AND COALESCE(NULLIF(update_by,''),'system')='system' AND billing_rule_json IS NULL;
+SET @wavespeed_depth_cny_rule := NULL;
+SET @topaz_video_cny_rule := NULL;
+SET @kling_omni_edit_cny_rule := NULL;
+
+-- Seedance 2.5 模型归一：保留旧 ID/编码别名和原有计费配置。
+-- 本文件前段由公共未发布 SQL 的 Seedance 能力段组成，确保未运行该批次的环境也能独立执行。
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_legacy_unify;
+CREATE TEMPORARY TABLE tmp_seedance25_legacy_unify (
+  model_id BIGINT NOT NULL PRIMARY KEY,
+  model_code VARCHAR(100) NOT NULL,
+  capability_code VARCHAR(96) NOT NULL
+);
+INSERT INTO tmp_seedance25_legacy_unify
+SELECT m.id,m.model_code,
+  CASE m.model_code
+    WHEN 'doubao-seedance-2.5-text' THEN 'text_to_video'
+    WHEN 'doubao-seedance-2.5-first-frame' THEN 'image_to_video'
+    WHEN 'doubao-seedance-2.5-first-last-frame' THEN 'start_end_to_video'
+    WHEN 'doubao-seedance-2.5-reference' THEN 'reference_to_video'
+    WHEN 'doubao-seedance-2.5-edit' THEN 'video_edit'
+    WHEN 'doubao-seedance-2.5-extend' THEN 'video_extend'
+  END
+FROM aid_ai_model m JOIN aid_ai_provider p ON p.id=m.provider_id
+WHERE p.provider_code='volcengine' AND m.del_flag='0'
+  AND m.real_model_code='doubao-seedance-2-5-260628'
+  AND m.model_code IN ('doubao-seedance-2.5-text','doubao-seedance-2.5-first-frame',
+    'doubao-seedance-2.5-first-last-frame','doubao-seedance-2.5-reference',
+    'doubao-seedance-2.5-edit','doubao-seedance-2.5-extend');
+
+SET @seedance25_canonical_id := (SELECT m.id FROM aid_ai_model m
+  JOIN aid_ai_provider p ON p.id=m.provider_id
+  WHERE p.provider_code='volcengine' AND m.model_code='doubao-seedance-2.5'
+    AND m.del_flag='0' LIMIT 1);
+SET @seedance25_text_id := (SELECT model_id FROM tmp_seedance25_legacy_unify
+  WHERE capability_code='text_to_video' LIMIT 1);
+UPDATE aid_ai_model m
+SET m.model_code='doubao-seedance-2.5',m.model_name='豆包 Seedance 2.5',
+    m.supports_image_input=1,m.supports_multi_image_input=1,
+    m.supports_first_frame=1,m.supports_last_frame=1,
+    m.capability_json=JSON_SET(JSON_REMOVE(m.capability_json,
+      '$.videoScenario','$.allowedInputs','$.requiredInputs','$.requiredAnyOf','$.inputImageRole'),
+      '$.allowedScenes',JSON_ARRAY('textToVideo','imageToVideo','startEndToVideo',
+        'referenceToVideo','videoToVideo'),
+      '$.sceneRules',JSON_OBJECT(
+        'textToVideo',JSON_OBJECT('allowedInputs',JSON_ARRAY('text')),
+        'imageToVideo',JSON_OBJECT('requiredInputs',JSON_ARRAY('firstFrame'),
+          'allowedInputs',JSON_ARRAY('text','firstFrame'),'aspectRatioOptions',JSON_ARRAY('adaptive')),
+        'startEndToVideo',JSON_OBJECT('requiredInputs',JSON_ARRAY('firstFrame','lastFrame'),
+          'allowedInputs',JSON_ARRAY('text','firstFrame','lastFrame'),
+          'aspectRatioOptions',JSON_ARRAY('adaptive')),
+        'referenceToVideo',JSON_OBJECT('requiredAnyOf',JSON_ARRAY('image','video','audio'),
+          'allowedInputs',JSON_ARRAY('text','image','video','audio')),
+        'videoToVideo',JSON_OBJECT('requiredInputs',JSON_ARRAY('video'),
+          'allowedInputs',JSON_ARRAY('text','image','video','audio'))),
+      '$.supportsImageInput',TRUE,'$.supportsMultiImageInput',TRUE,
+      '$.supportsFirstFrame',TRUE,'$.supportsLastFrame',TRUE,
+      '$.supportsVideoInput',TRUE,'$.supportsReferenceAudio',TRUE,
+      '$.maxReferenceImages',30,'$.maxReferenceVideos',10,'$.maxReferenceAudios',10,
+      '$.maxReferenceMaterials',50),
+    m.config_version=COALESCE(m.config_version,0)+1,
+    m.update_time=NOW(),m.update_by='system'
+WHERE m.id=@seedance25_text_id AND @seedance25_canonical_id IS NULL
+  AND JSON_VALID(m.capability_json)=1;
+SET @seedance25_canonical_id := (SELECT m.id FROM aid_ai_model m
+  JOIN aid_ai_provider p ON p.id=m.provider_id
+  WHERE p.provider_code='volcengine' AND m.model_code='doubao-seedance-2.5'
+    AND m.del_flag='0' LIMIT 1);
+
+INSERT INTO aid_ai_model_capability
+  (model_id,capability_code,generate_mode,definition_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT @seedance25_canonical_id,l.capability_code,c.generate_mode,
+  JSON_SET(c.definition_json,'$.defaultCapability',
+    IF(l.capability_code='text_to_video',TRUE,FALSE)),
+  c.sort_order,NOW(),'system',NOW(),'system','Seedance official capability contract'
+FROM tmp_seedance25_legacy_unify l
+JOIN aid_ai_model_capability c ON c.model_id=l.model_id AND c.capability_code=l.capability_code
+WHERE @seedance25_canonical_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_capability x
+    WHERE x.model_id=@seedance25_canonical_id AND x.capability_code=l.capability_code);
+
+INSERT INTO aid_ai_model_protocol_binding
+  (model_id,capability_code,binding_code,protocol,definition_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT @seedance25_canonical_id,b.capability_code,b.binding_code,b.protocol,
+  b.definition_json,b.sort_order,NOW(),'system',NOW(),'system',b.remark
+FROM tmp_seedance25_legacy_unify l
+JOIN aid_ai_model_protocol_binding b ON b.model_id=l.model_id
+  AND b.capability_code=l.capability_code
+WHERE @seedance25_canonical_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_protocol_binding x
+    WHERE x.model_id=@seedance25_canonical_id AND x.capability_code=b.capability_code
+      AND x.binding_code=b.binding_code);
+
+-- 将旧 Seedance 2.5 场景模型各自的计费规则保留到对应调用协议。
+UPDATE aid_ai_model_protocol_binding binding_row
+JOIN tmp_seedance25_legacy_unify old ON binding_row.model_id=@seedance25_canonical_id
+  AND binding_row.capability_code=old.capability_code
+  AND binding_row.binding_code=CONCAT('seedance_official_',old.model_id)
+JOIN aid_ai_model source_model ON source_model.id=old.model_id
+SET binding_row.definition_json=JSON_SET(binding_row.definition_json,
+      '$.billingMode',source_model.billing_mode,
+      '$.billingRule',JSON_EXTRACT(source_model.billing_rule_json,'$'),
+      '$.costCredits',source_model.cost_credits),
+    binding_row.update_time=NOW(),binding_row.update_by='system'
+WHERE JSON_VALID(binding_row.definition_json)=1
+  AND JSON_VALID(source_model.billing_rule_json)=1
+  AND JSON_CONTAINS_PATH(binding_row.definition_json,'one','$.billingRule')=0;
+
+-- Fresh canonical seeds use the model's verified SKU rule for each official route.
+-- Existing per-scene route billing is retained when already configured.
+UPDATE aid_ai_model_protocol_binding binding_row
+JOIN aid_ai_model source_model ON source_model.id=binding_row.model_id
+JOIN aid_ai_provider provider_row ON provider_row.id=source_model.provider_id
+SET binding_row.definition_json=JSON_SET(binding_row.definition_json,
+      '$.billingMode',source_model.billing_mode,
+      '$.billingRule',JSON_EXTRACT(source_model.billing_rule_json,'$'),
+      '$.costCredits',source_model.cost_credits),
+    binding_row.update_time=NOW(),binding_row.update_by='system'
+WHERE provider_row.provider_code='volcengine'
+  AND source_model.model_code='doubao-seedance-2.5'
+  AND binding_row.protocol='seedance-video'
+  AND JSON_VALID(binding_row.definition_json)=1
+  AND JSON_VALID(source_model.billing_rule_json)=1
+  AND JSON_CONTAINS_PATH(binding_row.definition_json,'one','$.billingRule')=0;
+
+-- Seedance 2.0 系列沿用模型级 Token SKU 计费规则。
+UPDATE aid_ai_model_protocol_binding binding_row
+JOIN aid_ai_model source_model ON source_model.id=binding_row.model_id
+JOIN aid_ai_provider provider_row ON provider_row.id=source_model.provider_id
+SET binding_row.definition_json=JSON_SET(binding_row.definition_json,
+      '$.billingMode',source_model.billing_mode,
+      '$.billingRule',JSON_EXTRACT(source_model.billing_rule_json,'$'),
+      '$.costCredits',source_model.cost_credits),
+    binding_row.update_time=NOW(),binding_row.update_by='system'
+WHERE provider_row.provider_code='volcengine'
+  AND source_model.model_code IN ('doubao-seedance-2.0','doubao-seedance-2.0-fast',
+    'doubao-seedance-2.0-mini')
+  AND binding_row.protocol='seedance-video'
+  AND JSON_VALID(binding_row.definition_json)=1
+  AND JSON_VALID(source_model.billing_rule_json)=1
+  AND JSON_CONTAINS_PATH(binding_row.definition_json,'one','$.billingRule')=0;
+
+INSERT INTO aid_ai_model_alias
+  (legacy_model_id,legacy_model_code,model_id,capability_code,binding_code,
+   create_time,create_by,update_time,update_by,remark)
+SELECT l.model_id,l.model_code,@seedance25_canonical_id,l.capability_code,
+  CONCAT('seedance_official_',l.model_id),NOW(),'system',NOW(),'system',
+  'Seedance legacy scene model alias'
+FROM tmp_seedance25_legacy_unify l
+WHERE @seedance25_canonical_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_model_alias a
+    WHERE a.legacy_model_id=l.model_id OR a.legacy_model_code=l.model_code);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_links;
+CREATE TEMPORARY TABLE tmp_seedance25_pool_links AS
+SELECT DISTINCT f.id pool_id,f.func_code,l.model_id legacy_model_id,l.capability_code
+FROM aid_ai_model_func_config f JOIN tmp_seedance25_legacy_unify l
+  ON JSON_VALID(f.model_ids)=1
+  AND JSON_CONTAINS(f.model_ids,CAST(CAST(l.model_id AS CHAR) AS JSON),'$')=1
+WHERE f.del_flag='0' AND @seedance25_canonical_id IS NOT NULL;
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code,model_id,capability_code,default_capability,defaults_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT b.func_code,@seedance25_canonical_id,b.capability_code,b.default_capability,
+  b.defaults_json,b.sort_order,NOW(),'system',NOW(),'system',b.remark
+FROM aid_ai_business_model_binding b JOIN tmp_seedance25_legacy_unify l
+  ON l.model_id=b.model_id AND l.capability_code=b.capability_code
+WHERE @seedance25_canonical_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding x
+    WHERE x.func_code=b.func_code AND x.model_id=@seedance25_canonical_id
+      AND x.capability_code=b.capability_code);
+
+INSERT INTO aid_ai_business_model_binding
+  (func_code,model_id,capability_code,default_capability,defaults_json,sort_order,
+   create_time,create_by,update_time,update_by,remark)
+SELECT DISTINCT p.func_code,@seedance25_canonical_id,p.capability_code,
+  IF(EXISTS (SELECT 1 FROM aid_ai_business_model_binding existing
+       WHERE existing.func_code=p.func_code AND existing.model_id=@seedance25_canonical_id
+         AND existing.default_capability=1),0,
+    IF((p.func_code IN ('main_storyboard_video_image','main_storyboard_video_grid')
+          AND p.capability_code='image_to_video')
+      OR (p.func_code='main_storyboard_video_edge'
+          AND p.capability_code='start_end_to_video')
+      OR (p.func_code IN ('main_storyboard_video','main_storyboard_video_multi_pro')
+          AND p.capability_code='reference_to_video'),1,0)),
+  NULL,0,NOW(),'system',NOW(),'system','Seedance business capability binding'
+FROM tmp_seedance25_pool_links p
+WHERE NOT EXISTS (SELECT 1 FROM aid_ai_business_model_binding x
+  WHERE x.func_code=p.func_code AND x.model_id=@seedance25_canonical_id
+    AND x.capability_code=p.capability_code);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_members;
+CREATE TEMPORARY TABLE tmp_seedance25_pool_members (
+  pool_id BIGINT NOT NULL,ordinal INT NOT NULL,model_id BIGINT NOT NULL,
+  PRIMARY KEY (pool_id,ordinal)
+);
+INSERT INTO tmp_seedance25_pool_members
+SELECT f.id,d0.n+10*d1.n+100*d2.n,
+  CAST(JSON_UNQUOTE(JSON_EXTRACT(f.model_ids,
+    CONCAT('$[',d0.n+10*d1.n+100*d2.n,']'))) AS UNSIGNED)
+FROM aid_ai_model_func_config f
+JOIN (SELECT DISTINCT pool_id FROM tmp_seedance25_pool_links) affected ON affected.pool_id=f.id
+CROSS JOIN (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) d0
+CROSS JOIN (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) d1
+CROSS JOIN (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) d2
+WHERE d0.n+10*d1.n+100*d2.n < JSON_LENGTH(f.model_ids);
+UPDATE tmp_seedance25_pool_members member
+JOIN tmp_seedance25_legacy_unify old ON old.model_id=member.model_id
+SET member.model_id=@seedance25_canonical_id;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_distinct;
+CREATE TEMPORARY TABLE tmp_seedance25_pool_distinct AS
+SELECT pool_id,model_id,MIN(ordinal) first_ordinal
+FROM tmp_seedance25_pool_members GROUP BY pool_id,model_id;
+SET SESSION group_concat_max_len=GREATEST(@@session.group_concat_max_len,65535);
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_json;
+CREATE TEMPORARY TABLE tmp_seedance25_pool_json AS
+SELECT pool_id,CONCAT('[',GROUP_CONCAT(model_id ORDER BY first_ordinal SEPARATOR ','),']') model_ids
+FROM tmp_seedance25_pool_distinct GROUP BY pool_id;
+UPDATE aid_ai_model_func_config f JOIN tmp_seedance25_pool_json next ON next.pool_id=f.id
+SET f.model_ids=next.model_ids,f.update_time=NOW(),f.update_by='system'
+WHERE NOT (f.model_ids <=> next.model_ids);
+
+UPDATE aid_agent a JOIN tmp_seedance25_legacy_unify old ON BINARY a.model_code=BINARY old.model_code
+SET a.model_code='doubao-seedance-2.5';
+UPDATE aid_gen_agent_pool a JOIN tmp_seedance25_legacy_unify old ON BINARY a.model_code=BINARY old.model_code
+SET a.model_code='doubao-seedance-2.5';
+UPDATE aid_skill a JOIN tmp_seedance25_legacy_unify old ON BINARY a.model_code=BINARY old.model_code
+SET a.model_code='doubao-seedance-2.5';
+UPDATE aid_provider_error_rule a JOIN tmp_seedance25_legacy_unify old ON BINARY a.model_code=BINARY old.model_code
+SET a.model_code='doubao-seedance-2.5';
+UPDATE aid_role_voice_binding a JOIN tmp_seedance25_legacy_unify old ON a.model_id=old.model_id
+SET a.model_id=@seedance25_canonical_id
+WHERE old.model_id<>@seedance25_canonical_id;
+UPDATE aid_audio_asset a JOIN tmp_seedance25_legacy_unify old ON a.voice_model_id=old.model_id
+SET a.voice_model_id=@seedance25_canonical_id
+WHERE old.model_id<>@seedance25_canonical_id;
+UPDATE aid_ai_voice_library a JOIN tmp_seedance25_legacy_unify old ON a.model_id=old.model_id
+SET a.model_id=@seedance25_canonical_id
+WHERE old.model_id<>@seedance25_canonical_id;
+UPDATE aid_ai_model m JOIN tmp_seedance25_legacy_unify old ON old.model_id=m.id
+SET m.status='1',m.del_flag='1',m.update_time=NOW(),m.update_by='system'
+WHERE m.id<>@seedance25_canonical_id AND @seedance25_canonical_id IS NOT NULL;
+
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_json;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_distinct;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_members;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_pool_links;
+DROP TEMPORARY TABLE IF EXISTS tmp_seedance25_legacy_unify;
+SET @seedance25_text_id := NULL;
+SET @seedance25_canonical_id := NULL;
+
+
+-- Model catalog: complete verified Seedance 2.0 Mini list-price SKUs without changing enablement.
+-- Official list prices are 14/23 CNY per million tokens with/without video input (480P/720P).
+SET @aid_seedance20_base_rule := (
+  SELECT m.billing_rule_json FROM aid_ai_model m
+  JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='volcengine'
+  WHERE m.model_code='doubao-seedance-2.0' AND m.del_flag='0' LIMIT 1
+);
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='volcengine'
+SET m.billing_rule_json=JSON_SET(
+      JSON_REMOVE(JSON_EXTRACT(@aid_seedance20_base_rule,'$'),
+        '$.videoTokenEstimate.dimensions."1080P"','$.videoTokenEstimate.dimensions."4K"'),
+      '$.params[0].options',JSON_ARRAY('480P','720P'),
+      '$.videoTokenEstimate.fallbackResolution','720P',
+      '$.skus',JSON_ARRAY(
+        JSON_OBJECT('skuCode','SEEDANCE20_MINI_480P_INVIDEO','skuName','Seedance 2.0 Mini 480P with video input',
+          'enabled',TRUE,'priority',1,'match',JSON_OBJECT('resolution','480P','inputVideoCountMin',1),
+          'inputPricePerMillion',0,'outputPricePerMillion',14),
+        JSON_OBJECT('skuCode','SEEDANCE20_MINI_720P_INVIDEO','skuName','Seedance 2.0 Mini 720P with video input',
+          'enabled',TRUE,'priority',2,'match',JSON_OBJECT('resolution','720P','inputVideoCountMin',1),
+          'inputPricePerMillion',0,'outputPricePerMillion',14),
+        JSON_OBJECT('skuCode','SEEDANCE20_MINI_480P','skuName','Seedance 2.0 Mini 480P',
+          'enabled',TRUE,'priority',11,'match',JSON_OBJECT('resolution','480P'),
+          'inputPricePerMillion',0,'outputPricePerMillion',23),
+        JSON_OBJECT('skuCode','SEEDANCE20_MINI_720P','skuName','Seedance 2.0 Mini 720P',
+          'enabled',TRUE,'priority',12,'match',JSON_OBJECT('resolution','720P'),
+          'inputPricePerMillion',0,'outputPricePerMillion',23))),
+    m.billing_mode='SKU',m.billing_version=COALESCE(m.billing_version,0)+1,
+    m.config_version=COALESCE(m.config_version,0)+1,
+    m.update_time=NOW(),m.update_by='system',
+    m.official_price_url='https://docs.volcengine.com/docs/ark/model-pricing?lang=zh'
+WHERE m.model_code='doubao-seedance-2.0-mini' AND m.del_flag='0'
+  AND @aid_seedance20_base_rule IS NOT NULL AND JSON_VALID(@aid_seedance20_base_rule)
+  AND (m.billing_rule_json IS NULL OR JSON_VALID(m.billing_rule_json)=0
+    OR COALESCE(JSON_LENGTH(JSON_EXTRACT(m.billing_rule_json,'$.skus')),0)=0);
+SET @aid_seedance20_base_rule := NULL;
+
+-- TokenDance Ark image generations accepts reference images for the full Seedream 5.0 route.
+-- The separate OpenAI-compatible generations route rejects reference images and stays text-only.
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='tokendance'
+SET m.capability_json=JSON_SET(m.capability_json,'$.sceneRules',
+      JSON_OBJECT('textToImage',JSON_OBJECT('supportsSizePreset',TRUE,'supportsAspectRatio',TRUE),
+        'imageToImage',JSON_OBJECT('supportsSizePreset',TRUE,'supportsAspectRatio',TRUE,
+          'aspectRatioFollowInput',FALSE))),
+    m.capability_inited=1,m.config_version=COALESCE(m.config_version,0)+1,
+    m.update_time=NOW(),m.update_by='system'
+WHERE m.real_model_code IN ('seedream-5.0-lite','seedream-5.0-pro')
+  AND m.protocol='tokendance:ark:image-generations' AND m.supports_image_input=1
+  AND m.del_flag='0' AND JSON_VALID(m.capability_json)
+  AND JSON_EXTRACT(m.capability_json,'$.sceneRules') IS NULL;
+
+-- MiniMax retired music-generation API: retain model enablement. Music 3.0/2.6
+-- use the published historical 1 CNY/song; music-cover is operator-set 1 CNY/call.
+UPDATE aid_ai_model m
+JOIN aid_ai_provider p ON p.id=m.provider_id AND p.provider_code='minimax'
+SET m.billing_mode='SKU',m.billing_rule_json=JSON_OBJECT('mode','SKU','meterType','SKU_PACKAGE',
+      'chargeType','AUDIO','preHold',TRUE,'matchStrategy','FIRST_HIT',
+      'skus',JSON_ARRAY(JSON_OBJECT('skuCode',CONCAT('MINIMAX_',UPPER(REPLACE(m.model_code,'-','_'))),
+        'skuName',m.model_name,'enabled',TRUE,'priority',1,'match',JSON_OBJECT(),'price',1.0))),
+    m.billing_version=COALESCE(m.billing_version,0)+1,
+    m.config_version=COALESCE(m.config_version,0)+1,
+    m.update_time=NOW(),m.update_by='system',
+    m.official_price_url=IF(m.model_code='music-cover',m.official_price_url,
+      'https://platform.minimax.cn/docs/guides/pricing-paygo')
+WHERE m.model_code IN ('music-3.0','music-2.6','music-cover') AND m.del_flag='0'
+  AND (m.billing_rule_json IS NULL OR JSON_VALID(m.billing_rule_json)=0
+    OR COALESCE(JSON_LENGTH(JSON_EXTRACT(m.billing_rule_json,'$.skus')),0)=0);
+
+-- Keep installed system model forms editable after installation.
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+SET c.definition_json=JSON_SET(c.definition_json,'$.parameters[0].items',
+  JSON_OBJECT('name','resourceId','label','视频资源 ID','type','integer'))
+WHERE m.model_code IN ('wavespeed-depth-anything-video','topaz-proteus-video-express',
+                       'tencent-mps-subtitle-erase') AND c.create_by='system'
+  AND JSON_VALID(c.definition_json)=1
+  AND JSON_CONTAINS_PATH(c.definition_json,'one','$.parameters[0].items')=0;
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+SET c.definition_json=JSON_SET(c.definition_json,'$.parameters[3].items',
+  JSON_OBJECT('name','area','label','时间区域','type','object','properties',JSON_ARRAY(
+    JSON_OBJECT('name','beginMs','label','开始毫秒','type','integer'),
+    JSON_OBJECT('name','endMs','label','结束毫秒','type','integer'),
+    JSON_OBJECT('name','boxes','label','画面区域','type','array','items',
+      JSON_OBJECT('name','box','label','矩形','type','object','properties',JSON_ARRAY(
+        JSON_OBJECT('name','x1','label','左边界','type','number'),
+        JSON_OBJECT('name','y1','label','上边界','type','number'),
+        JSON_OBJECT('name','x2','label','右边界','type','number'),
+        JSON_OBJECT('name','y2','label','下边界','type','number')))))))
+WHERE m.model_code='tencent-mps-subtitle-erase' AND c.create_by='system'
+  AND JSON_VALID(c.definition_json)=1
+  AND JSON_CONTAINS_PATH(c.definition_json,'one','$.parameters[3].items')=0;
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+SET c.definition_json=JSON_SET(c.definition_json,'$.parameters',JSON_ARRAY(
+  JSON_EXTRACT(c.definition_json,'$.parameters[0]'),
+  JSON_OBJECT('name','options','label','处理参数','type','object','properties',JSON_ARRAY(
+    JSON_EXTRACT(c.definition_json,'$.parameters[1]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[2]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[3]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[4]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[5]')))))
+WHERE m.model_code='topaz-proteus-video-express' AND c.create_by='system'
+  AND JSON_VALID(c.definition_json)=1
+  AND JSON_UNQUOTE(JSON_EXTRACT(c.definition_json,'$.parameters[1].name'))='targetResolution';
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+SET c.definition_json=JSON_SET(c.definition_json,'$.parameters',JSON_ARRAY(
+  JSON_EXTRACT(c.definition_json,'$.parameters[0]'),
+  JSON_OBJECT('name','options','label','处理参数','type','object','properties',JSON_ARRAY(
+    JSON_EXTRACT(c.definition_json,'$.parameters[1]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[2]'),
+    JSON_EXTRACT(c.definition_json,'$.parameters[3]')))))
+WHERE m.model_code='tencent-mps-subtitle-erase' AND c.create_by='system'
+  AND JSON_VALID(c.definition_json)=1
+  AND JSON_UNQUOTE(JSON_EXTRACT(c.definition_json,'$.parameters[1].name'))='eraseMode';
+UPDATE aid_ai_model m
+SET m.capability_json=JSON_SET(m.capability_json,'$.referenceVideoMinDurationSeconds',2)
+WHERE m.model_code='doubao-seedance-2.5' AND JSON_VALID(m.capability_json)=1
+  AND JSON_TYPE(JSON_EXTRACT(m.capability_json,'$.referenceVideoMinDurationSeconds'))='STRING'
+  AND JSON_UNQUOTE(JSON_EXTRACT(m.capability_json,'$.referenceVideoMinDurationSeconds'))='2';
+UPDATE aid_ai_provider SET provider_category='OFFICIAL'
+WHERE provider_code='agnes' AND provider_category<>'OFFICIAL';
+UPDATE aid_ai_model_capability c JOIN aid_ai_model m ON m.id=c.model_id
+SET c.definition_json=JSON_SET(c.definition_json,
+  '$.label',CASE c.capability_code
+    WHEN 'text_to_video' THEN '文生视频'
+    WHEN 'image_to_video' THEN '首帧图生视频'
+    WHEN 'last_frame_to_video' THEN '尾帧图生视频'
+    WHEN 'start_end_to_video' THEN '首尾帧视频'
+    WHEN 'reference_to_video' THEN '多参考视频' END,
+  '$.parameters[0].label','提示词',
+  '$.parameters[1].label','视频时长',
+  '$.parameters[1].unit','秒',
+  '$.parameters[2].label','画面比例',
+  '$.parameters[3].label','生成参数',
+  '$.parameters[3].properties[0].label','输出规格')
+WHERE m.model_code IN ('minimax-h3-t2v','minimax-h3-official','minimax-h3-max-official')
+  AND JSON_VALID(c.definition_json)=1
+  AND HEX(JSON_UNQUOTE(JSON_EXTRACT(c.definition_json,'$.label'))) LIKE 'C383%';
+UPDATE aid_ai_model_protocol_binding b JOIN aid_ai_model m ON m.id=b.model_id
+SET b.definition_json=JSON_SET(b.definition_json,
+  '$.billingRule.skus[0].remark','按对应规格和时长计费',
+  '$.billingRule.skus[1].remark','按对应规格和时长计费',
+  '$.billingRule.params[0].name','分辨率',
+  '$.billingRule.params[1].name','时长',
+  '$.billingRule.params[1].unit','秒')
+WHERE m.model_code='minimax-h3-t2v'
+  AND JSON_VALID(b.definition_json)=1
+  AND JSON_CONTAINS_PATH(b.definition_json,'one','$.billingRule.params[0].name')=1
+  AND HEX(CAST(b.definition_json AS CHAR)) LIKE '%C383%';

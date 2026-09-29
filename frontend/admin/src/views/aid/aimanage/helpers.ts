@@ -697,6 +697,19 @@ export function parseBillingRuleJson(json: string): {
     result.skuEditData.usagePricingMode = rule.settleRule?.usagePricingMode === 'BUCKETED'
       ? 'BUCKETED' : 'AGGREGATE';
     result.skuEditData.allowExtraCharge = rule.settleRule?.allowExtraCharge === true;
+    if (rule.settleRule?.imageOutputPixelTiers != null) {
+      const tiers = rule.settleRule.imageOutputPixelTiers;
+      if (!Array.isArray(tiers) || tiers.some((tier: any) => !tier || typeof tier !== 'object'
+        || (tier.maxPixels != null && (!Number.isSafeInteger(tier.maxPixels) || tier.maxPixels <= 0))
+        || (tier.price != null && (typeof tier.price !== 'number' || tier.price < 0)))) {
+        result.skuEditData.parseError = true;
+      } else {
+        result.skuEditData.imageOutputPixelTiers = tiers.map((tier: any) => ({
+          maxPixels: tier.maxPixels == null ? null : tier.maxPixels,
+          price: tier.price == null ? null : tier.price
+        }));
+      }
+    }
     // 规则级输入媒体计费（图片/视频输入附加费）
     if (isMalformedInputPricing(rule.inputPricing)) result.skuEditData.parseError = true;
     result.skuEditData.inputPricing = normalizeInputPricing(rule.inputPricing);
@@ -705,7 +718,7 @@ export function parseBillingRuleJson(json: string): {
     }
     if (Array.isArray(rule.skus)) {
       const numericFields = [
-        'priority', 'price', 'pricePerSecond', 'pricePerChar', 'fixedSurcharge',
+        'priority', 'price', 'outputPixelsPerUnit', 'pricePerSecond', 'pricePerChar', 'fixedSurcharge',
         'inputPricePerMillion', 'outputPricePerMillion', 'cachedInputPricePerMillion',
         'cacheWritePricePerMillion', 'reasoningPricePerMillion'
       ];
@@ -739,6 +752,7 @@ export function parseBillingRuleJson(json: string): {
         priority: s.priority != null ? s.priority : 1,
         match: s.match && typeof s.match === 'object' && !Array.isArray(s.match) ? { ...s.match } : {},
         price: s.price != null ? s.price : null,
+        outputPixelsPerUnit: s.outputPixelsPerUnit != null ? s.outputPixelsPerUnit : null,
         pricePerSecond: s.pricePerSecond != null ? s.pricePerSecond : null,
         pricePerChar: s.pricePerChar != null ? s.pricePerChar : null,
         fixedSurcharge: s.fixedSurcharge != null ? s.fixedSurcharge : null,
@@ -877,7 +891,7 @@ export function buildBillingRuleJson(
     sku.match = currentMatch;
     sku.remark = s.remark || '';
     [
-      'price', 'pricePerSecond', 'pricePerChar', 'fixedSurcharge', 'inputPricePerMillion',
+      'price', 'outputPixelsPerUnit', 'pricePerSecond', 'pricePerChar', 'fixedSurcharge', 'inputPricePerMillion',
       'outputPricePerMillion', 'cachedInputPricePerMillion',
       'cacheWritePricePerMillion', 'reasoningPricePerMillion'
     ].forEach((key) => {
@@ -892,6 +906,9 @@ export function buildBillingRuleJson(
       if (s.reasoningPricePerMillion != null) sku.reasoningPricePerMillion = Number(s.reasoningPricePerMillion);
     } else {
       sku.price = s.price == null ? null : Number(s.price);
+      if (skuMeterType === 'PER_IMAGE' && s.outputPixelsPerUnit != null) {
+        sku.outputPixelsPerUnit = Number(s.outputPixelsPerUnit);
+      }
       // 按秒计费：每秒单价必须随 SKU 落库，否则结算兜底会用 price/durationMax 反推出错价
       if (skuMeterType === 'PER_SECOND' && s.pricePerSecond != null && Number(s.pricePerSecond) >= 0) {
         sku.pricePerSecond = Number(s.pricePerSecond);
@@ -930,6 +947,13 @@ export function buildBillingRuleJson(
   settleRule.charToTokenRatio = skuData.charToTokenRatio || 2;
   settleRule.allowExtraCharge = skuData.allowExtraCharge === true;
   settleRule.usagePricingMode = skuData.usagePricingMode || 'AGGREGATE';
+  if (skuData.imageOutputPixelTiers) {
+    if (skuData.imageOutputPixelTiers.length > 0) {
+      settleRule.imageOutputPixelTiers = skuData.imageOutputPixelTiers;
+    } else {
+      delete settleRule.imageOutputPixelTiers;
+    }
+  }
   rule.settleRule = settleRule;
   // 规则级输入媒体计费（图片/视频输入附加费默认值）
   const ruleInput = mergeInputPricing(rule.inputPricing, skuData.inputPricing);

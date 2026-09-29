@@ -1,3 +1,4 @@
+import { providerCategoryLabel } from './providerCategory';
 import React from 'react';
 import ModelMigrationModal from './ModelMigrationModal';
 import ModelMigrationHistory from './ModelMigrationHistory';
@@ -10,6 +11,7 @@ import { runConfigTest, type ConfigTestResult } from '@/api/system/configTest';
 import TestResultModal from '@/components/TestResultModal';
 import { useAuth } from '@/hooks/useAuth';
 import { ModelBillingOverview } from './BillingOverview';
+import { resolveProviderLogo } from '@/utils/builtinImages';
 
 interface Props {
   provider: Provider | null;
@@ -40,6 +42,7 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
   const [testOpen, setTestOpen] = React.useState(false);
   const [testResult, setTestResult] = React.useState<ConfigTestResult | null>(null);
+  const [scrollContainer, setScrollContainer] = React.useState<HTMLDivElement | null>(null);
   const testing = React.useRef(false);
   const toggling = React.useRef(false);
   const { hasPermi } = useAuth();
@@ -87,7 +90,7 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
     {
       title: '模型名称', dataIndex: 'modelName', width: 210,
       render: (name: string, row: Model) => <div className="model-table__model">
-        <Avatar shape="square" size={34} src={row.logoUrl || provider.logoUrl}>{(name || 'M').slice(0, 1)}</Avatar>
+        <Avatar shape="square" size={34} src={row.logoUrl || resolveProviderLogo(provider.providerCode, provider.logoUrl)}>{(name || 'M').slice(0, 1)}</Avatar>
         <Tooltip title={name}><span>{name || '未命名模型'}</span></Tooltip>
       </div>
     },
@@ -132,7 +135,11 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
               />
             </Tooltip>
             <Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEdit(r)}>修改</Button>
-            <Button type="link" size="small" icon={<ExperimentOutlined />} loading={testingId === r.id} onClick={() => handleTestModel(r)}>测试</Button>
+            <Tooltip title={provider?.integrationType === 'NEW_API' && r.protocol === 'openai-compatible-text' ? '向上游实际生成一条短文本，会消耗少量额度' : undefined}>
+              <Button type="link" size="small" icon={<ExperimentOutlined />} loading={testingId === r.id} onClick={() => handleTestModel(r)}>
+                {provider?.integrationType === 'NEW_API' && ['openai-compatible-text', 'newapi-image'].includes(r.protocol || '') ? '实际测试' : '测试'}
+              </Button>
+            </Tooltip>
             <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(r)}>下线</Button>
           </Space>
         );
@@ -145,7 +152,7 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
       <div className="model-table__header">
         <div className="model-table__identity">
           <div className="model-table__title">
-          <h3 style={{ margin: 0 }}>{provider.providerName}</h3>
+          <h3 style={{ margin: 0 }}>{provider.providerName}</h3><Tag>{providerCategoryLabel(provider)}</Tag>
           <Tag>{provider.providerCode}</Tag>
           {provider.status === '1' && <Tag color="red">已停用</Tag>}
           </div>
@@ -212,7 +219,7 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
           )}
         </Space>
       </div>
-      <div className="model-table__scroll" role="region" aria-label="供应商模型列表" tabIndex={0}>
+      <div ref={setScrollContainer} className="model-table__scroll" role="region" aria-label="供应商模型列表" tabIndex={0}>
       <Table
         rowKey="id"
         size="small"
@@ -220,6 +227,7 @@ export default function ModelTable({ provider, list, loading, query, onQueryChan
         dataSource={list}
         columns={columns}
         scroll={{ x: 1660 }}
+        sticky={{ offsetScroll: 0, getContainer: () => scrollContainer || window }}
         pagination={false}
         rowSelection={canEditPools && poolSnapshotReady ? {
           selectedRowKeys: selectedModelIds,

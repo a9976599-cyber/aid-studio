@@ -81,7 +81,6 @@ function StudioFlowStoryScriptAgentShellContent({
         stopping={agent.stopping}
         onRetry={agent.retry}
         onStop={() => void agent.stop()}
-        onPauseReceiving={agent.pauseReceiving}
         onResumeReceiving={agent.resumeReceiving}
         onSend={agent.send}
         onSubmitInputRequest={agent.submitInputRequest}

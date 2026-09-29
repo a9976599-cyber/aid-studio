@@ -31,6 +31,7 @@ import com.aid.billing.vo.BillingRuleItemVO;
 import com.aid.billing.vo.InputPricingVO;
 import com.aid.billing.vo.ModelBillingDetailVO;
 import com.aid.billing.util.BillingSettlementPolicy;
+import com.aid.model.util.BuiltInBrandIcons;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
@@ -73,6 +74,7 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
     private static final String METER_TOKEN = "TOKEN";
     private static final String METER_PER_IMAGE = "PER_IMAGE";
     private static final String METER_PER_SECOND = "PER_SECOND";
+    private static final String METER_PER_CREDIT = "PER_CREDIT";
     private static final String METER_SKU_PACKAGE = "SKU_PACKAGE";
     private static final String METER_PER_CHAR = "PER_CHAR";
     private static final String METER_FIXED = "FIXED";
@@ -97,7 +99,7 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
 
         // 注意：查询字段精简，仅取展示所需字段，新增字段时务必同步追加到 select
         LambdaQueryWrapper<AidAiProvider> providerWrapper = Wrappers.lambdaQuery();
-        providerWrapper.select(AidAiProvider::getId, AidAiProvider::getProviderName, AidAiProvider::getLogoUrl);
+        providerWrapper.select(AidAiProvider::getId, AidAiProvider::getProviderCode, AidAiProvider::getProviderName, AidAiProvider::getLogoUrl);
         providerWrapper.eq(AidAiProvider::getStatus, STATUS_NORMAL);
         providerWrapper.eq(AidAiProvider::getDelFlag, DEL_FLAG_NORMAL);
         List<AidAiProvider> providers = aiProviderService.list(providerWrapper);
@@ -108,8 +110,9 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
                 .collect(Collectors.toMap(AidAiProvider::getId, AidAiProvider::getProviderName));
         // 供应商ID→LOGO映射（logo 可能为空，过滤后再收集，避免 toMap 空值 NPE）
         Map<Long, String> providerLogoMap = providers.stream()
-                .filter(p -> Objects.nonNull(p.getLogoUrl()))
-                .collect(Collectors.toMap(AidAiProvider::getId, AidAiProvider::getLogoUrl));
+                .filter(p -> BuiltInBrandIcons.resolve(p.getProviderCode(), p.getLogoUrl()) != null)
+                .collect(Collectors.toMap(AidAiProvider::getId,
+                        p -> BuiltInBrandIcons.resolve(p.getProviderCode(), p.getLogoUrl())));
         if (CollectionUtil.isEmpty(availableProviderIds))
         {
             log.info("计费详情查询：无可用供应商");
@@ -436,6 +439,9 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
             // 命中条件结构化拆分（按需出现）
             fillCondition(item, sku.getMatch());
             fillSkuPrice(item, sku, meterType, priceMultiplier);
+            if (Objects.equals(METER_PER_IMAGE, meterType) && sku.getOutputPixelsPerUnit() != null) {
+                item.setUnitName("输出像素单位/张");
+            }
             // SKU 级输入媒体价覆盖（如视频输入单价随分辨率变化）
             fillSkuInputPricing(item, sku, priceMultiplier);
             rules.add(item);
@@ -467,6 +473,12 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
                 item.setUnitName("秒");
                 item.setEstimated(BillingSettlementPolicy.isEstimated(
                         meterType, BILLING_MODE_SKU, JSONUtil.toJsonStr(rule)));
+            }
+            case METER_PER_CREDIT ->
+            {
+                item.setUnit("PROVIDER_CREDIT");
+                item.setUnitName("供应商积分");
+                item.setEstimated(Boolean.TRUE);
             }
             case METER_PER_CHAR ->
             {
@@ -533,13 +545,17 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
                 item.setInputPricePerMillion(display(sku.getInputPricePerMillion(), priceMultiplier));
                 item.setOutputPricePerMillion(display(sku.getOutputPricePerMillion(), priceMultiplier));
             }
-            case METER_PER_IMAGE -> item.setUnitPrice(display(sku.getPrice(), priceMultiplier));
+            case METER_PER_IMAGE -> {
+                item.setUnitPrice(display(sku.getPrice(), priceMultiplier));
+                item.setOutputPixelsPerUnit(sku.getOutputPixelsPerUnit());
+            }
             case METER_PER_SECOND ->
             {
                 // 仅缺少 SKU meterType 的旧规则允许用整包价 / durationMax 反推；显式口径必须有同单位价格。
                 item.setPricePerSecond(display(resolvePerSecondRaw(sku,
                         StrUtil.isBlank(sku.getMeterType())), priceMultiplier));
             }
+            case METER_PER_CREDIT -> item.setUnitPrice(display(sku.getPrice(), priceMultiplier));
             case METER_SKU_PACKAGE -> item.setPackagePrice(display(sku.getPrice(), priceMultiplier));
             case METER_PER_CHAR -> item.setUnitPrice(display(sku.getPricePerChar(), priceMultiplier));
             default -> item.setUnitPrice(display(sku.getPrice(), priceMultiplier));
@@ -615,8 +631,18 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
         {
             cols.addAll(meterColumns(meterType));
         }
+        if (Objects.equals(METER_PER_IMAGE, meterType) && hasOutputPixelUnitPricing(rule)) {
+            cols.add(cols.size() - 1, new BillingColumnVO("outputPixelsPerUnit", "每价格单位输出像素", "像素", "number"));
+            cols.set(cols.size() - 1, new BillingColumnVO("unitPrice", "像素单位价", CREDIT_UNIT, "number"));
+        }
         appendInputPricingColumns(cols, rule);
         return cols;
+    }
+
+    private boolean hasOutputPixelUnitPricing(BillingRule rule) {
+        return rule != null && CollectionUtil.isNotEmpty(rule.getSkus())
+                && rule.getSkus().stream().anyMatch(sku -> sku != null && sku.isEnabled()
+                && sku.getOutputPixelsPerUnit() != null && sku.getOutputPixelsPerUnit() > 0);
     }
 
     /** 按单一计费口径构建价格与条件列。 */
@@ -647,6 +673,7 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
                 cols.add(new BillingColumnVO("durationMax", "时长上限", UNIT_SECOND, "number"));
                 cols.add(new BillingColumnVO("pricePerSecond", "每秒单价", CREDIT_UNIT, "number"));
             }
+            case METER_PER_CREDIT -> cols.add(new BillingColumnVO("unitPrice", "每供应商积分单价", CREDIT_UNIT, "number"));
             case METER_SKU_PACKAGE ->
             {
                 cols.add(new BillingColumnVO("resolution", "分辨率", null, "text"));
@@ -734,6 +761,7 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
     /** 计费口径中文名 */
     private String resolveMeterTypeName(String meterType)
     {
+        if (METER_PER_CREDIT.equals(meterType)) return "按供应商积分计费";
         return switch (meterType)
         {
             case METER_TOKEN -> "按Token阶梯计费";
@@ -750,6 +778,10 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
     /** 计费整体说明 */
     private String resolveBillingDesc(String meterType, BillingRule rule)
     {
+        if (METER_PER_CREDIT.equals(meterType)) return "按供应商实际积分用量与配置的人民币单价计费，提交前显示估算金额";
+        if (Objects.equals(METER_PER_IMAGE, meterType) && hasOutputPixelUnitPricing(rule)) {
+            return "按目标输出像素向上取整计算每张价格，再按实际生成张数结算；每单位像素数及价格见下方";
+        }
         if (Objects.equals(METER_PER_SECOND, meterType)
                 && (hasInputPricing(rule, true) || hasInputPricing(rule, false)))
         {
@@ -826,6 +858,7 @@ public class BillingDetailQueryServiceImpl implements IBillingDetailQueryService
         return Objects.equals(METER_TOKEN, meterType)
                 || Objects.equals(METER_PER_IMAGE, meterType)
                 || Objects.equals(METER_PER_SECOND, meterType)
+                || Objects.equals(METER_PER_CREDIT, meterType)
                 || Objects.equals(METER_SKU_PACKAGE, meterType)
                 || Objects.equals(METER_PER_CHAR, meterType);
     }

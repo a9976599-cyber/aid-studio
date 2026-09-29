@@ -4,6 +4,7 @@ import { PictureOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons
 
 import { listAidconfig, updateAidconfig, addAidconfig } from '@/api/aidconfig/aidconfig';
 import ImageUpload from '@/components/ImageUpload';
+import { BUILTIN_AVATARS } from '@/utils/builtinImages';
 import './style.less';
 
 const CATEGORY = 'default_avatar';
@@ -34,7 +35,7 @@ export default function DefaultAvatarSection() {
       const row = rows.find((r) => r.configName === KEY_URLS);
       if (row) {
         setItem({ id: row.id, configName: row.configName, configValue: row.configValue || '' });
-        setUrls(row.configValue || '');
+        setUrls(row.configValue === BUILTIN_AVATARS.join(',') ? '' : (row.configValue || ''));
       } else {
         setItem(undefined);
         setUrls('');
@@ -96,7 +97,7 @@ export default function DefaultAvatarSection() {
           showIcon
           style={{ marginBottom: 16 }}
           message="用户首次注册时会从下方头像中随机选取一张作为默认头像"
-          description="最多上传 5 张。如果一张都不上传，新用户头像将为空（不强制设置默认头像）。"
+          description="最多上传 5 张。上传的图片优先使用；清空后，新用户会从系统内置头像中随机选取。"
         />
 
         <Form layout="horizontal" labelCol={{ flex: '150px' }} wrapperCol={{ flex: 'auto' }} labelAlign="right">
@@ -108,6 +109,11 @@ export default function DefaultAvatarSection() {
               maxSize={5}
               accept="image/*"
             />
+          </Form.Item>
+          <Form.Item label="系统内置头像" style={{ marginTop: 12, marginBottom: 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {BUILTIN_AVATARS.map((src, index) => <img key={src} src={src} alt={`内置头像 ${index + 1}`} width={48} height={48} style={{ borderRadius: '50%', objectFit: 'cover' }} />)}
+            </div>
           </Form.Item>
         </Form>
       </Card>

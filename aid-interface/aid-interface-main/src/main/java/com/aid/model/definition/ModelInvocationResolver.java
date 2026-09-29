@@ -79,9 +79,7 @@ public class ModelInvocationResolver {
         if (route.getBillingMode() != null) config.setBillingMode(route.getBillingMode());
         if (route.getBillingRule() != null) config.setBillingRuleJson(JSON.toJSONString(route.getBillingRule()));
         if (route.getCostCredits() != null) config.setCostCredits(route.getCostCredits());
-        applyPresentation(config, definition.getPresentation());
-        applyPresentation(config, route.getPresentation());
-        ModelSchemaPresentation.apply(config, definition);
+        applyResolvedPresentation(config, definition, route);
         return config;
     }
 
@@ -141,6 +139,13 @@ public class ModelInvocationResolver {
     public static void applyPresentation(Object target, Map<String, Object> presentation) {
         if (presentation == null) return;
         for (String field : PRESENTATION_FIELDS) if (presentation.containsKey(field)) BeanUtil.setProperty(target, field, presentation.get(field));
+    }
+
+    public static void applyResolvedPresentation(Object target, ModelCapabilityDefinition definition,
+                                                 ModelProtocolBinding route) {
+        ModelSchemaPresentation.apply(target, definition);
+        applyPresentation(target, definition.getPresentation());
+        if (route != null) applyPresentation(target, route.getPresentation());
     }
 
     private static void writeParameter(Object request, String name, Object value) {

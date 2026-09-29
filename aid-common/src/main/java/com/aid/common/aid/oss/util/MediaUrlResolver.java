@@ -52,6 +52,13 @@ public class MediaUrlResolver
         {
             return path;
         }
+        // Packaged brand and default assets are served by each application itself.
+        // They must never be rewritten to the configured upload CDN.
+        if (path.startsWith("/brand-icons/") || path.startsWith("/default-avatars/")
+                || path.startsWith("/captcha-backgrounds/"))
+        {
+            return path;
+        }
         OssProperties properties = ossConfigManager.getOssProperties();
         if (path.startsWith(LOCAL_PREFIX))
         {

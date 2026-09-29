@@ -345,7 +345,7 @@ public final class ModelCapabilityResolver {
         }
         String normalizedSize = normalize(size);
         String normalizedRatio = normalize(requestedAspectRatio);
-        if (!normalizedSize.matches("\\d{2,5}x\\d{2,5}") || !isConcreteAspectRatio(normalizedRatio)) {
+        if (!normalizedSize.matches("\\d{1,5}x\\d{1,5}") || !isConcreteAspectRatio(normalizedRatio)) {
             log.info("固定像素尺寸与展示比例格式无效: modelCode={}, size={}, aspectRatio={}",
                     modelCode, size, requestedAspectRatio);
             throw new ServiceException(MSG_ASPECT_RATIO_UNSUPPORTED);
@@ -383,7 +383,7 @@ public final class ModelCapabilityResolver {
         boolean custom = capability.path("allowCustomWH").asBoolean(false);
         List<String> sizes = readOptions(capability, KEY_SIZE_OPTIONS);
         if (StrUtil.isBlank(size) || (matchOption(sizes, size) == null
-                && !(custom && normalize(size).matches("\\d{2,5}x\\d{2,5}")))) {
+                && !(custom && normalize(size).matches("\\d{1,5}x\\d{1,5}")))) {
             log.info("图片编辑尺寸不受支持: modelCode={}, size={}", model.getModelCode(), size);
             throw new ServiceException(MSG_SIZE_UNSUPPORTED);
         }

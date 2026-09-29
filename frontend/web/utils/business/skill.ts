@@ -45,7 +45,8 @@ function runMutationOnce<T>(
 }
 
 /** Public catalog containing only active Runtime entrypoints; execution still requires login. */
-export function userSkillRuntimeCatalog(): Promise<UserSkillDefinition[]> {
+export function userSkillRuntimeCatalog(force = false): Promise<UserSkillDefinition[]> {
+  if (force) catalogBurst.current = null
   const body = {}
   const key = stableRequestKey(body)
   return runListDedupe(key, catalogInflight, catalogBurst, async () => {

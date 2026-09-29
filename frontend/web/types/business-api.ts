@@ -2766,6 +2766,10 @@ export interface UserModelCapability {
   defaultOutputCount?: number
   durationOptions?: number[]
   defaultDurationSeconds?: number
+  /** 提示词最大字符数；服务端按 Java String.length() 校验。 */
+  maxPromptCharacters?: number
+  /** 提示词包含中日韩文字时的最大字符数；缺失时回退 maxPromptCharacters。 */
+  maxPromptCharactersCjk?: number
   /** 是否支持音画同出；视频模型必返，未配置为 false */
   supportsAudio?: boolean
   /** 是否支持外部参考音频（音色克隆参考）；视频模型必返，缺失视为 false */
@@ -3124,16 +3128,23 @@ export interface UserTaskDetailRequest {
 
 /** 停止/取消进行中的任务：POST /api/user/task/cancel（与后端约定，未上线时可能 404） */
 export interface UserTaskCancelRequest {
-  taskId: number
+  taskId: number | string
+  taskSource?: 'EXTRACT' | 'MEDIA'
 }
 
 /** 批量取消 PENDING 独立任务：POST /api/user/task/cancel-batch */
 export interface UserTaskCancelBatchRequest {
-  taskIds: number[]
+  taskIds: Array<number | string>
+  taskSource?: 'EXTRACT' | 'MEDIA'
 }
 
 export interface UserTaskCancelBatchData {
   cancelCount: number
+  alreadyCancelledCount?: number
+  runningCount?: number
+  finishedCount?: number
+  rejectedCount?: number
+  items?: Array<{ taskId: string; status: 'CANCELLED' | 'ALREADY_CANCELLED' | 'IN_PROGRESS' | 'FINISHED' | 'REJECTED' }>
 }
 
 /** 图片、视频、音频任务的统一预计进度与剩余时间。 */

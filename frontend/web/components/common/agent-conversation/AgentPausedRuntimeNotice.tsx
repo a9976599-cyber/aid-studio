@@ -1,6 +1,6 @@
 'use client'
 
-import { CaretRightOutlined } from '@ant-design/icons'
+import { CaretRightOutlined, StopOutlined } from '@ant-design/icons'
 import './agent-paused-runtime-notice.css'
 
 /**
@@ -10,9 +10,11 @@ import './agent-paused-runtime-notice.css'
  */
 export function AgentPausedRuntimeNotice({
   onResume,
+  onStop,
   disabled = false
 }: {
   onResume: () => void
+  onStop?: () => void
   disabled?: boolean
 }) {
   return (
@@ -21,15 +23,16 @@ export function AgentPausedRuntimeNotice({
         <strong>已暂停接收</strong>
         <p>任务仍在后台处理，恢复后会继续展示生成内容</p>
       </div>
-      <button
-        type="button"
-        className="agent-paused-runtime-notice__resume"
-        disabled={disabled}
-        onClick={onResume}
-      >
-        <CaretRightOutlined aria-hidden />
-        <span>恢复生成</span>
-      </button>
+      <div className="agent-paused-runtime-notice__actions">
+        {onStop ? <button type="button" className="agent-paused-runtime-notice__stop"
+          disabled={disabled} onClick={onStop}>
+          <StopOutlined aria-hidden /><span>停止生成</span>
+        </button> : null}
+        <button type="button" className="agent-paused-runtime-notice__resume"
+          disabled={disabled} onClick={onResume}>
+          <CaretRightOutlined aria-hidden /><span>恢复生成</span>
+        </button>
+      </div>
     </section>
   )
 }

@@ -185,6 +185,11 @@ public class BillingSnapshot {
      */
     private BigDecimal unitPrice;
 
+    /** 图片按输出像素单位计费时的原始参数与向上取整后的单位数，供账务审计。 */
+    private Long outputPixels;
+    private Long outputPixelsPerUnit;
+    private Long outputBillingUnits;
+
     /**
      * 单价类型：当前固定 {@code PER_IMAGE}，预留未来按面积/分辨率阶梯。
      */

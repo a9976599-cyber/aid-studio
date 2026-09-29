@@ -66,6 +66,9 @@ public class BillingRuleItemVO implements Serializable
     /** 输出图片总像素上限。 */
     private Long outputPixelsMax;
 
+    /** 每个价格单位覆盖的输出像素数；为空时按张固定价。 */
+    private Long outputPixelsPerUnit;
+
     /** 参考图片数量下限，null 表示不限制 */
     private Integer referenceImageCountMin;
 

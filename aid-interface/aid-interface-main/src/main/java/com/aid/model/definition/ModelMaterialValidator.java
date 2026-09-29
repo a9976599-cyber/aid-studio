@@ -35,7 +35,8 @@ public final class ModelMaterialValidator {
             Object value = values.get(field.getName());
             if (value == null) continue;
             if (field.getMaterialRole() != null && (field.getFormats() != null && !field.getFormats().isEmpty()
-                    || field.getMaxFileSizeMb() != null || field.getMinDurationSeconds() != null || field.getMaxDurationSeconds() != null || field.getMaxTotalDurationSeconds() != null)) {
+                    || field.getMaxFileSizeMb() != null || field.getMaxFileSizeBytes() != null || field.getMinDurationSeconds() != null
+                    || field.getMaxDurationSeconds() != null || field.getMaxTotalDurationSeconds() != null || field.getClipDurationSeconds() != null)) {
                 Set<String> urls = new LinkedHashSet<>(); collect(urls, value);
                 if (urls.isEmpty() && !(value instanceof List<?> list && list.isEmpty())) fail(field, "无法解析素材地址");
                 String type = "reference_video".equals(field.getMaterialRole()) ? "video" : "reference_audio".equals(field.getMaterialRole()) ? "audio" : "image";
@@ -44,11 +45,14 @@ public final class ModelMaterialValidator {
                     var actual = metadata.inspect(url, type);
                     if (field.getFormats() != null && !field.getFormats().isEmpty() && field.getFormats().stream().noneMatch(format -> equivalent(format, actual.format()))) fail(field, "素材格式不支持");
                     if (field.getMaxFileSizeMb() != null && BigDecimal.valueOf(actual.sizeBytes()).compareTo(field.getMaxFileSizeMb().multiply(BigDecimal.valueOf(1048576))) > 0) fail(field, "素材文件过大");
+                    if (field.getMaxFileSizeBytes() != null && actual.sizeBytes() > field.getMaxFileSizeBytes()) fail(field, "素材文件过大");
                     if (field.getMinDurationSeconds() != null || field.getMaxDurationSeconds() != null || field.getMaxTotalDurationSeconds() != null) {
                         if (actual.durationSeconds() == null) fail(field, "素材缺少可信时长");
                         if (field.getMinDurationSeconds() != null && actual.durationSeconds().compareTo(field.getMinDurationSeconds()) < 0) fail(field, "素材时长过短");
-                        if (field.getMaxDurationSeconds() != null && actual.durationSeconds().compareTo(field.getMaxDurationSeconds()) > 0) fail(field, "素材时长过长");
-                        total = total.add(actual.durationSeconds());
+                        BigDecimal counted = field.getClipDurationSeconds() == null ? actual.durationSeconds()
+                                : actual.durationSeconds().min(field.getClipDurationSeconds());
+                        if (field.getMaxDurationSeconds() != null && counted.compareTo(field.getMaxDurationSeconds()) > 0) fail(field, "素材时长过长");
+                        total = total.add(counted);
                     }
                 }
                 if (field.getMaxTotalDurationSeconds() != null && total.compareTo(field.getMaxTotalDurationSeconds()) > 0) fail(field, "素材总时长超过上限");

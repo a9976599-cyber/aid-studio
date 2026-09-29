@@ -147,7 +147,7 @@ public final class ModelCapabilityValidator {
                                                  String size, String modelCode) {
         if (StrUtil.isBlank(size)) return;
         String normalized = size.trim().replace('×', 'x').replace('*', 'x').replace('X', 'x');
-        if (!normalized.matches("\\d{2,5}x\\d{2,5}")) return;
+        if (!normalized.matches("\\d{1,5}x\\d{1,5}")) return;
         String[] dimensions = normalized.split("x", 2);
         long pixels;
         long width;
@@ -416,12 +416,13 @@ public final class ModelCapabilityValidator {
                         modelConfig.getModelCode(), audio.getName());
                 continue;
             }
-            if (maxTotalDurationMs.signum() > 0 && java.math.BigDecimal.valueOf(totalDurationMs + audio.getDurationMs()).compareTo(maxTotalDurationMs) > 0) {
+            long effectiveMs = capability.effectiveDurationMs(audio.getDurationMs()).longValue();
+            if (maxTotalDurationMs.signum() > 0 && java.math.BigDecimal.valueOf(totalDurationMs + effectiveMs).compareTo(maxTotalDurationMs) > 0) {
                 seenUrls.remove(audio.getSampleUrl());
                 rejectReferenceAudio(modelConfig, audio, "总时长超限");
                 continue;
             }
-            totalDurationMs += audio.getDurationMs();
+            totalDurationMs += effectiveMs;
             accepted.add(audio);
         }
         request.setReferenceAudios(
@@ -585,7 +586,7 @@ public final class ModelCapabilityValidator {
     private static boolean customImageSize(JsonNode capability, String key, String value) {
         return KEY_SIZE_OPTIONS.equals(key) && capability != null
                 && capability.path("allowCustomWH").asBoolean(false)
-                && ModelCapabilityResolver.normalize(value).matches("\\d{2,5}x\\d{2,5}");
+                && ModelCapabilityResolver.normalize(value).matches("\\d{1,5}x\\d{1,5}");
     }
 
     /** 根据图片输入与组图开关识别能力场景。 */

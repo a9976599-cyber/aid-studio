@@ -214,15 +214,15 @@ export function useStoryScriptAgent({
   const skillCatalogInflightRef = useRef<Promise<void> | null>(null)
   const skillCatalogGenerationRef = useRef(0)
 
-  const loadSkills = useCallback((): Promise<void> => {
-    if (!enabled || skillCatalogLoadedRef.current) return Promise.resolve()
+  const loadSkills = useCallback((force = false): Promise<void> => {
+    if (!enabled || (!force && skillCatalogLoadedRef.current)) return Promise.resolve()
     const running = skillCatalogInflightRef.current
     if (running) return running
     const generation = skillCatalogGenerationRef.current
     setSkillsLoading(true)
     setSkillsError('')
     const holder: { promise?: Promise<void> } = {}
-    const pending = userSkillRuntimeCatalog()
+    const pending = userSkillRuntimeCatalog(force)
       .then((items) => {
         if (skillCatalogGenerationRef.current !== generation) return
         const availableSkills = catalogScope === 'all'
@@ -997,6 +997,8 @@ export function useStoryScriptAgent({
     } catch (error: unknown) {
       if (isAbortError(error) || !isCurrentProject(expectedProjectId)) return
       const errorMessage = runtimeErrorMessage(error, 'Skill 连接失败')
+      const rejectedBeforeRun = Boolean(checkpoint && !checkpoint.runId
+        && isDefinitiveRuntimeBusinessRejection(error))
       flushAssistantDeltas()
       if (checkpoint) {
         completeAssistantThinking(checkpoint.idempotencyKey)
@@ -1004,7 +1006,7 @@ export function useStoryScriptAgent({
           checkpoint = { ...checkpoint, partialOutputTrusted: false }
         }
         persistPatch(expectedProjectId, {
-          activeRun: { ...checkpoint },
+          activeRun: rejectedBeforeRun ? null : { ...checkpoint },
           pendingPrompt: undefined,
           paused: false
         })
@@ -1012,11 +1014,14 @@ export function useStoryScriptAgent({
           status: 'error',
           partialOutputTrusted: checkpoint.partialOutputTrusted === true
         })
-        setCanStop(true)
+        setCanStop(!rejectedBeforeRun)
       }
-      setCanRetry(Boolean(checkpoint || stateRef.current?.pendingPrompt))
+      setCanRetry(!rejectedBeforeRun && Boolean(checkpoint || stateRef.current?.pendingPrompt))
       setLastError(errorMessage)
-      setStatusText('连接中断，可重试恢复')
+      setStatusText(rejectedBeforeRun ? '请求未创建，请选择可用模型后重试' : '连接中断，可重试恢复')
+      if (rejectedBeforeRun) {
+        void loadSkills(true)
+      }
     } finally {
       if (isCurrentProject(expectedProjectId) && activeAbortRef.current === abortController) {
         sendingRef.current = false
@@ -1030,6 +1035,7 @@ export function useStoryScriptAgent({
     episodeId,
     isCurrentProject,
     flushAssistantDeltas,
+    loadSkills,
     persistPatch,
     updateAssistant,
     watchRuntimeRun

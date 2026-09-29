@@ -162,7 +162,7 @@ public class MediaEtaRecorder {
             }
             String mediaType = task.getMediaType() == null ? ""
                 : task.getMediaType().toUpperCase(Locale.ROOT);
-            if (!("IMAGE".equals(mediaType) || "VIDEO".equals(mediaType)
+            if (!("TEXT".equals(mediaType) || "IMAGE".equals(mediaType) || "VIDEO".equals(mediaType)
                     || "AUDIO".equals(mediaType) || "COMPOSE".equals(mediaType))) {
                 return null;
             }

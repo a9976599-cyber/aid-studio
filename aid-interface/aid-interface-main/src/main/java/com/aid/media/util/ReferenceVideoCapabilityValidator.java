@@ -36,9 +36,11 @@ public final class ReferenceVideoCapabilityValidator {
                 continue;
             }
             BigDecimal seconds = BigDecimal.valueOf(input.getDurationMs()).divide(MILLIS_PER_SECOND);
-            range(rule, "referenceVideoMinDurationSeconds", "referenceVideoMaxDurationSeconds",
-                    seconds, "参考视频时长超限");
-            totalSeconds = totalSeconds.add(seconds);
+            range(rule, "referenceVideoMinDurationSeconds", null, seconds, "参考视频时长超限");
+            BigDecimal clip = number(rule, "referenceVideoClipDurationSeconds");
+            BigDecimal counted = clip == null || clip.signum() <= 0 ? seconds : seconds.min(clip);
+            range(rule, null, "referenceVideoMaxDurationSeconds", counted, "参考视频时长超限");
+            totalSeconds = totalSeconds.add(counted);
             // 文件维度在完整探测后校验；只读报价不把缺失的文件属性冒充不合法素材。
             if (!requireMetadata) continue;
             range(rule, null, "referenceVideoMaxSizeMB", input.getFileSizeBytes() == null ? null

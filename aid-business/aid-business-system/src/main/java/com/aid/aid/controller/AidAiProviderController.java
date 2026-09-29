@@ -83,7 +83,7 @@ public class AidAiProviderController extends BaseController
      * 记录审计日志，便于追溯上游渠道的创建者。
      */
     @PreAuthorize("@ss.hasPermi('aid:aidprovider:add')")
-    @Log(title = "AI大模型服务商(官方渠道)配置", businessType = BusinessType.INSERT)
+    @Log(title = "AI大模型服务商(官方渠道)配置", businessType = BusinessType.INSERT, isSaveRequestData = false)
     @PostMapping
     public AjaxResult add(@RequestBody AidAiProvider aidAiProvider)
     {
@@ -104,7 +104,7 @@ public class AidAiProviderController extends BaseController
      * 记录审计日志，标记 baseUrl / 密钥是否变更（仅标记是否变更，不打印密钥明文）。
      */
     @PreAuthorize("@ss.hasPermi('aid:aidprovider:edit')")
-    @Log(title = "AI大模型服务商(官方渠道)配置", businessType = BusinessType.UPDATE)
+    @Log(title = "AI大模型服务商(官方渠道)配置", businessType = BusinessType.UPDATE, isSaveRequestData = false)
     @PutMapping
     public AjaxResult edit(@RequestBody AidAiProvider aidAiProvider)
     {

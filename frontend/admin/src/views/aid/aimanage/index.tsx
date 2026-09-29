@@ -14,7 +14,7 @@ import {
 import { cleanExpiredVoices } from '@/api/aid/voicelibrary';
 import ProviderPanel from './ProviderPanel';
 import ModelTable from './ModelTable';
-import TokenDanceRecommendedCard from './TokenDanceRecommendedCard';
+import { compareProviders } from './providerCategory';
 import { isTokenDanceProvider } from './recommendedProvider';
 import TokenDanceAccountModal from './TokenDanceAccountModal';
 import TokenDanceCatalogModal from './TokenDanceCatalogModal';
@@ -76,7 +76,7 @@ export default function AimanagePage() {
         listModel({ pageNum: 1, pageSize: 9999 }),
         getModelPoolBindings().catch(() => null)
       ]);
-      const list: Provider[] = [...(res.rows || [])].sort((a, b) => Number(isTokenDanceProvider(b)) - Number(isTokenDanceProvider(a)));
+      const list: Provider[] = [...(res.rows || [])].sort(compareProviders);
       setProviderList(list);
       setAllModels(res2.rows || []);
       if (poolRes?.data) {
@@ -85,7 +85,8 @@ export default function AimanagePage() {
       } else {
         setPoolSnapshotReady(false);
       }
-      setActiveProvider((current) => list.find((provider) => provider.id === current?.id) || list[0] || null);
+      setActiveProvider((current) => list.find((provider) => provider.id === current?.id)
+        || list.find((provider) => provider.status === '0') || list[0] || null);
     } finally { setProviderLoading(false); }
   }, []);
 
@@ -335,19 +336,6 @@ export default function AimanagePage() {
 
   return (
     <>
-      <TokenDanceRecommendedCard
-        provider={tokenDanceProvider}
-        loading={providerLoading}
-        modelCount={tokenDanceProvider ? modelCounts[tokenDanceProvider.id] || 0 : 0}
-        enabledModelCount={allModels.filter((model) => model.providerId === tokenDanceProvider?.id && model.status === '0').length}
-        onOpen={setTokenDanceAction}
-        onSelect={() => {
-          if (!tokenDanceProvider) return;
-          setActiveProvider(tokenDanceProvider);
-          setModelQuery({ modelType: null, generateMode: null, inputRequirement: null, poolId: null, keyword: '' });
-          setSelectedModelIds([]);
-        }}
-      />
       <TokenDanceAccountModal open={tokenDanceAction === 'account'} provider={tokenDanceProvider} onClose={() => setTokenDanceAction(null)} />
       <TokenDanceCatalogModal open={tokenDanceAction === 'catalog'} provider={tokenDanceProvider} onClose={() => setTokenDanceAction(null)} onImported={refreshProviders} />
       <div className="aimanage">
@@ -362,6 +350,7 @@ export default function AimanagePage() {
         onDelete={handleDeleteProvider}
         onToggleStatus={handleToggleProviderStatus}
         onTokenDanceAction={setTokenDanceAction}
+        onProviderChanged={() => { void loadProviders().catch(() => undefined); }}
       />
       <ModelTable
         provider={activeProvider}

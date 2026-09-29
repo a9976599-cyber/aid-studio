@@ -62,7 +62,8 @@ public class CaptchaConfigService {
         s.type = readString(CaptchaProperties.KEY_TYPE, CaptchaProperties.DEFAULT_TYPE);
         s.protectedScenes = parseList(readString(CaptchaProperties.KEY_PROTECTED_SCENES,
                 CaptchaProperties.DEFAULT_PROTECTED_SCENES));
-        s.backgroundUrls = parseList(readString(CaptchaProperties.KEY_BACKGROUND_URLS, ""));
+        s.backgroundUrls = parseList(readString(CaptchaProperties.KEY_BACKGROUND_URLS,
+                "/captcha-backgrounds/1.png,/captcha-backgrounds/2.png,/captcha-backgrounds/3.png,/captcha-backgrounds/4.png"));
         s.tokenExpireSeconds = readInt(CaptchaProperties.KEY_TOKEN_EXPIRE_SECONDS,
                 CaptchaProperties.DEFAULT_TOKEN_EXPIRE_SECONDS);
         s.captchaExpireSeconds = readInt(CaptchaProperties.KEY_CAPTCHA_EXPIRE_SECONDS,

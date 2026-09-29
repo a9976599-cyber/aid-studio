@@ -17,6 +17,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -307,28 +309,42 @@ public class GlobalExceptionHandler
     @ExceptionHandler(BindException.class)
     public AjaxResult handleBindException(BindException e)
     {
-        log.error(e.getMessage(), e);
-        String message = e.getAllErrors().get(0).getDefaultMessage();
-        return AjaxResult.error(message);
+        logInvalidRequest(e.getBindingResult());
+        String message = e.getAllErrors().isEmpty() ? null : e.getAllErrors().get(0).getDefaultMessage();
+        if (StringUtils.isEmpty(message))
+        {
+            message = MessageUtils.message("error.validation");
+        }
+        return AjaxResult.error(HttpStatus.BAD_REQUEST, message);
     }
 
     /**
      * 参数校验异常：返回首个字段校验失败文案，fieldErrors 为空时回退通用文案。
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Object handleMethodArgumentNotValidException(MethodArgumentNotValidException e)
+    public AjaxResult handleMethodArgumentNotValidException(MethodArgumentNotValidException e)
     {
-        log.error(e.getMessage(), e);
-        if (e.getBindingResult() == null || e.getBindingResult().getFieldError() == null)
+        BindingResult bindingResult = e.getBindingResult();
+        logInvalidRequest(bindingResult);
+        FieldError fieldError = bindingResult == null ? null : bindingResult.getFieldError();
+        if (fieldError == null)
         {
-            return AjaxResult.error(MessageUtils.message("error.validation"));
+            return AjaxResult.error(HttpStatus.BAD_REQUEST, MessageUtils.message("error.validation"));
         }
-        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        String message = fieldError.getDefaultMessage();
         if (StringUtils.isEmpty(message))
         {
             message = MessageUtils.message("error.validation");
         }
-        return AjaxResult.error(message);
+        return AjaxResult.error(HttpStatus.BAD_REQUEST, message);
+    }
+
+    private void logInvalidRequest(BindingResult bindingResult)
+    {
+        FieldError fieldError = bindingResult == null ? null : bindingResult.getFieldError();
+        log.error("请求参数校验失败: object={}, field={}",
+                bindingResult == null ? "unknown" : bindingResult.getObjectName(),
+                fieldError == null ? "unknown" : fieldError.getField());
     }
 
     /**

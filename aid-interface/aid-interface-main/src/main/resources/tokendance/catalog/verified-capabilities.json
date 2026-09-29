@@ -2469,7 +2469,13 @@
             "referenceAudioMaxDurationSeconds": 15,
             "referenceAudioMaxTotalDurationSeconds": 15,
             "maxReferenceMaterials": 15,
-            "maxInputMediaTotalFileSizeMb": 64
+            "maxInputMediaTotalFileSizeMb": 64,
+            "sceneRules": {
+              "textToVideo": {"requiredInputs": ["text"], "allowedInputs": ["text"]},
+              "imageToVideo": {"requiredInputs": ["firstFrame"], "allowedInputs": ["text", "firstFrame"], "aspectRatioFollowInput": true},
+              "startEndToVideo": {"requiredInputs": ["firstFrame", "lastFrame"], "allowedInputs": ["text", "firstFrame", "lastFrame"], "aspectRatioFollowInput": true},
+              "referenceToVideo": {"requiredInputs": ["text"], "requiredAnyOf": ["image", "video"], "allowedInputs": ["text", "image", "video", "audio"]}
+            }
           },
           "requirements": [
             {

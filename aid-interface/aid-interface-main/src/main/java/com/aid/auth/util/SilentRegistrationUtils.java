@@ -94,7 +94,7 @@ public final class SilentRegistrationUtils {
      */
     public static String pickRandomAvatar(String csvUrls) {
         if (csvUrls == null || csvUrls.isBlank()) {
-            return "";
+            return "/default-avatars/" + RandomUtil.randomInt(1, 6) + ".png";
         }
         java.util.List<String> list = new java.util.ArrayList<>();
         for (String s : csvUrls.split(",")) {
@@ -103,7 +103,7 @@ public final class SilentRegistrationUtils {
             }
         }
         if (list.isEmpty()) {
-            return "";
+            return "/default-avatars/" + RandomUtil.randomInt(1, 6) + ".png";
         }
         return list.get(RandomUtil.randomInt(0, list.size()));
     }

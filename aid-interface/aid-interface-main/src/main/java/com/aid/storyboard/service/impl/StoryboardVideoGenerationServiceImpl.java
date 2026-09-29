@@ -109,6 +109,7 @@ import com.aid.storyboard.video.ResolvedReference;
 import com.aid.storyboard.video.VideoReferenceContext;
 import com.aid.storyboard.video.VideoReferencePlan;
 import com.aid.storyboard.video.VideoReferencePlanner;
+import com.aid.tokendance.provider.common.TokenDanceProtocols;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
@@ -412,8 +413,7 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
         String creationMode = resolveCreationModeForBatch(ids, userId);
         String funcCode = CreationModeEnum.PRO.getValue().equals(creationMode)
                 ? FUNC_CODE_STORYBOARD_VIDEO_MULTI_PRO : FUNC_CODE_STORYBOARD_VIDEO; // pro 专属多参池 / 通用多参池
-        AiModelConfigVo modelConfig = requireVideoModel(
-                request.getModelName(), funcCode, multiCapability(request));
+        AiModelConfigVo modelConfig = requireMultiVideoModel(request, funcCode);
         String modelCode = modelConfig.getModelCode();
         Long modelId = modelConfig.getId();
         Integer requestedDuration = Boolean.TRUE.equals(modelConfig.getSupportsDuration())
@@ -443,7 +443,7 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
         String creationMode = resolveCreationModeForBatch(ids, userId);
         String funcCode = CreationModeEnum.PRO.getValue().equals(creationMode)
                 ? FUNC_CODE_STORYBOARD_VIDEO_MULTI_PRO : FUNC_CODE_STORYBOARD_VIDEO;
-        AiModelConfigVo modelConfig = requireVideoModel(request.getModelName(), funcCode, multiCapability(request));
+        AiModelConfigVo modelConfig = requireMultiVideoModel(request, funcCode);
         int perShotCount = single ? clampCount(request.getCount()) : 1;
         return quotePreparedVideoBatch("STORYBOARD_VIDEO", userId, ids, single,
                 single ? clampCount(request.getCount()) : 1, modelConfig,
@@ -464,7 +464,7 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
         String creationMode = resolveCreationModeForBatch(ids, userId);
         String funcCode = CreationModeEnum.PRO.getValue().equals(creationMode)
                 ? FUNC_CODE_STORYBOARD_VIDEO_MULTI_PRO : FUNC_CODE_STORYBOARD_VIDEO;
-        AiModelConfigVo modelConfig = requireVideoModel(request.getModelName(), funcCode, multiCapability(request));
+        AiModelConfigVo modelConfig = requireMultiVideoModel(request, funcCode);
         int perShotCount = single ? clampCount(request.getCount()) : 1;
         return quotePreparedVideoBatch("STORYBOARD_VIDEO", userId, ids, single,
                 perShotCount, modelConfig,
@@ -626,6 +626,56 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
         }
         String taskType = request == null ? null : request.getOmniReferenceTaskType();
         return "edit".equals(taskType) ? "video_edit" : "extend".equals(taskType) ? "video_extend" : null;
+    }
+
+    private AiModelConfigVo requireMultiVideoModel(StoryboardVideoGenerateRequest request, String funcCode)
+    {
+        String requested = multiCapability(request);
+        AiModelConfigVo selected = requireVideoModel(request.getModelName(), funcCode, requested);
+        boolean dmcH3 = "dmc-h3-video".equals(selected.getProtocol());
+        boolean tokenDanceH3 = TokenDanceProtocols.isTokenDance(selected.getProviderCode())
+                && TokenDanceProtocols.matches(TokenDanceProtocols.MINIMAX_VIDEO_GENERATION_V2,
+                        selected.getProtocol());
+        boolean implicitReference = dmcH3 && hasMultiReferenceSelection(request)
+                || tokenDanceH3 && hasTokenDanceReferenceSelection(request);
+        if (requested != null || !implicitReference)
+        {
+            return selected;
+        }
+        // 旧版多参请求只传模型编码；先选定参考能力，使报价、预校验与正式提交一致。
+        return requireVideoModel(request.getModelName(), funcCode, "reference_to_video");
+    }
+
+    private static boolean hasMultiReferenceSelection(StoryboardVideoGenerateRequest request)
+    {
+        if (request == null) return false;
+        if (request.getBaseImageRecordId() != null
+                || request.getReferenceOverrides() != null && !request.getReferenceOverrides().isEmpty()
+                || request.getReferenceAudioRecordIds() != null && !request.getReferenceAudioRecordIds().isEmpty()
+                || request.getReferenceAudioIds() != null && !request.getReferenceAudioIds().isEmpty()
+                || request.getReferenceVideoRecordIds() != null && !request.getReferenceVideoRecordIds().isEmpty())
+        {
+            return true;
+        }
+        String prompt = request.getVideoPrompt();
+        return StrUtil.isNotBlank(prompt) && (prompt.contains("@图片") || prompt.contains("<Picture ")
+                || prompt.contains("<Video ") || prompt.contains("<Audio "));
+    }
+
+    /** 单张垫图仍走首帧能力；TokenDance 只为显式参考素材请求补齐旧版缺失的能力编码。 */
+    private static boolean hasTokenDanceReferenceSelection(StoryboardVideoGenerateRequest request)
+    {
+        if (request == null) return false;
+        if (request.getReferenceOverrides() != null && !request.getReferenceOverrides().isEmpty()
+                || request.getReferenceAudioRecordIds() != null && !request.getReferenceAudioRecordIds().isEmpty()
+                || request.getReferenceAudioIds() != null && !request.getReferenceAudioIds().isEmpty()
+                || request.getReferenceVideoRecordIds() != null && !request.getReferenceVideoRecordIds().isEmpty())
+        {
+            return true;
+        }
+        String prompt = request.getVideoPrompt();
+        return StrUtil.isNotBlank(prompt) && (prompt.contains("@图片") || prompt.contains("<Picture ")
+                || prompt.contains("<Video ") || prompt.contains("<Audio "));
     }
 
     private AiModelConfigVo requireVideoModel(String requestedModelCode, String funcCode, String capability)
@@ -5301,8 +5351,8 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
 
     /**
      * DB 兜底：检查指定 storyboardId 是否真的有未结束（PENDING / PROCESSING）的
-     * storyboard_video_generate 任务。父任务 input_snapshot 内为 {@code "storyboardIds":[...]} 数组，
-     * 用数组元素边界（{@code [id] / [id, / ,id, / ,id]}）做 LIKE 匹配，避免数字前缀误命中。
+     * storyboard_video_generate 任务。只检查 input_snapshot.storyboardIds 数组，避免
+     * referenceAudioIds 等其他数组中相同的数字误判为分镜正在处理。
      */
     private boolean hasActiveTaskInDb(Long storyboardId)
     {
@@ -5310,20 +5360,12 @@ public class StoryboardVideoGenerationServiceImpl implements IStoryboardVideoGen
         {
             return false;
         }
-        String key = "\"storyboardIds\":[";
-        String only = "[" + storyboardId + "]";
-        String first = "[" + storyboardId + ",";
-        String middle = "," + storyboardId + ",";
-        String last = "," + storyboardId + "]";
         LambdaQueryWrapper<AidExtractTask> w = Wrappers.lambdaQuery();
         w.eq(AidExtractTask::getTaskType, TASK_TYPE_STORYBOARD_VIDEO_GENERATE)
                 .in(AidExtractTask::getStatus, TASK_STATUS_PENDING, TASK_STATUS_QUEUED, TASK_STATUS_PROCESSING)
                 .eq(AidExtractTask::getDelFlag, DEL_FLAG_NORMAL)
-                .like(AidExtractTask::getInputSnapshot, key)
-                .and(q -> q.like(AidExtractTask::getInputSnapshot, only)
-                        .or().like(AidExtractTask::getInputSnapshot, first)
-                        .or().like(AidExtractTask::getInputSnapshot, middle)
-                        .or().like(AidExtractTask::getInputSnapshot, last));
+                .apply("JSON_CONTAINS(IF(JSON_VALID(input_snapshot), input_snapshot, '{}'), "
+                        + "CAST({0} AS CHAR), '$.storyboardIds') = 1", storyboardId);
         Long cnt = extractTaskService.getBaseMapper().selectCount(w);
         return Objects.nonNull(cnt) && cnt > 0;
     }

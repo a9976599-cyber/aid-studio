@@ -31,7 +31,14 @@
   line-height: 1.5;
 }
 
-.agent-paused-runtime-notice__resume {
+.agent-paused-runtime-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agent-paused-runtime-notice__resume,
+.agent-paused-runtime-notice__stop {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -50,16 +57,25 @@
   transition: filter 0.18s ease, opacity 0.18s ease;
 }
 
-.agent-paused-runtime-notice__resume:hover:not(:disabled) {
+.agent-paused-runtime-notice__stop {
+  color: #e8edf4;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+}
+
+.agent-paused-runtime-notice__resume:hover:not(:disabled),
+.agent-paused-runtime-notice__stop:hover:not(:disabled) {
   filter: brightness(1.08);
 }
 
-.agent-paused-runtime-notice__resume:disabled {
+.agent-paused-runtime-notice__resume:disabled,
+.agent-paused-runtime-notice__stop:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.agent-paused-runtime-notice__resume .anticon {
+.agent-paused-runtime-notice__resume .anticon,
+.agent-paused-runtime-notice__stop .anticon {
   font-size: 11px;
 }
 
@@ -69,7 +85,8 @@
     align-items: stretch;
   }
 
-  .agent-paused-runtime-notice__resume {
+  .agent-paused-runtime-notice__resume,
+  .agent-paused-runtime-notice__stop {
     width: 100%;
   }
 }

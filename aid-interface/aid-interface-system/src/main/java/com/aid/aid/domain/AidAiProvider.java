@@ -22,7 +22,7 @@ import com.aid.common.core.domain.BaseEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 // toString 排除 apiKey / apiSecret / extraHeaders，避免日志或异常堆栈打印对象时泄露密钥与敏感 header。
-@ToString(callSuper = true, exclude = {"apiKey", "apiSecret", "extraHeaders"})
+@ToString(callSuper = true, exclude = {"apiKey", "apiSecret", "extraHeaders", "newApiAccessToken"})
 @TableName(value = "aid_ai_provider")
 public class AidAiProvider extends BaseEntity implements Serializable
 {
@@ -39,6 +39,31 @@ public class AidAiProvider extends BaseEntity implements Serializable
     /** 服务商唯一编码 (系统内路由标识, 如: bytedance) */
     @Excel(name = "服务商唯一编码 (系统内路由标识, 如: bytedance)")
     private String providerCode;
+
+    /** 展示分类：AGGREGATOR 三方聚合，OFFICIAL 官方厂商。 */
+    private String providerCategory;
+
+    /** 同类供应商展示顺序，不参与任务调度。 */
+    private Integer displayOrder;
+
+    /** 接入方式：NATIVE 保留原有协议，NEW_API 使用站点协议。 */
+    private String integrationType;
+
+    /** 是否授权访问上游普通用户账户接口。 */
+    private Boolean newApiSystemTokenEnabled;
+
+    /** 上游普通用户访问令牌，与模型调用 Key 分开保存且不回显。 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String newApiAccessToken;
+
+    /** 兼容要求 New-Api-User 请求头的站点。 */
+    private Long newApiUserId;
+
+    /** 当前供应商绑定的上游分组。 */
+    private String newApiGroup;
+
+    /** 当前供应商绑定的上游模型 Key 编号。 */
+    private Long newApiTokenId;
 
     /** 服务商LOGO图标URL（厂家品牌图标，所属模型共用；存相对路径，出参由 @MediaUrl 拼 OSS/COS/本地域名） */
     @Excel(name = "服务商LOGO图标URL")
